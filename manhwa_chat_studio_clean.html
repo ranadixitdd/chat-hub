@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Manhwa Chat Hub — WhatsApp Comic Studio</title>
 <meta name="theme-color" content="#075e54">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -124,14 +124,347 @@
     box-shadow: none !important;
   }
 
-  @media (max-width: 480px) {
-    .phone-wrapper {
-      max-width: 100%;
-      height: 100dvh;
-      max-height: 100dvh;
-      border-radius: 0;
-      border: none;
-      box-shadow: none;
+  /* =====================================================================
+     MOBILE-FIRST RESPONSIVE ENGINE (UP TO 768px: PHONES & TABLETS)
+     ===================================================================== */
+  @media (max-width: 768px) {
+    html, body {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      overflow: hidden !important;
+      overscroll-behavior-y: none !important;
+      background: #000000 !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+    }
+
+    /* Edge-to-Edge True Native Mobile Shell */
+    .phone-wrapper,
+    .phone-wrapper.ratio-9-16,
+    .phone-wrapper.ratio-16-9,
+    .phone-wrapper.ratio-full {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Safe Area Notch & Status Bar Support */
+    .wa-header, .gpt-header, .gemini-header {
+      padding-top: max(8px, env(safe-area-inset-top)) !important;
+      padding-left: max(10px, env(safe-area-inset-left)) !important;
+      padding-right: max(10px, env(safe-area-inset-right)) !important;
+      min-height: calc(52px + env(safe-area-inset-top)) !important;
+    }
+
+    /* Mobile Header Layout */
+    .wa-header {
+      padding: 6px 10px !important;
+      gap: 6px !important;
+    }
+
+    .wa-header-left {
+      gap: 8px !important;
+      padding: 2px 4px !important;
+      min-width: 0 !important;
+      flex: 1 1 auto !important;
+      overflow: hidden !important;
+    }
+
+    .group-dp-wrapper {
+      width: 38px !important;
+      height: 38px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .wa-group-info {
+      min-width: 0 !important;
+      flex: 1 !important;
+      overflow: hidden !important;
+    }
+
+    .wa-group-title {
+      font-size: 14px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 145px !important;
+      display: inline-block !important;
+    }
+
+    .wa-group-subtitle {
+      font-size: 11px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 145px !important;
+    }
+
+    .wa-header-actions {
+      gap: 3px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .header-icon-btn {
+      width: 33px !important;
+      height: 33px !important;
+      font-size: 14px !important;
+      border-radius: 8px !important;
+      box-shadow: 1px 1px 0px #0f172a !important;
+    }
+
+    /* Top Dropdown Menu */
+    .dropdown-menu {
+      top: calc(52px + env(safe-area-inset-top)) !important;
+      right: max(8px, env(safe-area-inset-right)) !important;
+      max-width: calc(100vw - 20px) !important;
+      width: 250px !important;
+    }
+
+    /* Chat Stream & Bubbles */
+    .chat-stream {
+      padding: 8px 10px 14px 10px !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    .msg-row {
+      max-width: 90% !important;
+      gap: 6px !important;
+    }
+
+    .char-avatar-box {
+      width: 38px !important;
+      height: 38px !important;
+    }
+
+    .char-avatar-img {
+      width: 38px !important;
+      height: 38px !important;
+    }
+
+    .speech-bubble {
+      font-size: 14.5px !important;
+      padding: 7px 11px !important;
+      line-height: 1.4 !important;
+    }
+
+    /* Character Director Strip (Silky Horizontal Thumb Carousel) */
+    .director-deck {
+      padding: 5px 8px !important;
+      gap: 4px !important;
+    }
+
+    .deck-row {
+      gap: 6px !important;
+      align-items: center !important;
+    }
+
+    .char-strip {
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+      padding: 2px 2px 4px 2px !important;
+      max-height: none !important;
+      display: flex !important;
+      gap: 5px !important;
+    }
+
+    .char-strip::-webkit-scrollbar {
+      display: none !important;
+    }
+
+    .char-pill {
+      flex-shrink: 0 !important;
+      padding: 4px 9px 4px 4px !important;
+      font-size: 12px !important;
+      border-radius: 18px !important;
+    }
+
+    .char-pill-avatar {
+      width: 22px !important;
+      height: 22px !important;
+    }
+
+    .side-switch-btn {
+      flex-shrink: 0 !important;
+      padding: 5px 8px !important;
+      font-size: 10.5px !important;
+      white-space: nowrap !important;
+      border-radius: 10px !important;
+    }
+
+    /* Mobile Bottom Composer Bar & Safe Area */
+    .wa-input-bar {
+      padding-top: 6px !important;
+      padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+      padding-left: max(6px, env(safe-area-inset-left)) !important;
+      padding-right: max(6px, env(safe-area-inset-right)) !important;
+      gap: 6px !important;
+    }
+
+    .input-action-btn {
+      width: 36px !important;
+      height: 36px !important;
+      font-size: 20px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .wa-text-input {
+      font-size: 16px !important; /* Crucial: 16px prevents iOS Safari auto-zoom on focus */
+      padding: 9px 13px !important;
+      min-height: 40px !important;
+    }
+
+    .wa-send-btn {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      flex-shrink: 0 !important;
+    }
+
+    /* Sticker Drawer on Mobile */
+    .sticker-drawer.open {
+      height: 260px !important;
+      max-height: 46dvh !important;
+    }
+
+    .drawer-tabs {
+      padding: 3px 6px !important;
+    }
+
+    .drawer-tab-group {
+      overflow-x: auto !important;
+      scrollbar-width: none !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    .drawer-tab {
+      padding: 5px 8px !important;
+      font-size: 11px !important;
+    }
+
+    .drawer-content {
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 6px !important;
+      padding: 8px 6px !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    .sticker-option-item {
+      min-height: 68px !important;
+      padding: 4px 2px !important;
+    }
+
+    .sticker-option-item img {
+      width: 40px !important;
+      height: 40px !important;
+    }
+
+    /* Native Bottom-Sheet Modals */
+    .modal-backdrop {
+      padding: 0 !important;
+      align-items: flex-end !important;
+      background: rgba(15, 23, 42, 0.75) !important;
+      backdrop-filter: blur(4px) !important;
+    }
+
+    .modal-window,
+    .modal-window.studio-modal-wide,
+    div[class*="modal-window"] {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 92dvh !important;
+      max-height: 92dvh !important;
+      border-radius: 20px 20px 0 0 !important;
+      border-bottom: none !important;
+      border-left: none !important;
+      border-right: none !important;
+      margin: 0 !important;
+      animation: mobileSheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    @keyframes mobileSheetSlideUp {
+      0% { transform: translateY(100%); }
+      100% { transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 11px 14px !important;
+      border-radius: 20px 20px 0 0 !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 5 !important;
+    }
+
+    .modal-body {
+      padding: 12px 12px 24px 12px !important;
+      -webkit-overflow-scrolling: touch !important;
+      flex: 1 !important;
+    }
+
+    .hub-tab-bar {
+      padding: 6px 8px !important;
+      gap: 5px !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+    }
+
+    .hub-tab-btn {
+      padding: 6px 11px !important;
+      font-size: 11.5px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .hub-tab-panel {
+      padding: 12px 10px !important;
+    }
+
+    .global-section {
+      padding: 10px 12px !important;
+    }
+
+    .global-app-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+
+    .cast-grid-layout {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+
+    .cast-card {
+      padding: 10px 12px !important;
+    }
+
+    /* Floating Cinema Playback Dock */
+    .cinema-control-dock {
+      max-width: 96vw !important;
+      bottom: max(10px, env(safe-area-inset-bottom)) !important;
+      padding: 4px 7px !important;
+      gap: 4px !important;
+      overflow-x: auto !important;
+      scrollbar-width: none !important;
+    }
+
+    .cinema-btn {
+      padding: 5px 8px !important;
+      font-size: 10.5px !important;
     }
   }
 
@@ -7411,6 +7744,17 @@ function promptQuestAlert() {
   renderDirectorStrip();
   renderChatStream();
   renderDrawerContent();
+
+  // Mobile virtual keyboard handling: scroll to bottom on input focus
+  const mobileInputEl = document.getElementById('chatMessageInput');
+  if (mobileInputEl) {
+    mobileInputEl.addEventListener('focus', () => {
+      setTimeout(() => {
+        const stream = document.getElementById('chatStream');
+        if (stream) stream.scrollTop = stream.scrollHeight;
+      }, 300);
+    });
+  }
 
   /* =====================================================================
      GLOBAL OUTSIDE-CLICK & ESCAPE KEY LISTENERS (TAP ANYWHERE TO CLOSE)
