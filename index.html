@@ -231,31 +231,55 @@
       width: 250px !important;
     }
 
-    /* Chat Stream & Bubbles */
+    /* Chat Stream & Bubbles (Zero Clipping / Cropping on Phones in WhatsApp & Manhwa) */
     .chat-stream {
-      padding: 8px 10px 14px 10px !important;
+      padding: 10px 14px 18px 14px !important;
       -webkit-overflow-scrolling: touch !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
     }
 
     .msg-row {
-      max-width: 90% !important;
-      gap: 6px !important;
+      max-width: 88% !important;
+      gap: 7px !important;
+      box-sizing: border-box !important;
+      position: relative !important;
     }
 
     .char-avatar-box {
-      width: 38px !important;
-      height: 38px !important;
+      width: 36px !important;
+      height: 36px !important;
+      flex-shrink: 0 !important;
     }
 
     .char-avatar-img {
-      width: 38px !important;
-      height: 38px !important;
+      width: 36px !important;
+      height: 36px !important;
+    }
+
+    .bubble-wrapper {
+      max-width: calc(100% - 43px) !important;
+      min-width: 0 !important;
+      flex: 1 1 auto !important;
+      overflow: visible !important;
+    }
+
+    .msg-row.left .bubble-wrapper {
+      align-items: flex-start !important;
+    }
+
+    .msg-row.right .bubble-wrapper {
+      align-items: flex-end !important;
     }
 
     .speech-bubble {
       font-size: 14.5px !important;
       padding: 7px 11px !important;
       line-height: 1.4 !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      word-break: break-word !important;
+      overflow-wrap: anywhere !important;
     }
 
     /* Character Director Strip (Silky Horizontal Thumb Carousel) */
@@ -336,12 +360,12 @@
 
     /* Sticker Drawer on Mobile */
     .sticker-drawer.open {
-      height: 260px !important;
-      max-height: 46dvh !important;
+      height: 280px !important;
+      max-height: 48dvh !important;
     }
 
     .drawer-tabs {
-      padding: 3px 6px !important;
+      padding: 4px 6px !important;
     }
 
     .drawer-tab-group {
@@ -353,6 +377,16 @@
     .drawer-tab {
       padding: 5px 8px !important;
       font-size: 11px !important;
+    }
+
+    .drawer-subbar {
+      padding: 4px 6px !important;
+      gap: 5px !important;
+    }
+
+    .subbar-pill {
+      padding: 3px 9px !important;
+      font-size: 10.5px !important;
     }
 
     .drawer-content {
@@ -1019,7 +1053,18 @@
   .bubble-wrapper {
     display: flex;
     flex-direction: column;
-    max-width: calc(100% - 62px);
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 54px);
+    overflow: visible;
+  }
+
+  .msg-row.left .bubble-wrapper {
+    align-items: flex-start;
+  }
+
+  .msg-row.right .bubble-wrapper {
+    align-items: flex-end;
   }
 
   .sender-name-label {
@@ -1776,6 +1821,54 @@
   .drawer-tab.active {
     background: #0f172a;
     color: #facc15;
+  }
+
+  /* Fixed Category Sub-Bar (Permanent Strip: Never Scrolls Away or Overlaps Cards) */
+  .drawer-subbar {
+    display: none;
+    background: #0f172a;
+    border-bottom: 1.5px solid #1e293b;
+    padding: 5px 8px;
+    gap: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+
+  .drawer-subbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .drawer-subbar.active {
+    display: flex;
+  }
+
+  .subbar-pill {
+    padding: 4px 11px;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 14px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #cbd5e1;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+  }
+
+  .subbar-pill:hover {
+    color: #ffffff;
+    border-color: #64748b;
+  }
+
+  .subbar-pill.active {
+    background: #facc15;
+    color: #0f172a;
+    border-color: #facc15;
+    font-weight: 900;
   }
 
   .drawer-content {
@@ -3690,6 +3783,8 @@
       </div>
       <button class="icon-btn" style="padding:3px 9px; font-size:11px; background:#00a884;" onclick="triggerCustomUploadForDrawer()" title="Upload multiple images, stickers, GIFs, or short videos">+ Upload</button>
     </div>
+    <!-- FIXED SUB-FILTER BAR (ALWAYS VISIBLE, NEVER SCROLLS AWAY OR OVERLAPS) -->
+    <div class="drawer-subbar" id="drawerSubBar"></div>
     <div class="drawer-content" id="drawerGridContent"></div>
   </div>
 
@@ -6097,12 +6192,66 @@ if (msg.type === 'quest') {
     if (btnUploads) btnUploads.classList.toggle('active', tabName === 'uploads');
     if (btnSfx) btnSfx.classList.toggle('active', tabName === 'sfx');
     if (btnSounds) btnSounds.classList.toggle('active', tabName === 'sounds');
+    const grid = document.getElementById('drawerGridContent');
+    if (grid) grid.scrollTop = 0;
     renderDrawerContent();
   }
 
   function renderDrawerContent() {
     const grid = document.getElementById('drawerGridContent');
+    const subBar = document.getElementById('drawerSubBar');
     grid.innerHTML = '';
+
+    // Handle Fixed Category Sub-Bar (Permanent strip above grid: Never scrolls off or overlaps)
+    if (subBar) {
+      subBar.innerHTML = '';
+      if (activeDrawerTab === 'sfx') {
+        subBar.classList.add('active');
+        const cats = [
+          { id: 'all', label: 'All SFX' },
+          { id: 'combat', label: '💥 Combat' },
+          { id: 'drama', label: '😱 Drama' },
+          { id: 'comedy', label: '😂 Comedy' },
+          { id: 'aura', label: '🔥 Auras' }
+        ];
+        cats.forEach(c => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = `subbar-pill ${currentSfxCategory === c.id ? 'active' : ''}`;
+          b.textContent = c.label;
+          b.onclick = (e) => {
+            e.stopPropagation();
+            currentSfxCategory = c.id;
+            grid.scrollTop = 0;
+            renderDrawerContent();
+          };
+          subBar.appendChild(b);
+        });
+      } else if (activeDrawerTab === 'sounds') {
+        subBar.classList.add('active');
+        const cats = [
+          { id: 'all', label: 'All Sounds' },
+          { id: 'combat', label: '🥊 Combat' },
+          { id: 'drama', label: '😱 Drama' },
+          { id: 'comedy', label: '😂 Comedy' }
+        ];
+        cats.forEach(c => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = `subbar-pill ${currentSoundCategory === c.id ? 'active' : ''}`;
+          b.textContent = c.label;
+          b.onclick = (e) => {
+            e.stopPropagation();
+            currentSoundCategory = c.id;
+            grid.scrollTop = 0;
+            renderDrawerContent();
+          };
+          subBar.appendChild(b);
+        });
+      } else {
+        subBar.classList.remove('active');
+      }
+    }
 
     if (activeDrawerTab === 'stickers') {
       builtInStickers.forEach((st) => {
@@ -6150,30 +6299,6 @@ if (msg.type === 'quest') {
         grid.appendChild(card);
       });
     } else if (activeDrawerTab === 'sfx') {
-      // Category filter bar
-      const catBar = document.createElement('div');
-      catBar.style.cssText = 'grid-column: 1 / -1; display:flex; gap:5px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;';
-      const cats = [
-        { id: 'all', label: 'All SFX' },
-        { id: 'combat', label: '💥 Combat' },
-        { id: 'drama', label: '😱 Drama' },
-        { id: 'comedy', label: '😂 Comedy' },
-        { id: 'aura', label: '🔥 Auras' }
-      ];
-      cats.forEach(c => {
-        const b = document.createElement('button');
-        b.className = 'icon-btn';
-        b.style.cssText = `padding:3px 9px; font-size:10.5px; border-radius:14px; background:${currentSfxCategory === c.id ? '#facc15' : '#1e293b'}; color:${currentSfxCategory === c.id ? '#0f172a' : '#cbd5e1'};`;
-        b.textContent = c.label;
-        b.onclick = (e) => {
-          e.stopPropagation();
-          currentSfxCategory = c.id;
-          renderDrawerContent();
-        };
-        catBar.appendChild(b);
-      });
-      grid.appendChild(catBar);
-
       const filtered = currentSfxCategory === 'all'
         ? builtInSfxBursts
         : builtInSfxBursts.filter(b => b.category === currentSfxCategory);
@@ -6190,29 +6315,6 @@ if (msg.type === 'quest') {
         grid.appendChild(card);
       });
     } else if (activeDrawerTab === 'sounds') {
-      // Category filter bar
-      const catBar = document.createElement('div');
-      catBar.style.cssText = 'grid-column: 1 / -1; display:flex; gap:5px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;';
-      const cats = [
-        { id: 'all', label: 'All Sounds' },
-        { id: 'combat', label: '🥊 Combat' },
-        { id: 'drama', label: '😱 Drama' },
-        { id: 'comedy', label: '😂 Comedy' }
-      ];
-      cats.forEach(c => {
-        const b = document.createElement('button');
-        b.className = 'icon-btn';
-        b.style.cssText = `padding:3px 9px; font-size:10.5px; border-radius:14px; background:${currentSoundCategory === c.id ? '#facc15' : '#1e293b'}; color:${currentSoundCategory === c.id ? '#0f172a' : '#cbd5e1'};`;
-        b.textContent = c.label;
-        b.onclick = (e) => {
-          e.stopPropagation();
-          currentSoundCategory = c.id;
-          renderDrawerContent();
-        };
-        catBar.appendChild(b);
-      });
-      grid.appendChild(catBar);
-
       const filtered = currentSoundCategory === 'all'
         ? builtInSounds
         : builtInSounds.filter(s => s.category === currentSoundCategory);
