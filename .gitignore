@@ -1,0 +1,9 @@
+# Ignore heavy scripts and raw scraper archives
+scripts/
+backups/
+node_modules/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db

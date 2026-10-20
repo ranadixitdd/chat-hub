@@ -1,0 +1,19 @@
+{
+  "name": "Manhwa Chat Hub — WhatsApp Comic Studio",
+  "short_name": "ChatStudio",
+  "description": "Create and direct WhatsApp comic conversations, manhwa stories, and AI chat roleplays",
+  "start_url": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090d16",
+  "theme_color": "#075e54",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
