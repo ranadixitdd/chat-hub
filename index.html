@@ -247,14 +247,14 @@
     }
 
     .char-avatar-box {
-      width: 36px !important;
-      height: 36px !important;
+      width: 80px !important;
+      height: 80px !important;
       flex-shrink: 0 !important;
     }
 
     .char-avatar-img {
-      width: 36px !important;
-      height: 36px !important;
+      width: 80px !important;
+      height: 80px !important;
     }
 
     .bubble-wrapper {
@@ -977,8 +977,8 @@
   /* === CHARACTER AVATAR & EMOTION BADGES === */
   .char-avatar-box {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 55px;
+    height: 55px;
     flex-shrink: 0;
     cursor: pointer;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -991,7 +991,7 @@
   .char-avatar-img {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
+    border-radius: 30%;
     object-fit: cover;
     border: var(--comic-border);
     box-shadow: var(--comic-shadow-sm);
@@ -1869,6 +1869,119 @@
     color: #0f172a;
     border-color: #facc15;
     font-weight: 900;
+  }
+
+  /* === SCRIPT STUDIO TABS & PRESET LIBRARY === */
+  .script-tab-bar {
+    display: flex;
+    align-items: center;
+    background: #090d16;
+    border-bottom: 1.5px solid #334155;
+    padding: 6px 12px;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .script-tab-bar::-webkit-scrollbar { display: none; }
+  .script-tab-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .script-tab-btn:hover {
+    color: #f8fafc;
+    border-color: #64748b;
+  }
+  .script-tab-btn.active {
+    background: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+    font-weight: 900;
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.35);
+  }
+  .script-tab-panel {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .script-tab-panel.active {
+    display: flex;
+  }
+  .script-format-tags {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .script-tag-pill {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+  .script-library-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 290px;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .script-library-card {
+    background: #090d16;
+    border: 1.5px solid #334155;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: all 0.15s ease;
+  }
+  .script-library-card:hover {
+    border-color: #38bdf8;
+    background: #0f172a;
+  }
+  .script-lib-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #f8fafc;
+  }
+  .script-lib-desc {
+    font-size: 10.5px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+  .script-lib-cast {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+  }
+  .script-lib-badge {
+    background: #1e293b;
+    color: #38bdf8;
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 4px;
   }
 
   .drawer-content {
@@ -4189,33 +4302,102 @@
 </div>
 
 <!-- ===================================================================== -->
-<!-- MODAL: AI / STORY SCRIPT IMPORTER                                     -->
+<!-- MODAL: AI / STORY SCRIPT & AUTO-DIRECTOR STUDIO                       -->
 <!-- ===================================================================== -->
 <div class="modal-backdrop" id="scriptModal" style="z-index:9999;">
-  <div class="modal-window" style="max-width:540px;">
+  <div class="modal-window studio-modal-wide" style="max-width:660px;">
     <div class="modal-header">
-      <span class="modal-title">📜 Story Script Importer</span>
-      <button class="modal-close-btn" onclick="closeScriptModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
-        <p style="font-size:11.5px; color:#cbd5e1; line-height:1.4; flex:1; min-width:200px; margin:0;">
-          Format: <b>Name: message</b>, <b>[Name:emotion]: message</b>, <b>[Name:SFX]: BAM!</b>, <b>[Name:STICKER]: label</b>, or <b>[QUEST: text]</b>
-        </p>
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff;" onclick="copyChatGptTemplate()">📋 Copy AI Prompt</button>
-          <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a;" onclick="loadDemoScriptIntoModal()">⚡ Sample Script</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:20px;">🎬</span>
+        <div>
+          <div class="modal-title" style="font-size:15px; font-weight:900;">Anime/Manhwa Script & Auto-Director Studio</div>
+          <div style="font-size:11px; color:#94a3b8; font-weight:600;">Import dialogue scripts or JSON & auto-direct video scenes</div>
         </div>
       </div>
-      <textarea class="form-textarea" id="scriptInputBox" rows="7" placeholder="[SYSTEM: Episode 1 - The Missing Gadget]
-[Nobita:cry]: Doraemon!! Gian took my limited-edition comic book again!
-[Doraemon:angry]: What?! Not on my watch! Let me check my 4D pocket!
-[Shizuka:shock]: Wait, is that the Ultra Boing Hammer?!
-[Doraemon:SFX]: BOING SMASH!!"></textarea>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-secondary-comic" style="flex:1;" onclick="importScriptText(false)">➕ Append</button>
-        <button class="btn-primary-comic" style="flex:1;" onclick="importScriptText(true)">🎬 Replace & Play</button>
+      <button class="modal-close-btn" onclick="closeScriptModal()">✕</button>
+    </div>
+
+    <!-- SCRIPT STUDIO TAB BAR -->
+    <div class="script-tab-bar">
+      <button type="button" class="script-tab-btn active" id="tabBtnScriptText" onclick="switchScriptStudioTab('text')">
+        <span>📜</span> <span>Dialogue Script</span>
+      </button>
+      <button type="button" class="script-tab-btn" id="tabBtnScriptJson" onclick="switchScriptStudioTab('json')">
+        <span>📦</span> <span>JSON Studio</span>
+      </button>
+      <button type="button" class="script-tab-btn" id="tabBtnScriptLibrary" onclick="switchScriptStudioTab('library')">
+        <span>📚</span> <span>Story Library (5 Presets)</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+      
+      <!-- TAB PANEL 1: SCRIPT TEXT -->
+      <div class="script-tab-panel active" id="scriptPanelText">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+          <div class="script-format-tags">
+            <span class="script-tag-pill" title="Character dialogue with emotion">[Name:emotion]: text</span>
+            <span class="script-tag-pill" title="Action sound effect burst">[Name:SFX]: 💥 BAM!!</span>
+            <span class="script-tag-pill" title="Reaction sticker from vault">[Name:STICKER]: label</span>
+            <span class="script-tag-pill" title="Solo Leveling holographic quest alert">[QUEST: text]</span>
+            <span class="script-tag-pill" title="Episode or scene title banner">[SYSTEM: text]</span>
+            <span class="script-tag-pill" title="Dramatic suspense pause">[PAUSE: 1.5s]</span>
+          </div>
+          <div style="display:flex; gap:5px; margin-left:auto;">
+            <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template for ChatGPT / Claude / Gemini">📋 Copy AI Prompt</button>
+            <button type="button" class="icon-btn" style="background:#8b5cf6; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertScriptToJsonView()" title="Convert script into JSON">🔄 To JSON</button>
+            <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a; font-size:11px; padding:4px 9px;" onclick="loadDemoScriptIntoModal()">⚡ Sample</button>
+          </div>
+        </div>
+
+        <textarea class="form-textarea" id="scriptInputBox" rows="8" placeholder="[SYSTEM: EPISODE 1: GIAN'S REVENGE]
+[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
+[Nobita:SFX]: 😭 WAAAHH!!
+[Doraemon:angry]: Again?! What did you do to anger him this time?!
+[Nobita]: I accidentally stepped on his prized baseball card...
+[Gian:SFX]: 👊 POW!!
+[Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
+[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
+[Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
+[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
+[Nobita:SFX]: 💨 NIGERUNDAYO!!"></textarea>
       </div>
+
+      <!-- TAB PANEL 2: JSON STUDIO -->
+      <div class="script-tab-panel" id="scriptPanelJson">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+          <p style="font-size:11px; color:#cbd5e1; margin:0;">
+            Paste full story JSON or convert your current script to inspect automatic timings & sound attributes.
+          </p>
+          <div style="display:flex; gap:5px;">
+            <button type="button" class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 9px;" onclick="exportCurrentChatToJsonBox()">📥 Current Chat ➔ JSON</button>
+            <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertJsonToScriptView()">🔄 To Script</button>
+          </div>
+        </div>
+
+        <textarea class="form-textarea" id="scriptJsonBox" rows="8" style="font-family:monospace; font-size:11px; background:#090d16; color:#38bdf8;" placeholder='{
+  "title": "Episode 1: Gian&apos;s Revenge",
+  "characters": [ ... ],
+  "messages": [ ... ]
+}'></textarea>
+      </div>
+
+      <!-- TAB PANEL 3: STORY & SCRIPT LIBRARY -->
+      <div class="script-tab-panel" id="scriptPanelLibrary">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-bottom:2px;">
+          <span style="font-size:12px; font-weight:800; color:#f8fafc;">Curated Anime & Manhwa Episode Presets</span>
+          <button type="button" class="icon-btn" style="background:#00a884; color:#fff; font-size:11px; padding:4px 10px;" onclick="saveCurrentStoryAsTemplate()">💾 Save Current Chat as Template</button>
+        </div>
+        <div class="script-library-grid" id="scriptLibraryList"></div>
+      </div>
+
+      <!-- BOTTOM ACTIONS ROW -->
+      <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
+        <button type="button" class="btn-secondary-comic" style="flex:1; min-width:110px; font-size:12.5px; padding:9px 12px;" onclick="handleScriptStudioImport(false, false)">➕ Append to Chat</button>
+        <button type="button" class="btn-secondary-comic" style="flex:1; min-width:110px; font-size:12.5px; padding:9px 12px; background:#334155;" onclick="handleScriptStudioImport(true, false)">🔄 Replace Story</button>
+        <button type="button" class="btn-primary-comic" style="flex:2; min-width:180px; font-size:13px; padding:9px 14px; background:linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);" onclick="handleScriptStudioImport(true, true)">🎬 Auto-Direct & Play (Cinema Mode)</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -5877,6 +6059,16 @@ if (msg.type === 'quest') {
       return quest;
     }
 
+    if (msg.type === 'pause') {
+      const pauseDiv = document.createElement('div');
+      pauseDiv.className = 'scene-pause-pill';
+      pauseDiv.style.cssText = 'align-self:center; margin:8px auto; font-size:11px; color:#94a3b8; font-style:italic; background:rgba(148,163,184,0.12); border:1px dashed rgba(148,163,184,0.35); padding:4px 14px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none;';
+      pauseDiv.innerHTML = `<span>⏸️</span><span>Dramatic Pause (${((msg.delayMs || 1500) / 1000).toFixed(1)}s)</span>`;
+      pauseDiv.title = 'Click to edit or remove pause';
+      pauseDiv.onclick = () => openMessageEditModal(msg.id);
+      return pauseDiv;
+    }
+
     const char = characters.find(c => c.id === msg.charId) || characters[0];
     const expr = msg.expr || 'normal';
 
@@ -7079,6 +7271,14 @@ if (msg.type === 'quest') {
         return;
       }
 
+      if (nextMsg.type === 'pause') {
+        const pauseMs = (nextMsg.delayMs || 1500) / cinemaSpeedMultiplier;
+        document.getElementById('cinemaStatusText').textContent = `⏸️ Dramatic Pause (${((nextMsg.delayMs || 1500) / 1000).toFixed(1)}s)...`;
+        stepIndex++;
+        cinemaStepTimeout = setTimeout(playNextStep, pauseMs);
+        return;
+      }
+
       if (nextMsg.type === 'divider' || nextMsg.type === 'system' || nextMsg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
@@ -7088,7 +7288,37 @@ if (msg.type === 'quest') {
           else playPopSound();
         }
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.type === 'quest' ? 1400 : 1000) / cinemaSpeedMultiplier);
+        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' ? 1400 : 1000)) / cinemaSpeedMultiplier);
+        return;
+      }
+
+      if (nextMsg.type === 'sfx') {
+        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+        stream.appendChild(el);
+        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
+        if (soundEnabled) {
+          triggerSfxByName(nextMsg.sfx || 'punch', char.pitch || 1.05);
+        }
+        const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sfx-burst-bubble');
+        if (bubbleEl) {
+          bubbleEl.classList.remove('in-box-shock');
+          void bubbleEl.offsetWidth;
+          bubbleEl.classList.add('in-box-shock');
+        }
+        stepIndex++;
+        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 420) / cinemaSpeedMultiplier);
+        return;
+      }
+
+      if (nextMsg.type === 'sticker') {
+        const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
+        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+        stream.appendChild(el);
+        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        if (soundEnabled) playPopSound(char.pitch || 1.05);
+        stepIndex++;
+        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 550) / cinemaSpeedMultiplier);
         return;
       }
 
@@ -7111,12 +7341,13 @@ if (msg.type === 'quest') {
         triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
 
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, (cinemaSpamDelayMs || 400) / cinemaSpeedMultiplier);
+        const spamDelay = (nextMsg.delayMs || cinemaSpamDelayMs || 400) / cinemaSpeedMultiplier;
+        cinemaStepTimeout = setTimeout(playNextStep, spamDelay);
         return;
       }
 
       // Normal dialogue with typing indicator
-      const typingTime = Math.max(220, Math.min(800, textLen * 18)) / cinemaSpeedMultiplier;
+      const typingTime = Math.max(200, Math.min(800, textLen * 18)) / cinemaSpeedMultiplier;
 
       showTypingIndicatorThenRun(char, typingTime, () => {
         if (!isCinemaPlaying) return;
@@ -7132,7 +7363,8 @@ if (msg.type === 'quest') {
         triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
 
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, 750 / cinemaSpeedMultiplier);
+        const paceDelay = (nextMsg.delayMs || 750) / cinemaSpeedMultiplier;
+        cinemaStepTimeout = setTimeout(playNextStep, paceDelay);
       });
     }
 
@@ -7423,6 +7655,239 @@ if (msg.type === 'quest') {
     e.target.value = '';
   }
 
+  /* =====================================================================
+     SCRIPT & AUTO-DIRECTOR STUDIO (DUAL-FORMAT ENGINE: SCRIPT + JSON + LIBRARY)
+     ===================================================================== */
+  let activeScriptStudioTab = 'text';
+
+  // 5 Curated Built-In Anime/Manhwa Episodes
+  const BUILTIN_STORY_PRESETS = [
+    {
+      id: 'preset_gian_revenge',
+      title: "Episode 1: Gian's Revenge & Dorayaki Crisis",
+      desc: "Gian cornered Nobita outside his house! A Solo Leveling Quest suddenly appears!",
+      cast: ['Nobita', 'Doraemon', 'Gian'],
+      script: `[SYSTEM: EPISODE 1: GIAN'S REVENGE]
+[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with a baseball bat!
+[Nobita:SFX]: 😭 WAAAHH!!
+[Doraemon:angry]: Again?! What did you do to anger him this time?!
+[Nobita]: I accidentally stepped on his prized baseball card...
+[Gian:SFX]: 👊 POW!!
+[Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
+[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
+[Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
+[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
+[Nobita:SFX]: 💨 NIGERUNDAYO!!`
+    },
+    {
+      id: 'preset_solo_awakening',
+      title: "Solo Leveling: Double Dungeon Awakening",
+      desc: "Trapped in the temple of the God Statue! Player Jinwoo awakens his hunter system!",
+      cast: ['Sung_Jinwoo', 'Hunter_Song', 'System'],
+      script: `[SYSTEM: EPISODE: AWAKENING IN THE DOUBLE DUNGEON]
+[Sung_Jinwoo:shock]: The statue's eyes... they're glowing red?!
+[Hunter_Song:angry]: Everyone get down! Don't look into its eyes!
+[Sung_Jinwoo:SFX]: ⚡ NANI?!
+[Statue_God:SFX]: 💀 OMAE WA MOU...
+[Sung_Jinwoo:cry]: My leg... I can't move! Is this how it ends?!
+[QUEST: COURAGE OF THE WEAK: Complete the secret trial of the God Statue!]
+[QUEST: REWARD: Player Awakening & System Administrator Access]
+[Sung_Jinwoo:shock]: A holographic quest window in front of my eyes?!
+[System]: Welcome, Player Sung Jinwoo. Will you accept the quest?
+[Sung_Jinwoo:angry]: If I don't... I'll die anyway. I ACCEPT!
+[Sung_Jinwoo:SFX]: 🔥 AWAKEN!!`
+    },
+    {
+      id: 'preset_jjk_showdown',
+      title: "Jujutsu Kaisen: Shinjuku Group Chat Showdown",
+      desc: "Sukuna infiltrates the Tokyo Jujutsu squad chat. Gojo drops the ultimate catchphrase.",
+      cast: ['Megumi', 'Sukuna', 'Gojo'],
+      script: `[SYSTEM: EPISODE: SHINJUKU SHOWDOWN IN THE GROUP CHAT]
+[Megumi:shock]: Gojo-sensei... Sukuna just joined the squad chat!
+[Sukuna:laugh]: Bwahaha! What a pathetic gathering of insects.
+[Sukuna:SFX]: 💀 OMAE WA MOU...
+[Gojo:laugh]: Oh? Look who decided to crawl out of his fingers!
+[Gojo]: You know you're just a challenger here, right?
+[Sukuna:angry]: Insolent brat. I'll cleave you before you can blink!
+[Sukuna:SFX]: 💥 BAM!!
+[Gojo:love]: Nah, I'd win. 💅
+[Gojo:SFX]: ⚡ HOLLOW PURPLE!!
+[QUEST: SYSTEM ALERT: Special Grade Cursed Energy Surge Detected!]
+[Megumi:cry]: Sensei please don't destroy Tokyo again...`
+    },
+    {
+      id: 'preset_death_note_chip',
+      title: "Death Note: Light's Dramatic Potato Chip",
+      desc: "Light Yagami faces L's surveillance cameras while eating a potato chip with godlike drama.",
+      cast: ['L', 'Light', 'Ryuk'],
+      script: `[SYSTEM: EPISODE: LIGHT'S ULTIMATE DEDUCTION]
+[L:shock]: The suspect must be someone within the police department...
+[Light]: I'm just an innocent student studying for university entrance exams.
+[Ryuk:laugh]: Hehehe... humans are so interesting.
+[Ryuk:SFX]: 🤣 BWAHAHA!
+[Light]: I'll take a potato chip...
+[Light:angry]: AND EAT IT!!
+[Light:SFX]: 💥 BAM!!
+[QUEST: MIND GAME: Deduce L's real name before the 40-second timer expires!]
+[L:shock]: His heart rate didn't change at all... Could he really not be Kira?!`
+    },
+    {
+      id: 'preset_romcom_tsundere',
+      title: "Anime Rom-Com: The Rooftop Tsundere Confession",
+      desc: "Sakura is caught red-handed with her secret notebook on the school rooftop.",
+      cast: ['Senpai', 'Sakura'],
+      script: `[SYSTEM: EPISODE: AFTER-SCHOOL ROOFTOP CONFESSION]
+[Senpai]: Hey Sakura, thanks for meeting me on the rooftop.
+[Sakura:angry]: D-Don't get the wrong idea! I only came because it was on my way home!
+[Sakura:SFX]: 😡 B-BAKA!!
+[Senpai]: I found your notebook... the one with all the sketches of me.
+[Sakura:shock]: WH-WHAT?! YOU SAW THAT?!
+[Sakura:cry]: I'm so embarrassed I could die right now!!
+[QUEST: ROM-COM MISSION: Confess your true feelings before the bell rings!]
+[Senpai:love]: Actually... I really liked the drawings.
+[Sakura:love]: I-It's not like I like you or anything... baka!`
+    }
+  ];
+
+  function openScriptModal() {
+    renderScriptLibrary();
+    document.getElementById('scriptModal').classList.add('open');
+  }
+
+  function closeScriptModal() {
+    document.getElementById('scriptModal').classList.remove('open');
+  }
+
+  function switchScriptStudioTab(tab) {
+    activeScriptStudioTab = tab;
+    const btnText = document.getElementById('tabBtnScriptText');
+    const btnJson = document.getElementById('tabBtnScriptJson');
+    const btnLib = document.getElementById('tabBtnScriptLibrary');
+    const panelText = document.getElementById('scriptPanelText');
+    const panelJson = document.getElementById('scriptPanelJson');
+    const panelLib = document.getElementById('scriptPanelLibrary');
+
+    if (btnText) btnText.classList.toggle('active', tab === 'text');
+    if (btnJson) btnJson.classList.toggle('active', tab === 'json');
+    if (btnLib) btnLib.classList.toggle('active', tab === 'library');
+
+    if (panelText) panelText.classList.toggle('active', tab === 'text');
+    if (panelJson) panelJson.classList.toggle('active', tab === 'json');
+    if (panelLib) panelLib.classList.toggle('active', tab === 'library');
+
+    if (tab === 'library') {
+      renderScriptLibrary();
+    }
+  }
+
+  function renderScriptLibrary() {
+    const list = document.getElementById('scriptLibraryList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Load custom saved stories
+    let customPresets = [];
+    try {
+      const raw = safeGetStorage('manhwa_script_library_custom');
+      if (raw) customPresets = JSON.parse(raw);
+    } catch (e) {
+      customPresets = [];
+    }
+
+    const allPresets = [...customPresets, ...BUILTIN_STORY_PRESETS];
+
+    allPresets.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'script-library-card';
+      const castBadges = (p.cast || []).map(c => `<span class="script-lib-badge">👤 ${escapeHtml(c)}</span>`).join('');
+      const isCustom = !p.id.startsWith('preset_');
+
+      card.innerHTML = `
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="script-lib-title">${escapeHtml(p.title)}</span>
+            ${isCustom ? '<span style="font-size:9px; background:#00a884; color:#fff; padding:1px 5px; border-radius:4px; font-weight:800;">CUSTOM</span>' : '<span style="font-size:9px; background:#38bdf8; color:#0f172a; padding:1px 5px; border-radius:4px; font-weight:800;">OFFICIAL</span>'}
+          </div>
+          <div class="script-lib-desc">${escapeHtml(p.desc || '')}</div>
+          <div class="script-lib-cast">${castBadges}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
+          <button type="button" class="icon-btn" style="background:linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color:#fff; font-size:11px; padding:5px 10px;" onclick="loadAndAutoDirectStory(${idx})">▶ Auto-Direct & Play</button>
+          <div style="display:flex; gap:4px;">
+            <button type="button" class="icon-btn" style="background:#1e293b; font-size:10px; padding:3px 7px;" onclick="loadPresetIntoScriptEditor(${idx})">📝 Script</button>
+            <button type="button" class="icon-btn" style="background:#1e293b; font-size:10px; padding:3px 7px;" onclick="loadPresetIntoJsonEditor(${idx})">📦 JSON</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function getLibraryPresetByIndex(idx) {
+    let customPresets = [];
+    try {
+      const raw = safeGetStorage('manhwa_script_library_custom');
+      if (raw) customPresets = JSON.parse(raw);
+    } catch (e) {
+      customPresets = [];
+    }
+    const allPresets = [...customPresets, ...BUILTIN_STORY_PRESETS];
+    return allPresets[idx] || BUILTIN_STORY_PRESETS[0];
+  }
+
+  function loadAndAutoDirectStory(idx) {
+    const p = getLibraryPresetByIndex(idx);
+    document.getElementById('scriptInputBox').value = p.script;
+    handleScriptStudioImport(true, true);
+  }
+
+  function loadPresetIntoScriptEditor(idx) {
+    const p = getLibraryPresetByIndex(idx);
+    document.getElementById('scriptInputBox').value = p.script;
+    switchScriptStudioTab('text');
+    showToast(`📝 Loaded "${p.title}" into script editor!`);
+  }
+
+  function loadPresetIntoJsonEditor(idx) {
+    const p = getLibraryPresetByIndex(idx);
+    document.getElementById('scriptInputBox').value = p.script;
+    convertScriptToJsonView();
+    showToast(`📦 Converted "${p.title}" to JSON!`);
+  }
+
+  function saveCurrentStoryAsTemplate() {
+    openCustomPromptModal({
+      title: '💾 Save Current Story as Template',
+      desc: 'Enter a title for this preset template:',
+      defaultValue: currentStoryTitle || 'My Anime Episode',
+      showInput: true,
+      onConfirm: (title) => {
+        if (!title) return;
+        const scriptText = convertChatMessagesToScriptText(messages);
+        const newPreset = {
+          id: 'custom_' + Date.now(),
+          title: title.trim(),
+          desc: `Custom script template with ${messages.length} lines & ${characters.length} characters`,
+          cast: characters.map(c => c.name),
+          script: scriptText
+        };
+
+        let customPresets = [];
+        try {
+          const raw = safeGetStorage('manhwa_script_library_custom');
+          if (raw) customPresets = JSON.parse(raw);
+        } catch (e) {
+          customPresets = [];
+        }
+
+        customPresets.unshift(newPreset);
+        safeSetStorage('manhwa_script_library_custom', JSON.stringify(customPresets));
+        renderScriptLibrary();
+        showToast(`✨ Saved "${title}" to your Story Library!`);
+      }
+    });
+  }
+
   function copyChatGptTemplate() {
     const prompt = `Write an anime/manhwa comic chat dialogue script in this exact format so my chat studio app can play it directly:
 
@@ -7437,6 +7902,8 @@ if (msg.type === 'quest') {
 [CharacterName:MEDIA]: punch (or label of any image/video from your vault)
 [QUEST: URGENT - Solo Leveling style system quest hologram alert]
 [SYSTEM: Episode Banner or Scene Description]
+[PAUSE: 1.5s]
+[APP: whatsapp / chatgpt / gemini]
 
 Example:
 [SYSTEM: EPISODE 1: GIAN'S REVENGE]
@@ -7482,58 +7949,111 @@ Example:
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with a baseball bat!
 [Nobita:SFX]: 😭 WAAAHH!!
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
-[Nobita]: I accidentally stepped on his prized comic book...
+[Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
 [Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
 [QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using 4D gadgets!]
-[Nobita:shock]: A Solo Leveling Quest appeared?! Since when do we have manhwa quests?!
-[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a true hunter!
+[Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
+[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
 [Nobita:SFX]: 💨 NIGERUNDAYO!!`;
     showToast('⚡ Rich sample script loaded!');
   }
 
-  function importScriptText(replaceExisting) {
-    const raw = document.getElementById('scriptInputBox').value.trim();
-    if (!raw) return;
+  // Converts in-memory messages array to script dialogue text format
+  function convertChatMessagesToScriptText(msgList) {
+    return (msgList || []).map(m => {
+      if (m.type === 'divider') return `[SYSTEM: ${m.text || ''}]`;
+      if (m.type === 'quest') return `[QUEST: ${m.text || ''}]`;
+      if (m.type === 'app_switch') return `[APP: ${m.targetApp || 'whatsapp'}]`;
+      if (m.type === 'pause') return `[PAUSE: ${(m.delayMs || 1500) / 1000}s]`;
+      const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+      if (m.type === 'sfx') return `[${char.name}:SFX]: ${m.text || '💥 BAM!!'}`;
+      if (m.type === 'sticker') {
+        const label = (m.stickerData && m.stickerData.label) || 'sticker';
+        return `[${char.name}:STICKER]: ${label}`;
+      }
+      const exprTag = (m.expr && m.expr !== 'normal') ? `:${m.expr}` : '';
+      return `[${char.name}${exprTag}]: ${m.text || ''}`;
+    }).join('\n');
+  }
 
-    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  // Parse Dialogue Script into Structured Data Objects (with Smart Auto-Timing)
+  function parseScriptLinesToMessages(rawScript) {
+    const lines = (rawScript || '').split('\n').map(l => l.trim()).filter(Boolean);
     const parsedMsgs = [];
-    const validExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love'];
+    const validExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
 
     lines.forEach((line, idx) => {
-      // Check [SYSTEM: text]
+      // 1. [SYSTEM: text]
       const sysMatch = line.match(/^\[SYSTEM:\s*(.+)\]$/i);
       if (sysMatch) {
         parsedMsgs.push({
           id: 'm_sys_' + Date.now() + '_' + idx,
           type: 'divider',
-          text: sysMatch[1].trim()
+          text: sysMatch[1].trim(),
+          delayMs: 1100
         });
         return;
       }
 
-      // Check [QUEST: text] or [SYSTEM QUEST: text]
+      // 2. [QUEST: text]
       const questMatch = line.match(/^\[(?:SYSTEM\s+)?QUEST:\s*(.+)\]$/i);
       if (questMatch) {
         parsedMsgs.push({
           id: 'm_quest_' + Date.now() + '_' + idx,
           type: 'quest',
           title: 'SYSTEM QUEST ALERT',
-          text: questMatch[1].trim()
+          text: questMatch[1].trim(),
+          delayMs: 1600
         });
         return;
       }
 
-      // Check [Name:emotion]: text OR Name: text
+      // 3. [APP: appName]
+      const appMatch = line.match(/^\[(?:APP|SCENE):\s*(whatsapp|chatgpt|gemini)\]$/i);
+      if (appMatch) {
+        parsedMsgs.push({
+          id: 'm_app_' + Date.now() + '_' + idx,
+          type: 'app_switch',
+          targetApp: appMatch[1].toLowerCase(),
+          delayMs: 900
+        });
+        return;
+      }
+
+      // 4. [PAUSE: 1.5s] or [PAUSE: 2000]
+      const pauseMatch = line.match(/^\[PAUSE:\s*([\d\.]+)(s|ms)?\]$/i);
+      if (pauseMatch) {
+        const val = parseFloat(pauseMatch[1]);
+        const ms = (pauseMatch[2] === 's' || !pauseMatch[2]) && val < 50 ? val * 1000 : val;
+        parsedMsgs.push({
+          id: 'm_pause_' + Date.now() + '_' + idx,
+          type: 'pause',
+          delayMs: ms || 1500
+        });
+        return;
+      }
+
+      // 5. [SPEED: 1.5x]
+      const speedMatch = line.match(/^\[SPEED:\s*([\d\.]+)x?\]$/i);
+      if (speedMatch) {
+        cinemaSpeedMultiplier = parseFloat(speedMatch[1]) || 1.0;
+        safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
+        return;
+      }
+
+      // 6. Character dialogue lines
       let charName = '';
-      let exprTag = 'normal';
+      let tag1 = 'normal';
+      let tag2 = '';
       let msgBody = '';
 
-      const bracketMatch = line.match(/^\[([^:\]]+)(?::([^\]]+))?\]:\s*(.+)$/);
+      const bracketMatch = line.match(/^\[([^:\]]+)(?::([^:\]]+))?(?::([^\]]+))?\]:\s*(.+)$/);
       if (bracketMatch) {
         charName = bracketMatch[1].trim();
-        exprTag = (bracketMatch[2] || 'normal').trim();
-        msgBody = bracketMatch[3].trim();
+        tag1 = (bracketMatch[2] || 'normal').trim();
+        tag2 = (bracketMatch[3] || '').trim();
+        msgBody = bracketMatch[4].trim();
       } else {
         const colonIdx = line.indexOf(':');
         if (colonIdx === -1) return;
@@ -7543,9 +8063,10 @@ Example:
 
       if (!charName || !msgBody) return;
 
+      // Auto-create missing characters with vibrant palette & avatar
       let char = characters.find(c => c.name.toLowerCase() === charName.toLowerCase());
       if (!char) {
-        const palette = ['#eab308', '#0284c7', '#ec4899', '#a855f7', '#10b981'];
+        const palette = ['#eab308', '#0284c7', '#ec4899', '#a855f7', '#10b981', '#f97316', '#06b6d4'];
         const cIdx = characters.length;
         const color = palette[cIdx % palette.length];
         char = {
@@ -7553,29 +8074,46 @@ Example:
           name: charName,
           side: cIdx % 2 === 0 ? 'left' : 'right',
           color,
-          pitch: 1.05,
-          avatar: makeComicAvatarDataUri(charName, color, '✨')
+          pitch: 1.0 + (cIdx % 3) * 0.12,
+          avatar: makeComicAvatarDataUri(charName, color, '⚡')
         };
         characters.push(char);
       }
 
-      const upperTag = exprTag.toUpperCase();
-      if (upperTag === 'SFX') {
-        // Find matching sfx sound if any
-        const matchBurst = builtInSfxBursts.find(b => b.text.toLowerCase().includes(msgBody.toLowerCase()));
+      const upperTag1 = tag1.toUpperCase();
+      const upperTag2 = tag2.toUpperCase();
+
+      // Check SFX Burst
+      if (upperTag1 === 'SFX' || upperTag2 === 'SFX') {
+        const bodyLower = msgBody.toLowerCase();
+        let soundType = 'punch';
+        if (bodyLower.includes('bam') || bodyLower.includes('pow') || bodyLower.includes('punch') || bodyLower.includes('hit')) soundType = 'punch';
+        else if (bodyLower.includes('slash') || bodyLower.includes('sword') || bodyLower.includes('blade') || bodyLower.includes('cut')) soundType = 'sword';
+        else if (bodyLower.includes('boom') || bodyLower.includes('vineboom') || bodyLower.includes('bruh') || bodyLower.includes('explode')) soundType = 'vineboom';
+        else if (bodyLower.includes('nani') || bodyLower.includes('shock') || bodyLower.includes('omae') || bodyLower.includes('sting')) soundType = 'sting';
+        else if (bodyLower.includes('awaken') || bodyLower.includes('quest') || bodyLower.includes('mana') || bodyLower.includes('system') || bodyLower.includes('level')) soundType = 'scifi';
+        else if (bodyLower.includes('wah') || bodyLower.includes('cry') || bodyLower.includes('tear') || bodyLower.includes('sob')) soundType = 'sad';
+        else if (bodyLower.includes('bwaha') || bodyLower.includes('haha') || bodyLower.includes('laugh') || bodyLower.includes('rofl')) soundType = 'boing';
+
+        const matchBurst = builtInSfxBursts.find(b => b.text.toLowerCase().includes(bodyLower) || bodyLower.includes(b.id));
+        if (matchBurst && matchBurst.sfx) soundType = matchBurst.sfx;
+
         parsedMsgs.push({
           id: 'm_sfx_' + Date.now() + '_' + idx,
           type: 'sfx',
           charId: char.id,
           text: msgBody,
-          expr: (matchBurst && matchBurst.expr) || 'angry',
-          sfx: (matchBurst && matchBurst.sfx) || 'punch',
+          expr: (matchBurst && matchBurst.expr) || (soundType === 'sad' ? 'cry' : (soundType === 'boing' ? 'laugh' : 'angry')),
+          sfx: soundType,
+          delayMs: 380,
+          screenShake: true,
           time: getNextStoryTime()
         });
         return;
       }
 
-      if (upperTag === 'STICKER' || upperTag === 'MEDIA' || upperTag === 'GIF') {
+      // Check Sticker / Media
+      if (upperTag1 === 'STICKER' || upperTag1 === 'MEDIA' || upperTag1 === 'GIF' || upperTag2 === 'STICKER') {
         const found = customStickers.find(s => s.label.toLowerCase().includes(msgBody.toLowerCase())) ||
                       builtInStickers.find(s => (s.label || '').toLowerCase().includes(msgBody.toLowerCase())) ||
                       customStickers[0] || builtInStickers[0];
@@ -7585,20 +8123,29 @@ Example:
           charId: char.id,
           stickerData: found,
           expr: 'normal',
+          delayMs: 550,
           time: getNextStoryTime()
         });
         return;
       }
 
-      let expr = exprTag.toLowerCase();
+      // Emotion & Auto-Timing
+      let expr = tag1.toLowerCase();
       if (!validExprs.includes(expr)) {
         expr = 'normal';
         if (msgBody.includes('😭') || msgBody.includes('😢')) expr = 'cry';
         else if (msgBody.includes('😂') || msgBody.includes('🤣')) expr = 'laugh';
         else if (msgBody.includes('😡') || msgBody.includes('!')) expr = 'angry';
         else if (msgBody.includes('😱') || msgBody.includes('?!')) expr = 'shock';
-        else if (msgBody.includes('😍') || msgBody.includes('💖')) expr = 'love';
+        else if (msgBody.includes('😍') || msgBody.includes('💖') || msgBody.includes('💅')) expr = 'love';
       }
+
+      // Smart Typing Delay (words pace)
+      const textLen = msgBody.length;
+      let calculatedDelay = Math.max(300, Math.min(1200, textLen * 24));
+      if (expr === 'angry') calculatedDelay = Math.max(220, textLen * 16);
+      if (upperTag1 === 'FAST' || upperTag2 === 'FAST') calculatedDelay = 220;
+      if (upperTag1 === 'SLOW' || upperTag2 === 'SLOW') calculatedDelay = 1200;
 
       parsedMsgs.push({
         id: 'm_imp_' + Date.now() + '_' + idx,
@@ -7606,9 +8153,114 @@ Example:
         charId: char.id,
         text: msgBody,
         expr,
+        delayMs: calculatedDelay,
         time: getNextStoryTime()
       });
     });
+
+    return parsedMsgs;
+  }
+
+  function convertScriptToJsonView() {
+    const raw = (document.getElementById('scriptInputBox').value || '').trim();
+    if (!raw) {
+      showToast('⚠️ Script box is empty! Enter script lines first.');
+      return;
+    }
+    const msgs = parseScriptLinesToMessages(raw);
+    const fullJson = {
+      title: currentStoryTitle || 'My Anime Manhwa Episode',
+      activeApp: activeAppMode,
+      style: chatThemeStyle,
+      speedMultiplier: cinemaSpeedMultiplier,
+      characters: characters.map(c => ({ id: c.id, name: c.name, side: c.side, color: c.color })),
+      messages: msgs
+    };
+    document.getElementById('scriptJsonBox').value = JSON.stringify(fullJson, null, 2);
+    switchScriptStudioTab('json');
+    showToast('📦 Script converted to JSON Studio code!');
+  }
+
+  function convertJsonToScriptView() {
+    const raw = (document.getElementById('scriptJsonBox').value || '').trim();
+    if (!raw) {
+      showToast('⚠️ JSON box is empty! Paste JSON first.');
+      return;
+    }
+    try {
+      const data = JSON.parse(raw);
+      const msgList = Array.isArray(data) ? data : (data.messages || []);
+      const scriptText = convertChatMessagesToScriptText(msgList);
+      document.getElementById('scriptInputBox').value = scriptText;
+      switchScriptStudioTab('text');
+      showToast('📜 JSON converted to readable Script dialogue!');
+    } catch (e) {
+      showToast('⚠️ Invalid JSON syntax! Please check formatting.');
+    }
+  }
+
+  function exportCurrentChatToJsonBox() {
+    const fullJson = {
+      title: currentStoryTitle,
+      activeApp: activeAppMode,
+      style: chatThemeStyle,
+      speedMultiplier: cinemaSpeedMultiplier,
+      characters,
+      messages
+    };
+    document.getElementById('scriptJsonBox').value = JSON.stringify(fullJson, null, 2);
+    showToast('📥 Current chat exported to JSON Studio!');
+  }
+
+  function handleScriptStudioImport(replaceExisting, autoPlayCinema) {
+    let parsedMsgs = [];
+    let scriptContent = '';
+
+    if (activeScriptStudioTab === 'json') {
+      scriptContent = (document.getElementById('scriptJsonBox').value || '').trim();
+    } else {
+      scriptContent = (document.getElementById('scriptInputBox').value || '').trim();
+    }
+
+    if (!scriptContent) {
+      showToast('⚠️ Input box is empty!');
+      return;
+    }
+
+    // Auto-detect JSON even in script tab!
+    if (scriptContent.startsWith('{') || scriptContent.startsWith('[')) {
+      try {
+        const data = JSON.parse(scriptContent);
+        if (data.title) {
+          currentStoryTitle = data.title;
+          safeSetStorage('wh_current_story_title', currentStoryTitle);
+        }
+        if (data.activeApp) switchAppMode(data.activeApp);
+        if (data.style) applyChatStyle(data.style);
+        if (data.speedMultiplier) {
+          cinemaSpeedMultiplier = data.speedMultiplier;
+          safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
+        }
+        if (Array.isArray(data.characters)) {
+          data.characters.forEach(c => {
+            if (!characters.some(existing => existing.id === c.id || existing.name.toLowerCase() === c.name.toLowerCase())) {
+              characters.push(c);
+            }
+          });
+        }
+        parsedMsgs = Array.isArray(data) ? data : (data.messages || []);
+      } catch (err) {
+        showToast('⚠️ Invalid JSON! Parsing as text script...');
+        parsedMsgs = parseScriptLinesToMessages(scriptContent);
+      }
+    } else {
+      parsedMsgs = parseScriptLinesToMessages(scriptContent);
+    }
+
+    if (parsedMsgs.length === 0) {
+      showToast('⚠️ No valid dialogue lines detected!');
+      return;
+    }
 
     if (replaceExisting) {
       messages = parsedMsgs;
@@ -7622,10 +8274,13 @@ Example:
     renderChatStream();
     closeScriptModal();
 
-    if (replaceExisting) {
-      startCinemaPlayback();
+    if (autoPlayCinema) {
+      showToast('🎬 Auto-Directing Scene...');
+      setTimeout(() => {
+        startCinemaPlayback();
+      }, 200);
     } else {
-      showToast(`📜 Appended ${parsedMsgs.length} lines!`);
+      showToast(`✨ ${replaceExisting ? 'Loaded' : 'Appended'} ${parsedMsgs.length} lines!`);
     }
   }
 
