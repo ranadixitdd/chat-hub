@@ -1672,6 +1672,7 @@ function playSciFiChimeSound() {
   window.closeCastPickerPopover = closeCastPickerPopover;
   window.toggleCurrentCharSide = toggleCurrentCharSide;
   window.selectActiveSpeaker = selectActiveSpeaker;
+  window.toggleCleanRecordMode = toggleCleanRecordMode;
 
   function selectExpression(expr) {
     currentExpr = expr;
@@ -3507,6 +3508,9 @@ if (msg.type === 'quest') {
       wrapper.classList.remove('clean-record-mode');
     }
 
+    const ghostTrigger = document.getElementById('cinemaGhostTrigger');
+    if (ghostTrigger) ghostTrigger.style.display = 'none';
+
     renderChatStream();
   }
 
@@ -3533,7 +3537,7 @@ if (msg.type === 'quest') {
 
     stream.addEventListener('pointerdown', (e) => {
       if (!isCinemaPlaying) return;
-      if (e.target.closest('button, a, input, .dropdown-menu, .cinema-control-dock')) return;
+      if (e.target.closest('button, a, input, .dropdown-menu, .cinema-control-dock, .cinema-ghost-trigger')) return;
       turboHoldTimer = setTimeout(startTurbo, 350);
     });
 
@@ -4568,6 +4572,11 @@ Example:
       } else {
         dock.classList.remove('auto-faded');
       }
+    }
+
+    const ghostTrigger = document.getElementById('cinemaGhostTrigger');
+    if (ghostTrigger) {
+      ghostTrigger.style.display = cleanRecordMode ? 'inline-flex' : 'none';
     }
 
     const label = document.getElementById('cleanRecordMenuLabel');
