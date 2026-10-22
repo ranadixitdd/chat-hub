@@ -258,14 +258,14 @@
     }
 
     .char-avatar-box {
-      width: 80px !important;
-      height: 80px !important;
+      width: 60px !important;
+      height: 60px !important;
       flex-shrink: 0 !important;
     }
 
     .char-avatar-img {
-      width: 80px !important;
-      height: 80px !important;
+      width: 60px !important;
+      height: 60px !important;
     }
 
     .bubble-wrapper {
@@ -1052,8 +1052,8 @@
   /* === CHARACTER AVATAR & EMOTION BADGES === */
   .char-avatar-box {
     position: relative;
-    width: 55px;
-    height: 55px;
+    width: 65px;
+    height: 65px;
     flex-shrink: 0;
     cursor: pointer;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
