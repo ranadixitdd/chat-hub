@@ -15,7 +15,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="style.css?v=2.8">
+<link rel="stylesheet" href="style.css?v=2.9">
 </head>
 <body>
 
@@ -243,6 +243,7 @@
         <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(1.5); hideSpeedPopover();">1.5x</button>
         <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(2.0); hideSpeedPopover();">2.0x</button>
         <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(3.0); hideSpeedPopover();">3.0x</button>
+        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('instant'); hideSpeedPopover();" title="Instant Playback (Bypass simulated typing)">⚡ Instant</button>
       </div>
       <div class="speed-slider-row">
         <span style="font-size:10px; color:#94a3b8;">Slow</span>
@@ -832,6 +833,10 @@
           <div class="script-format-tags">
             <span class="script-tag-pill" title="Character dialogue with emotion">[Name:emotion]: text</span>
             <span class="script-tag-pill" title="Custom wardrobe face expression">[Name:custom_face]: text</span>
+            <span class="script-tag-pill" title="Natural typing delay: /delay 3sec (incoming typing bubble or POV composer typing)">/delay 3sec</span>
+            <span class="script-tag-pill" title="Photo/image card">[IMAGE: url]</span>
+            <span class="script-tag-pill" title="Video clip card">[VIDEO: url]</span>
+            <span class="script-tag-pill" title="Voice note / audio card">[AUDIO: url]</span>
             <span class="script-tag-pill" title="Waiting seconds / suspense pause">[PAUSE: 2s]</span>
             <span class="script-tag-pill" title="Switch interface to WhatsApp, ChatGPT, or Gemini">[SCENE: chatgpt]</span>
             <span class="script-tag-pill" title="Action sound effect burst">[Name:SFX]: 💥 BAM!!</span>
@@ -848,9 +853,10 @@
         </div>
 
         <textarea class="form-textarea" id="scriptInputBox" rows="8" placeholder="[SYSTEM: EPISODE 1: GIAN'S REVENGE]
+/delay 1.5sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
 [Nobita:SFX]: 😭 WAAAHH!!
-[PAUSE: 1s]
+/delay 2sec
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
 [Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
@@ -1073,6 +1079,6 @@
   </div>
 </div>
 
-<script src="app.js?v=2.8"></script>
+<script src="app.js?v=2.9"></script>
 </body>
 </html>

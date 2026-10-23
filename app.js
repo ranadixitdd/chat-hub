@@ -1920,6 +1920,45 @@ if (msg.type === 'quest') {
           </div>
         </div>
       `;
+    } else if (msg.type === 'image') {
+      const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
+      bubbleContentHtml = `
+        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
+          <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Image')}" style="max-width:240px; max-height:240px; border-radius:12px; object-fit:cover; display:block;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '🖼️');">
+          ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
+          <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
+            <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
+          </div>
+        </div>
+      `;
+    } else if (msg.type === 'video') {
+      const srcUrl = msg.videoUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
+      bubbleContentHtml = `
+        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
+          <video src="${srcUrl}" controls playsinline style="max-width:240px; max-height:240px; border-radius:12px; object-fit:cover; display:block;"></video>
+          ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
+          <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
+            <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
+          </div>
+        </div>
+      `;
+    } else if (msg.type === 'audio' || msg.type === 'voice') {
+      const audioSrc = msg.audioUrl || msg.url || msg.data || '';
+      bubbleContentHtml = `
+        <div class="speech-bubble" onclick="openMessageEditModal('${msg.id}')" style="min-width:180px;">
+          ${replyBoxHtml}
+          <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+            <button type="button" class="icon-btn" style="background:#00a884; color:#fff; border-radius:50%; width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="event.stopPropagation(); playCustomAudio('${audioSrc}')">▶</button>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:12px; font-weight:800; color:#f8fafc;">${escapeHtml(msg.label || 'Voice Message')}</span>
+              <span style="font-size:10px; color:#94a3b8;">${msg.duration || '0:05'}</span>
+            </div>
+          </div>
+          <span class="bubble-meta">
+            <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
+          </span>
+        </div>
+      `;
     } else if (msg.type === 'sfx') {
       bubbleContentHtml = `
         <div class="speech-bubble sfx-burst-bubble" onclick="openMessageEditModal('${msg.id}')">
@@ -1998,6 +2037,11 @@ if (msg.type === 'quest') {
   /* =====================================================================
      7. SENDING MESSAGES, STICKERS & REALISTIC TYPING INDICATOR
      ===================================================================== */
+  let activePovComposerTimer = null;
+  let activePreDelayTimer = null;
+  let userComposerDraftBackup = '';
+  let cinemaPlaybackMode = 'natural'; // 'natural' | 'instant'
+
   function clearTypingTimers() {
     if (activeTypingTimer) {
       clearTimeout(activeTypingTimer);
@@ -2007,7 +2051,20 @@ if (msg.type === 'quest') {
       clearInterval(activeTypingTickTimer);
       activeTypingTickTimer = null;
     }
+    if (activePovComposerTimer) {
+      clearTimeout(activePovComposerTimer);
+      activePovComposerTimer = null;
+    }
+    if (activePreDelayTimer) {
+      clearTimeout(activePreDelayTimer);
+      activePreDelayTimer = null;
+    }
     document.querySelectorAll('.typing-indicator-row').forEach(el => el.remove());
+    const input = document.getElementById('chatMessageInput');
+    if (input) {
+      input.classList.remove('simulated-typing-active');
+      if (isCinemaPlaying) input.value = '';
+    }
     const statusEl = document.getElementById('headerGroupStatus');
     if (statusEl) {
       statusEl.classList.remove('typing-pulse-status');
@@ -3260,9 +3317,15 @@ if (msg.type === 'quest') {
     isCinemaPaused = false;
 
     document.getElementById('directorDeck').classList.add('hidden');
-    document.getElementById('waInputBar').style.display = 'none';
+    document.getElementById('waInputBar').style.display = 'flex';
     document.getElementById('composerReplyBar').classList.remove('open');
     document.getElementById('stickerDrawer').classList.remove('open');
+
+    const composerInput = document.getElementById('chatMessageInput');
+    if (composerInput) {
+      userComposerDraftBackup = composerInput.value || '';
+      composerInput.value = '';
+    }
     
     const dock = document.getElementById('cinemaDock');
     if (dock) {
@@ -3310,6 +3373,17 @@ if (msg.type === 'quest') {
         const rBtn = document.getElementById('cinemaRestartBtn');
         if (rBtn) {
           rBtn.classList.add('pulse-glow');
+        }
+
+        const composer = document.getElementById('chatMessageInput');
+        if (composer) {
+          composer.classList.remove('simulated-typing-active');
+          if (userComposerDraftBackup !== undefined && userComposerDraftBackup !== '') {
+            composer.value = userComposerDraftBackup;
+            userComposerDraftBackup = '';
+          } else {
+            composer.value = '';
+          }
         }
 
         if (isBuiltinRecording) {
@@ -3412,14 +3486,24 @@ if (msg.type === 'quest') {
         return;
       }
 
-      if (nextMsg.type === 'sticker') {
+      // 5. Multimedia Story Events (Sticker, Image, Video, Audio)
+      if (nextMsg.type === 'sticker' || nextMsg.type === 'image' || nextMsg.type === 'video' || nextMsg.type === 'audio') {
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
-        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-        stream.appendChild(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
-        if (soundEnabled) playPopSound(char.pitch || 1.05);
-        stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 550) / cinemaSpeedMultiplier);
+        const mediaPreDelay = (nextMsg.preDelayMs || 0) / cinemaSpeedMultiplier;
+        
+        activePreDelayTimer = setTimeout(() => {
+          if (!isCinemaPlaying) return;
+          if (isCinemaPaused) {
+            cinemaStepTimeout = setTimeout(playNextStep, 200);
+            return;
+          }
+          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+          stream.appendChild(el);
+          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          if (soundEnabled) playPopSound(char.pitch || 1.05);
+          stepIndex++;
+          cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 650) / cinemaSpeedMultiplier);
+        }, mediaPreDelay);
         return;
       }
 
@@ -3432,7 +3516,7 @@ if (msg.type === 'quest') {
       const isOutburst = nextMsg.expr && ['angry', 'shock', 'laugh'].includes(nextMsg.expr) && textLen <= 32;
       const isExplicitFast = Boolean(nextMsg.delayMs && nextMsg.delayMs < 500);
 
-      const isRapidSpam = nextMsg.type === 'text' && (
+      const isRapidSpam = nextMsg.type === 'text' && !nextMsg.preDelayMs && (
         isShortBurst ||
         (isConsecutiveSameChar && textLen <= 38) ||
         isOutburst ||
@@ -3454,7 +3538,23 @@ if (msg.type === 'quest') {
         return;
       }
 
-      // Natural Human Typing Flow & Delivery Animation
+      // Instant Playback mode (Skip typing delays)
+      if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
+        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+        stream.appendChild(el);
+        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        if (soundEnabled) playPopSound(char.pitch || 1.05);
+        stepIndex++;
+        cinemaStepTimeout = setTimeout(playNextStep, 60);
+        return;
+      }
+
+      // Check author-configured delay (via /delay 3sec or custom timing)
+      const configuredPreDelay = (nextMsg.preDelayMs || 0) / cinemaSpeedMultiplier;
+
+      // ==========================================
+      // BEHAVIOR A: INCOMING CHARACTER (LEFT SIDE)
+      // ==========================================
       if (char.side === 'left') {
         const isGpt = (activeAppMode === 'chatgpt');
         const isGemini = (activeAppMode === 'gemini');
@@ -3499,7 +3599,10 @@ if (msg.type === 'quest') {
         stream.appendChild(typingRow);
         stream.scrollTop = stream.scrollHeight;
 
-        const typingDuration = Math.max(650, Math.min(2200, textLen * 34)) / cinemaSpeedMultiplier;
+        // If author explicitly set /delay 3sec, keep typing indicator active for that interval!
+        const typingDuration = configuredPreDelay > 0
+          ? configuredPreDelay
+          : (Math.max(650, Math.min(2200, textLen * 34)) / cinemaSpeedMultiplier);
 
         if (soundEnabled) {
           activeTypingTickTimer = setInterval(() => {
@@ -3543,48 +3646,104 @@ if (msg.type === 'quest') {
           cinemaStepTimeout = setTimeout(playNextStep, readingPause);
         }, typingDuration);
 
+      // ==========================================
+      // BEHAVIOR B: POV CHARACTER (RIGHT SIDE)
+      // ==========================================
       } else {
-        // Right side (POV Phone Owner)
-        const typingDuration = Math.max(400, Math.min(1300, textLen * 24)) / cinemaSpeedMultiplier;
-
-        if (soundEnabled) {
-          activeTypingTickTimer = setInterval(() => {
-            playTypingTickSound(char.pitch || 1.05);
-          }, 140);
-        }
-
-        activeTypingTimer = setTimeout(() => {
-          clearTypingTimers();
+        // Step 1: Wait for any preceding delay (from /delay command)
+        activePreDelayTimer = setTimeout(() => {
           if (!isCinemaPlaying) return;
           if (isCinemaPaused) {
-            cinemaStepTimeout = setTimeout(playNextStep, 200);
+            activePreDelayTimer = setTimeout(playNextStep, 200);
             return;
           }
 
-          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-          const tickEl = el.querySelector('.read-ticks');
-          if (tickEl) {
-            tickEl.textContent = '✓';
-            tickEl.style.color = '#94a3b8';
-            setTimeout(() => {
-              if (tickEl && tickEl.textContent === '✓') {
-                tickEl.textContent = '✓✓';
-              }
-            }, 350 / cinemaSpeedMultiplier);
+          // Step 2: Gradually type the message into bottom composer letter by letter
+          const composerInput = document.getElementById('chatMessageInput');
+          const sendBtn = document.querySelector('.wa-send-btn');
+          const fullText = nextMsg.text || '';
+
+          if (composerInput) {
+            composerInput.value = '';
+            composerInput.classList.add('simulated-typing-active');
           }
 
-          stream.appendChild(el);
-          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          const totalTypingTime = Math.max(380, Math.min(2000, fullText.length * 36)) / cinemaSpeedMultiplier;
+          const charDelay = Math.max(18, totalTypingTime / Math.max(1, fullText.length));
 
-          if (soundEnabled) playPopSound(char.pitch || 1.05);
+          let charIdx = 0;
 
-          const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+          function typeNextChar() {
+            if (!isCinemaPlaying) return;
+            if (isCinemaPaused) {
+              activePovComposerTimer = setTimeout(typeNextChar, 180);
+              return;
+            }
 
-          stepIndex++;
-          const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(500, Math.min(1400, 280 + textLen * 15))) / cinemaSpeedMultiplier;
-          cinemaStepTimeout = setTimeout(playNextStep, readingPause);
-        }, typingDuration);
+            charIdx++;
+            if (composerInput) {
+              composerInput.value = fullText.slice(0, charIdx);
+            }
+
+            if (soundEnabled && charIdx % 2 === 0) {
+              playTypingTickSound(char.pitch || 1.05);
+            }
+
+            if (charIdx < fullText.length) {
+              activePovComposerTimer = setTimeout(typeNextChar, charDelay);
+            } else {
+              // Simulated typing complete! Brief sending pause
+              if (composerInput) {
+                composerInput.classList.remove('simulated-typing-active');
+              }
+              const sendPause = Math.max(120, 220 / cinemaSpeedMultiplier);
+
+              activePovComposerTimer = setTimeout(() => {
+                if (!isCinemaPlaying) return;
+                if (isCinemaPaused) {
+                  activePovComposerTimer = setTimeout(playNextStep, 180);
+                  return;
+                }
+
+                // Clear composer & trigger send button animation
+                if (composerInput) {
+                  composerInput.value = '';
+                }
+                if (sendBtn) {
+                  sendBtn.classList.add('btn-press-anim');
+                  setTimeout(() => sendBtn.classList.remove('btn-press-anim'), 160);
+                }
+
+                // Append outgoing message
+                const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+                const tickEl = el.querySelector('.read-ticks');
+                if (tickEl) {
+                  tickEl.textContent = '✓';
+                  tickEl.style.color = '#94a3b8';
+                  setTimeout(() => {
+                    if (tickEl && tickEl.textContent === '✓') {
+                      tickEl.textContent = '✓✓';
+                    }
+                  }, 350 / cinemaSpeedMultiplier);
+                }
+
+                stream.appendChild(el);
+                stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+
+                if (soundEnabled) playPopSound(char.pitch || 1.05);
+
+                const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
+                triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+
+                stepIndex++;
+                const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(500, Math.min(1400, 280 + textLen * 15))) / cinemaSpeedMultiplier;
+                cinemaStepTimeout = setTimeout(playNextStep, readingPause);
+              }, sendPause);
+            }
+          }
+
+          typeNextChar();
+        }, configuredPreDelay);
       }
     }
 
@@ -3630,30 +3789,38 @@ if (msg.type === 'quest') {
   }
 
   function updateCinemaSpeedUI() {
-    const speedStr = `${cinemaSpeedMultiplier.toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`;
+    const isInstant = (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0);
+    const speedStr = isInstant ? 'Instant' : `${cinemaSpeedMultiplier.toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`;
     const speedTextEl = document.getElementById('cinemaSpeedText');
     if (speedTextEl) speedTextEl.textContent = speedStr;
 
     const btn = document.getElementById('cinemaSpeedBtn');
-    if (btn) btn.title = `Instant Speed: ${speedStr} (Tap to change)`;
+    if (btn) btn.title = `Playback Speed: ${speedStr} (Tap to change)`;
 
     // Update active state in popover pill buttons
     document.querySelectorAll('.speed-pill-btn').forEach(pill => {
-      const pillVal = parseFloat(pill.textContent);
-      if (!isNaN(pillVal) && Math.abs(pillVal - cinemaSpeedMultiplier) < 0.05) {
+      const text = pill.textContent.trim().toLowerCase();
+      if (isInstant && text.includes('instant')) {
         pill.classList.add('active');
-      } else if (!isNaN(pillVal)) {
+      } else if (!isInstant && !text.includes('instant')) {
+        const pillVal = parseFloat(text);
+        if (!isNaN(pillVal) && Math.abs(pillVal - cinemaSpeedMultiplier) < 0.05) {
+          pill.classList.add('active');
+        } else {
+          pill.classList.remove('active');
+        }
+      } else {
         pill.classList.remove('active');
       }
     });
 
     const quickSlider = document.getElementById('cinemaQuickSpeedSlider');
-    if (quickSlider) quickSlider.value = cinemaSpeedMultiplier;
+    if (quickSlider && !isInstant) quickSlider.value = cinemaSpeedMultiplier;
 
     const speedLbl = document.getElementById('speedValLabel');
-    if (speedLbl) speedLbl.textContent = `${cinemaSpeedMultiplier.toFixed(2)}x`;
+    if (speedLbl) speedLbl.textContent = isInstant ? 'Instant' : `${cinemaSpeedMultiplier.toFixed(2)}x`;
     const speedSlider = document.getElementById('cinemaSpeedSlider');
-    if (speedSlider) speedSlider.value = cinemaSpeedMultiplier;
+    if (speedSlider && !isInstant) speedSlider.value = cinemaSpeedMultiplier;
     const spamLbl = document.getElementById('spamDelayValLabel');
     if (spamLbl) spamLbl.textContent = `${cinemaSpamDelayMs} ms`;
     const spamSlider = document.getElementById('cinemaSpamDelaySlider');
@@ -3686,10 +3853,17 @@ if (msg.type === 'quest') {
   }
 
   function setQuickCinemaSpeed(val) {
-    cinemaSpeedMultiplier = parseFloat(val);
-    safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
+    if (val === 'instant') {
+      cinemaPlaybackMode = 'instant';
+      cinemaSpeedMultiplier = 10.0;
+      showToast('⚡ Instant Playback Mode (Zero delay)');
+    } else {
+      cinemaPlaybackMode = 'natural';
+      cinemaSpeedMultiplier = parseFloat(val);
+      safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
+      showToast(`⚡ Playback Speed: ${cinemaSpeedMultiplier}x`);
+    }
     updateCinemaSpeedUI();
-    showToast(`⚡ Playback Speed: ${cinemaSpeedMultiplier}x`);
   }
 
   function updateCinemaSpeedSlider(val) {
@@ -3924,6 +4098,18 @@ if (msg.type === 'quest') {
 
     document.getElementById('directorDeck').classList.remove('hidden');
     document.getElementById('waInputBar').style.display = 'flex';
+
+    // Safely restore user composer draft if one was active before playback
+    const composer = document.getElementById('chatMessageInput');
+    if (composer) {
+      composer.classList.remove('simulated-typing-active');
+      if (userComposerDraftBackup !== undefined && userComposerDraftBackup !== '') {
+        composer.value = userComposerDraftBackup;
+        userComposerDraftBackup = '';
+      } else {
+        composer.value = '';
+      }
+    }
 
     const wrapper = document.getElementById('phoneWrapper');
     if (wrapper) {
@@ -4424,7 +4610,13 @@ if (msg.type === 'quest') {
     const prompt = `You are a professional Anime & Manhwa Webtoon Screenwriter. Write a dynamic multi-scene comic chat dialogue script using this EXACT syntax so my Chat Studio app can direct and auto-play it with realistic typing animations, sound effects, facial expressions, and interface switching:
 
 === SCRIPT SYNTAX CHEAT SHEET ===
-1. CHARACTER DIALOGUE & FACIAL EXPRESSIONS:
+1. NATURAL LIVE TYPING & CUSTOM DELAYS (High Recommended):
+   /delay 3sec  -> Displays realistic typing for 3 seconds before next message
+   /delay 1.5s  -> 1.5 seconds typing delay
+   /delay 800ms -> 800 milliseconds quick response delay
+   * Behavior: Incoming characters show an animated 3-dot typing bubble & header "typing..." pulse. POV user messages simulate letter-by-letter typing directly inside the bottom composer!
+
+2. CHARACTER DIALOGUE & FACIAL EXPRESSIONS:
    [CharacterName]: normal dialogue text
    [CharacterName:cry]: dialogue with crying / sad face
    [CharacterName:shock]: dialogue with shocked / stunned face
@@ -4433,51 +4625,56 @@ if (msg.type === 'quest') {
    [CharacterName:laugh]: dialogue with laughing / joy face
    [CharacterName:custom_face]: dialogue with custom uploaded expression (e.g. [Nobita:bliss], [Nobita:smirk], [Nobita:bruised])
 
-2. WAITING SECONDS & SUSPENSE PAUSES:
-   [PAUSE: 2s] -> Pauses replay for 2 seconds before the next event
-   [PAUSE: 1.5s] -> Pauses for 1.5 seconds
-   [PAUSE: 800ms] -> Pauses for 800 milliseconds
+3. WAITING SECONDS & SUSPENSE SILENCE:
+   [PAUSE: 2s] -> Dramatic silent pause before next event
 
-3. MULTI-APP SCENE MORPHING (WhatsApp <-> ChatGPT <-> Gemini):
+4. MULTI-APP SCENE MORPHING (WhatsApp <-> ChatGPT <-> Gemini):
    [SCENE: whatsapp] -> Switches interface to WhatsApp (header typing pulse, double read ticks ✓✓)
    [SCENE: chatgpt] -> Switches interface to ChatGPT (authentic ChatGPT thinking indicator ●)
    [SCENE: gemini] -> Switches interface to Google Gemini (authentic Gemini sparkle thinking ✦)
 
-4. ACTION SOUND EFFECT (SFX) BURSTS & SCREENSHAKE:
+5. ACTION SOUND EFFECT (SFX) BURSTS & SCREENSHAKE:
    [CharacterName:SFX]: 💥 BAM!! (or 👊 POW!!, 🥊 ORA ORA!!, ⚔️ CLASH!!, ⚡ NANI?!, 💀 OMAE WA MOU..., 😭 WAAAHH!!, 🤣 BWAHAHA!)
 
-5. STICKERS & MEDIA VAULT:
-   [CharacterName:STICKER]: dorayaki (or name of any sticker/GIF)
-   [CharacterName:MEDIA]: punch (or name of photo/clip)
+6. MULTIMEDIA & STICKERS:
+   [CharacterName:IMAGE]: https://example.com/photo.jpg (or [IMAGE: url])
+   [CharacterName:VIDEO]: https://example.com/video.mp4 (or [VIDEO: url])
+   [CharacterName:AUDIO]: https://example.com/voice.mp3 (or [AUDIO: url])
+   [CharacterName:STICKER]: dorayaki (or name of sticker/GIF)
 
-6. SYSTEM NOTIFICATIONS & QUEST ALERTS:
+7. SYSTEM NOTIFICATIONS & QUEST ALERTS:
    [SYSTEM: Episode Title or Location Banner]
    [QUEST: SURVIVAL QUEST: Solo Leveling holographic alert text]
 
-7. PLAYBACK PACING & SPEED:
+8. PLAYBACK PACING & SPEED:
    [SPEED: 1.0x] (or 1.25x, 1.5x)
    [CharacterName:FAST]: rapid fire comic texting
    [CharacterName:SLOW]: deliberate dramatic delivery
 
 === EXAMPLE FULL EPISODE SCRIPT ===
 [SYSTEM: EPISODE 1: GIAN'S REVENGE]
+/delay 1.5sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
 [Nobita:SFX]: 😭 WAAAHH!!
-[PAUSE: 1s]
+/delay 2sec
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
+/delay 1.2sec
 [Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
 [Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
 [QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without 4D gadgets!]
+/delay 1sec
 [Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
 [Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
-[PAUSE: 1.5s]
+/delay 2sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
+/delay 2.5sec
 [ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
-[PAUSE: 1.5s]
+/delay 1.5sec
 [SCENE: whatsapp]
 [Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
+/delay 1sec
 [Doraemon:love]: Only if it's NOT my Dorayaki!
 [Nobita:SFX]: 💨 NIGERUNDAYO!!
 
@@ -4494,11 +4691,11 @@ If JSON format is preferred, you can output this JSON structure directly:
   ],
   "messages": [
     { "id": "m1", "type": "divider", "text": "EPISODE 1: GIAN'S REVENGE" },
-    { "id": "m2", "type": "text", "charId": "c1", "text": "Doraemon!! Help me!", "expr": "cry" },
+    { "id": "m2", "type": "text", "charId": "c1", "text": "Doraemon!! Help me!", "expr": "cry", "preDelayMs": 1500 },
     { "id": "m3", "type": "pause", "delayMs": 1500 },
     { "id": "m4", "type": "app_switch", "targetApp": "chatgpt" },
     { "id": "m5", "type": "text", "charId": "c1", "text": "ChatGPT, give me an escape plan!", "expr": "normal" },
-    { "id": "m6", "type": "text", "charId": "c3", "text": "Tactical advice: 1. Apologize. 2. Run!", "expr": "normal" }
+    { "id": "m6", "type": "text", "charId": "c3", "text": "Tactical advice: 1. Apologize. 2. Run!", "expr": "normal", "preDelayMs": 2500 }
   ]
 }`;
 
@@ -4530,44 +4727,71 @@ If JSON format is preferred, you can output this JSON structure directly:
 
   function loadDemoScriptIntoModal() {
     document.getElementById('scriptInputBox').value = `[SYSTEM: EPISODE 1: GIAN'S REVENGE]
+/delay 1.5sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
 [Nobita:SFX]: 😭 WAAAHH!!
-[PAUSE: 1s]
+/delay 2sec
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
+/delay 1.2sec
 [Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
 [Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
 [QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
+/delay 1sec
 [Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
 [Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
-[PAUSE: 1.5s]
+/delay 2sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
+/delay 2.5sec
 [ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
-[PAUSE: 1.5s]
+/delay 1.5sec
 [SCENE: whatsapp]
 [Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
+/delay 1sec
 [Doraemon:love]: Only if it's NOT my Dorayaki!
 [Nobita:SFX]: 💨 NIGERUNDAYO!!`;
-    showToast('⚡ Rich sample script loaded!');
+    showToast('⚡ Rich sample script with natural typing delays loaded!');
   }
 
   // Converts in-memory messages array to script dialogue text format
   function convertChatMessagesToScriptText(msgList) {
-    return (msgList || []).map(m => {
-      if (m.type === 'divider') return `[SYSTEM: ${m.text || ''}]`;
-      if (m.type === 'quest') return `[QUEST: ${m.text || ''}]`;
-      if (m.type === 'app_switch') return `[APP: ${m.targetApp || 'whatsapp'}]`;
-      if (m.type === 'pause') return `[PAUSE: ${(m.delayMs || 1500) / 1000}s]`;
-      const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
-      if (m.type === 'sfx') return `[${char.name}:SFX]: ${m.text || '💥 BAM!!'}`;
-      if (m.type === 'sticker') {
-        const label = (m.stickerData && m.stickerData.label) || 'sticker';
-        return `[${char.name}:STICKER]: ${label}`;
+    const lines = [];
+    (msgList || []).forEach(m => {
+      if (m.preDelayMs && m.preDelayMs > 0) {
+        lines.push(`/delay ${(m.preDelayMs / 1000).toFixed(1).replace(/\.0$/, '')}sec`);
       }
-      const exprTag = (m.expr && m.expr !== 'normal') ? `:${m.expr}` : '';
-      return `[${char.name}${exprTag}]: ${m.text || ''}`;
-    }).join('\n');
+      if (m.type === 'divider') {
+        lines.push(`[SYSTEM: ${m.text || ''}]`);
+      } else if (m.type === 'quest') {
+        lines.push(`[QUEST: ${m.text || ''}]`);
+      } else if (m.type === 'app_switch') {
+        lines.push(`[SCENE: ${m.targetApp || 'whatsapp'}]`);
+      } else if (m.type === 'pause') {
+        lines.push(`/delay ${(m.delayMs / 1000).toFixed(1).replace(/\.0$/, '')}sec`);
+      } else if (m.type === 'image') {
+        const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        lines.push(`[${char.name}:IMAGE]: ${m.imageUrl || m.text || ''}`);
+      } else if (m.type === 'video') {
+        const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        lines.push(`[${char.name}:VIDEO]: ${m.videoUrl || m.text || ''}`);
+      } else if (m.type === 'audio') {
+        const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        lines.push(`[${char.name}:AUDIO]: ${m.audioUrl || m.text || ''}`);
+      } else if (m.type === 'sfx') {
+        const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        lines.push(`[${char.name}:SFX]: ${m.text || '💥 BAM!!'}`);
+      } else if (m.type === 'sticker') {
+        const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        const label = (m.stickerData && m.stickerData.label) || 'sticker';
+        lines.push(`[${char.name}:STICKER]: ${label}`);
+      } else {
+        const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        const exprTag = (m.expr && m.expr !== 'normal') ? `:${m.expr}` : '';
+        lines.push(`[${char.name}${exprTag}]: ${m.text || ''}`);
+      }
+    });
+    return lines.join('\n');
   }
 
   // Parse Dialogue Script into Structured Data Objects (with Smart Auto-Timing)
@@ -4575,8 +4799,38 @@ If JSON format is preferred, you can output this JSON structure directly:
     const lines = (rawScript || '').split('\n').map(l => l.trim()).filter(Boolean);
     const parsedMsgs = [];
     const validExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
+    let pendingDelayMs = 0;
 
     lines.forEach((line, idx) => {
+      // 0. Custom delay command: /delay 3sec, /delay 1.5s, /delay 800ms, /delay 2.5sec
+      const delayCmdMatch = line.match(/^\/delay\s+([\d\.]+)\s*(s|sec|secs|second|seconds|ms)?$/i);
+      if (delayCmdMatch) {
+        const val = parseFloat(delayCmdMatch[1]);
+        if (!isNaN(val) && val > 0) {
+          const unit = (delayCmdMatch[2] || '').toLowerCase();
+          const ms = (unit === 'ms') ? val : (val * 1000);
+          const clamped = Math.max(100, Math.min(30000, ms));
+          pendingDelayMs = Math.min(30000, pendingDelayMs + clamped);
+        }
+        return;
+      }
+
+      // [PAUSE: 1.5s] or [PAUSE: 2000]
+      const pauseMatch = line.match(/^\[PAUSE:\s*([\d\.]+)\s*(s|sec|secs|second|seconds|ms)?\]$/i);
+      if (pauseMatch) {
+        const val = parseFloat(pauseMatch[1]);
+        if (!isNaN(val) && val > 0) {
+          const unit = (pauseMatch[2] || '').toLowerCase();
+          const ms = (unit === 'ms') ? val : (val * 1000);
+          const clamped = Math.max(100, Math.min(30000, ms));
+          pendingDelayMs = Math.min(30000, pendingDelayMs + clamped);
+        }
+        return;
+      }
+
+      const eventPreDelay = pendingDelayMs;
+      pendingDelayMs = 0;
+
       // 1. [SYSTEM: text]
       const sysMatch = line.match(/^\[SYSTEM:\s*(.+)\]$/i);
       if (sysMatch) {
@@ -4584,6 +4838,7 @@ If JSON format is preferred, you can output this JSON structure directly:
           id: 'm_sys_' + Date.now() + '_' + idx,
           type: 'divider',
           text: sysMatch[1].trim(),
+          preDelayMs: eventPreDelay,
           delayMs: 1100
         });
         return;
@@ -4597,32 +4852,41 @@ If JSON format is preferred, you can output this JSON structure directly:
           type: 'quest',
           title: 'SYSTEM QUEST ALERT',
           text: questMatch[1].trim(),
+          preDelayMs: eventPreDelay,
           delayMs: 1600
         });
         return;
       }
 
-      // 3. [APP: appName]
+      // 3. [APP: appName] or [SCENE: appName]
       const appMatch = line.match(/^\[(?:APP|SCENE):\s*(whatsapp|chatgpt|gemini)\]$/i);
       if (appMatch) {
         parsedMsgs.push({
           id: 'm_app_' + Date.now() + '_' + idx,
           type: 'app_switch',
           targetApp: appMatch[1].toLowerCase(),
+          preDelayMs: eventPreDelay,
           delayMs: 900
         });
         return;
       }
 
-      // 4. [PAUSE: 1.5s] or [PAUSE: 2000]
-      const pauseMatch = line.match(/^\[PAUSE:\s*([\d\.]+)(s|ms)?\]$/i);
-      if (pauseMatch) {
-        const val = parseFloat(pauseMatch[1]);
-        const ms = (pauseMatch[2] === 's' || !pauseMatch[2]) && val < 50 ? val * 1000 : val;
+      // Standalone Media Tags: [IMAGE: url], [PHOTO: url], [VIDEO: url], [AUDIO: url]
+      const standaloneMediaMatch = line.match(/^\[(IMAGE|PHOTO|VIDEO|AUDIO|MEDIA):\s*(.+)\]$/i);
+      if (standaloneMediaMatch) {
+        const mType = standaloneMediaMatch[1].toUpperCase();
+        const mUrl = standaloneMediaMatch[2].trim();
+        const activeChar = characters.find(c => c.id === currentCharId) || characters[0];
         parsedMsgs.push({
-          id: 'm_pause_' + Date.now() + '_' + idx,
-          type: 'pause',
-          delayMs: ms || 1500
+          id: 'm_media_' + Date.now() + '_' + idx,
+          type: (mType === 'VIDEO' ? 'video' : (mType === 'AUDIO' ? 'audio' : 'image')),
+          charId: activeChar.id,
+          imageUrl: (mType !== 'VIDEO' && mType !== 'AUDIO') ? mUrl : null,
+          videoUrl: (mType === 'VIDEO') ? mUrl : null,
+          audioUrl: (mType === 'AUDIO') ? mUrl : null,
+          preDelayMs: eventPreDelay,
+          delayMs: 800,
+          time: getNextStoryTime()
         });
         return;
       }
@@ -4677,6 +4941,44 @@ If JSON format is preferred, you can output this JSON structure directly:
       const upperTag1 = tag1.toUpperCase();
       const upperTag2 = tag2.toUpperCase();
 
+      // Check Media within character bracket: [Dora:IMAGE]: url, [Dora:VIDEO]: url
+      if (upperTag1 === 'IMAGE' || upperTag1 === 'PHOTO' || upperTag2 === 'IMAGE') {
+        parsedMsgs.push({
+          id: 'm_img_' + Date.now() + '_' + idx,
+          type: 'image',
+          charId: char.id,
+          imageUrl: msgBody,
+          preDelayMs: eventPreDelay,
+          delayMs: 800,
+          time: getNextStoryTime()
+        });
+        return;
+      }
+      if (upperTag1 === 'VIDEO' || upperTag2 === 'VIDEO') {
+        parsedMsgs.push({
+          id: 'm_vid_' + Date.now() + '_' + idx,
+          type: 'video',
+          charId: char.id,
+          videoUrl: msgBody,
+          preDelayMs: eventPreDelay,
+          delayMs: 800,
+          time: getNextStoryTime()
+        });
+        return;
+      }
+      if (upperTag1 === 'AUDIO' || upperTag1 === 'VOICE' || upperTag2 === 'AUDIO') {
+        parsedMsgs.push({
+          id: 'm_aud_' + Date.now() + '_' + idx,
+          type: 'audio',
+          charId: char.id,
+          audioUrl: msgBody,
+          preDelayMs: eventPreDelay,
+          delayMs: 800,
+          time: getNextStoryTime()
+        });
+        return;
+      }
+
       // Check SFX Burst
       if (upperTag1 === 'SFX' || upperTag2 === 'SFX') {
         const bodyLower = msgBody.toLowerCase();
@@ -4699,6 +5001,7 @@ If JSON format is preferred, you can output this JSON structure directly:
           text: msgBody,
           expr: (matchBurst && matchBurst.expr) || (soundType === 'sad' ? 'cry' : (soundType === 'boing' ? 'laugh' : 'angry')),
           sfx: soundType,
+          preDelayMs: eventPreDelay,
           delayMs: 380,
           screenShake: true,
           time: getNextStoryTime()
@@ -4717,6 +5020,7 @@ If JSON format is preferred, you can output this JSON structure directly:
           charId: char.id,
           stickerData: found,
           expr: 'normal',
+          preDelayMs: eventPreDelay,
           delayMs: 550,
           time: getNextStoryTime()
         });
@@ -4749,10 +5053,19 @@ If JSON format is preferred, you can output this JSON structure directly:
         charId: char.id,
         text: msgBody,
         expr,
+        preDelayMs: eventPreDelay,
         delayMs: calculatedDelay,
         time: getNextStoryTime()
       });
     });
+
+    if (pendingDelayMs > 0) {
+      parsedMsgs.push({
+        id: 'm_pause_end',
+        type: 'pause',
+        delayMs: pendingDelayMs
+      });
+    }
 
     return parsedMsgs;
   }
