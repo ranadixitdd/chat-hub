@@ -3308,6 +3308,10 @@ if (msg.type === 'quest') {
       showToast('⚠️ Add some messages first before playing!');
       return;
     }
+    if (cinemaStepTimeout) {
+      clearTimeout(cinemaStepTimeout);
+      cinemaStepTimeout = null;
+    }
     flushPendingLiveMessage();
     clearTypingTimers();
     resetCinemaCamera();
@@ -3489,57 +3493,76 @@ if (msg.type === 'quest') {
       // 5. Multimedia Story Events (Sticker, Image, Video, Audio)
       if (nextMsg.type === 'sticker' || nextMsg.type === 'image' || nextMsg.type === 'video' || nextMsg.type === 'audio') {
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
-        const mediaPreDelay = (nextMsg.preDelayMs || 0) / cinemaSpeedMultiplier;
         
-        activePreDelayTimer = setTimeout(() => {
-          if (!isCinemaPlaying) return;
-          if (isCinemaPaused) {
-            cinemaStepTimeout = setTimeout(playNextStep, 200);
-            return;
-          }
+        // Instant Playback mode (Skip delays)
+        if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
+          clearTypingTimers();
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
           stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
           if (soundEnabled) playPopSound(char.pitch || 1.05);
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 650) / cinemaSpeedMultiplier);
-        }, mediaPreDelay);
+          cinemaStepTimeout = setTimeout(playNextStep, 60);
+          return;
+        }
+
+        const mediaPreDelay = (nextMsg.preDelayMs || 0) / cinemaSpeedMultiplier;
+        const sendDuration = (mediaPreDelay > 0 ? mediaPreDelay : (550 / cinemaSpeedMultiplier));
+
+        const statusEl = document.getElementById('headerGroupStatus');
+        if (char.side === 'left') {
+          if (statusEl) {
+            statusEl.textContent = `${char.name} is typing...`;
+            statusEl.classList.add('typing-pulse-status');
+          }
+          const typingRow = document.createElement('div');
+          typingRow.className = `typing-indicator-row ${char.side}`;
+          const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
+          typingRow.innerHTML = `
+            <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
+            <div class="typing-bubble">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+            <span class="typing-text-label">${escapeHtml(char.name)} is sharing media...</span>
+          `;
+          stream.appendChild(typingRow);
+          stream.scrollTop = stream.scrollHeight;
+        }
+
+        activePreDelayTimer = setTimeout(() => {
+          clearTypingTimers();
+          if (!isCinemaPlaying) return;
+          if (isCinemaPaused) {
+            cinemaStepTimeout = setTimeout(playNextStep, 200);
+            return;
+          }
+          if (statusEl) {
+            statusEl.classList.remove('typing-pulse-status');
+            const autoStatus = characters.map(c => c.name).join(', ');
+            statusEl.textContent = groupProfile.status.trim() || autoStatus;
+          }
+          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+          stream.appendChild(el);
+          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          if (soundEnabled) playPopSound(char.pitch || 1.05);
+
+          const bubbleEl = el.querySelector('.sticker-card') || el.querySelector('.speech-bubble');
+          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+
+          stepIndex++;
+          cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 700) / cinemaSpeedMultiplier);
+        }, sendDuration);
         return;
       }
 
       const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
       const textLen = nextMsg.text ? nextMsg.text.trim().length : 12;
 
-      // Auto-Detect Rapid Spam
-      const isShortBurst = nextMsg.type === 'text' && (textLen <= 26 || /(!{2,}|\?{2,}|\?!|\!?)/.test(nextMsg.text || ''));
-      const isConsecutiveSameChar = stepIndex > 0 && fullQueue[stepIndex - 1].charId === nextMsg.charId;
-      const isOutburst = nextMsg.expr && ['angry', 'shock', 'laugh'].includes(nextMsg.expr) && textLen <= 32;
-      const isExplicitFast = Boolean(nextMsg.delayMs && nextMsg.delayMs < 500);
-
-      const isRapidSpam = nextMsg.type === 'text' && !nextMsg.preDelayMs && (
-        isShortBurst ||
-        (isConsecutiveSameChar && textLen <= 38) ||
-        isOutburst ||
-        isExplicitFast
-      );
-
-      if (isRapidSpam) {
-        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-        stream.appendChild(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
-        if (soundEnabled) playPopSound(char.pitch || 1.05);
-
-        const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-        triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
-
-        stepIndex++;
-        const spamDelay = (nextMsg.delayMs || cinemaSpamDelayMs || 280) / cinemaSpeedMultiplier;
-        cinemaStepTimeout = setTimeout(playNextStep, spamDelay);
-        return;
-      }
-
-      // Instant Playback mode (Skip typing delays)
+      // Instant Playback mode (Skip typing delays entirely)
       if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
+        clearTypingTimers();
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
@@ -3549,7 +3572,21 @@ if (msg.type === 'quest') {
         return;
       }
 
-      // Check author-configured delay (via /delay 3sec or custom timing)
+      // Explicit Fast / Burst override (only if explicitly tagged as fast/burst!)
+      const isExplicitFast = Boolean(nextMsg.fast || (nextMsg.delayMs && nextMsg.delayMs <= 200 && !nextMsg.preDelayMs));
+      if (isExplicitFast) {
+        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+        stream.appendChild(el);
+        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        if (soundEnabled) playPopSound(char.pitch || 1.05);
+        const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
+        triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        stepIndex++;
+        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 250) / cinemaSpeedMultiplier);
+        return;
+      }
+
+      // Author-configured delay (via /delay 3sec or custom timing)
       const configuredPreDelay = (nextMsg.preDelayMs || 0) / cinemaSpeedMultiplier;
 
       // ==========================================
@@ -3558,103 +3595,117 @@ if (msg.type === 'quest') {
       if (char.side === 'left') {
         const isGpt = (activeAppMode === 'chatgpt');
         const isGemini = (activeAppMode === 'gemini');
-
         const statusEl = document.getElementById('headerGroupStatus');
-        if (statusEl && !isGpt && !isGemini) {
-          statusEl.textContent = `${char.name} is typing...`;
-          statusEl.classList.add('typing-pulse-status');
-        }
 
-        const typingRow = document.createElement('div');
-        typingRow.className = `typing-indicator-row ${char.side}`;
-        const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
-
-        if (isGpt) {
-          typingRow.innerHTML = `
-            <img src="${avatarSrc}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
-            <div class="typing-bubble">
-              <span class="gpt-thinking-dot"></span>
-              <span class="gpt-thinking-label">${escapeHtml(char.name || 'ChatGPT')} is thinking...</span>
-            </div>
-          `;
-        } else if (isGemini) {
-          typingRow.innerHTML = `
-            <img src="${avatarSrc}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
-            <div class="typing-bubble">
-              <span class="gemini-sparkle-dot">✦</span>
-              <span class="gemini-thinking-label">${escapeHtml(char.name || 'Gemini')} is thinking...</span>
-            </div>
-          `;
-        } else {
-          typingRow.innerHTML = `
-            <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
-            <div class="typing-bubble">
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-            </div>
-            <span class="typing-text-label">${escapeHtml(char.name)} is typing...</span>
-          `;
-        }
-        stream.appendChild(typingRow);
-        stream.scrollTop = stream.scrollHeight;
-
-        // If author explicitly set /delay 3sec, keep typing indicator active for that interval!
-        const typingDuration = configuredPreDelay > 0
-          ? configuredPreDelay
-          : (Math.max(650, Math.min(2200, textLen * 34)) / cinemaSpeedMultiplier);
-
-        if (soundEnabled) {
-          activeTypingTickTimer = setInterval(() => {
-            playTypingTickSound(char.pitch || 1.05);
-          }, 140);
-        }
-
-        // When remote friend starts typing in WhatsApp, prior messages flip to double blue ticks (read)
-        if (!isGpt && !isGemini) {
-          document.querySelectorAll('.msg-row.right .read-ticks').forEach(t => {
-            t.textContent = '✓✓';
-            t.style.color = '#0284c7';
-          });
-        }
-
-        activeTypingTimer = setTimeout(() => {
-          clearTypingTimers();
+        function startIncomingTypingIndicator(durationMs) {
           if (!isCinemaPlaying) return;
-          if (isCinemaPaused) {
-            cinemaStepTimeout = setTimeout(playNextStep, 200);
-            return;
-          }
-
           if (statusEl && !isGpt && !isGemini) {
-            statusEl.classList.remove('typing-pulse-status');
-            const autoStatus = characters.map(c => c.name).join(', ');
-            statusEl.textContent = groupProfile.status.trim() || autoStatus;
+            statusEl.textContent = `${char.name} is typing...`;
+            statusEl.classList.add('typing-pulse-status');
           }
 
-          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-          stream.appendChild(el);
-          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          const typingRow = document.createElement('div');
+          typingRow.className = `typing-indicator-row ${char.side}`;
+          const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
 
-          if (soundEnabled) playPopSound(char.pitch || 1.05);
+          if (isGpt) {
+            typingRow.innerHTML = `
+              <img src="${avatarSrc}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
+              <div class="typing-bubble">
+                <span class="gpt-thinking-dot"></span>
+                <span class="gpt-thinking-label">${escapeHtml(char.name || 'ChatGPT')} is thinking...</span>
+              </div>
+            `;
+          } else if (isGemini) {
+            typingRow.innerHTML = `
+              <img src="${avatarSrc}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
+              <div class="typing-bubble">
+                <span class="gemini-sparkle-dot">✦</span>
+                <span class="gemini-thinking-label">${escapeHtml(char.name || 'Gemini')} is thinking...</span>
+              </div>
+            `;
+          } else {
+            typingRow.innerHTML = `
+              <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
+              <div class="typing-bubble">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+              <span class="typing-text-label">${escapeHtml(char.name)} is typing...</span>
+            `;
+          }
+          stream.appendChild(typingRow);
+          stream.scrollTop = stream.scrollHeight;
 
-          const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+          if (soundEnabled) {
+            activeTypingTickTimer = setInterval(() => {
+              playTypingTickSound(char.pitch || 1.05);
+            }, 140);
+          }
 
-          stepIndex++;
-          const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(650, Math.min(1800, 320 + textLen * 18))) / cinemaSpeedMultiplier;
-          cinemaStepTimeout = setTimeout(playNextStep, readingPause);
-        }, typingDuration);
+          // Prior outgoing messages on right flip to double blue checkmarks (read)
+          if (!isGpt && !isGemini) {
+            document.querySelectorAll('.msg-row.right .read-ticks').forEach(t => {
+              t.textContent = '✓✓';
+              t.style.color = '#0284c7';
+            });
+          }
+
+          activeTypingTimer = setTimeout(() => {
+            clearTypingTimers();
+            if (!isCinemaPlaying) return;
+            if (isCinemaPaused) {
+              cinemaStepTimeout = setTimeout(playNextStep, 200);
+              return;
+            }
+
+            if (statusEl && !isGpt && !isGemini) {
+              statusEl.classList.remove('typing-pulse-status');
+              const autoStatus = characters.map(c => c.name).join(', ');
+              statusEl.textContent = groupProfile.status.trim() || autoStatus;
+            }
+
+            const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+            stream.appendChild(el);
+            stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+
+            if (soundEnabled) playPopSound(char.pitch || 1.05);
+
+            const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
+            triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+
+            stepIndex++;
+            const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(650, Math.min(1800, 320 + textLen * 18))) / cinemaSpeedMultiplier;
+            cinemaStepTimeout = setTimeout(playNextStep, readingPause);
+          }, durationMs);
+        }
+
+        if (configuredPreDelay > 0) {
+          // Explicit /delay (e.g. 3sec): typing indicator remains active throughout that full interval
+          startIncomingTypingIndicator(configuredPreDelay);
+        } else {
+          // Natural human thinking pause before typing starts
+          const thinkPause = Math.max(250, 420 / cinemaSpeedMultiplier);
+          const typingDuration = Math.max(700, Math.min(2200, textLen * 34)) / cinemaSpeedMultiplier;
+
+          activePreDelayTimer = setTimeout(() => {
+            if (!isCinemaPlaying) return;
+            startIncomingTypingIndicator(typingDuration);
+          }, thinkPause);
+        }
 
       // ==========================================
       // BEHAVIOR B: POV CHARACTER (RIGHT SIDE)
       // ==========================================
       } else {
-        // Step 1: Wait for any preceding delay (from /delay command)
+        // Step 1: Wait for any preceding delay (from /delay command or natural human pause)
+        const povWait = configuredPreDelay > 0 ? configuredPreDelay : (250 / cinemaSpeedMultiplier);
+
         activePreDelayTimer = setTimeout(() => {
           if (!isCinemaPlaying) return;
           if (isCinemaPaused) {
-            activePreDelayTimer = setTimeout(playNextStep, 200);
+            cinemaStepTimeout = setTimeout(playNextStep, 200);
             return;
           }
 
@@ -3666,6 +3717,7 @@ if (msg.type === 'quest') {
           if (composerInput) {
             composerInput.value = '';
             composerInput.classList.add('simulated-typing-active');
+            composerInput.focus();
           }
 
           const totalTypingTime = Math.max(380, Math.min(2000, fullText.length * 36)) / cinemaSpeedMultiplier;
@@ -3683,6 +3735,7 @@ if (msg.type === 'quest') {
             charIdx++;
             if (composerInput) {
               composerInput.value = fullText.slice(0, charIdx);
+              composerInput.scrollLeft = composerInput.scrollWidth;
             }
 
             if (soundEnabled && charIdx % 2 === 0) {
@@ -3743,7 +3796,7 @@ if (msg.type === 'quest') {
           }
 
           typeNextChar();
-        }, configuredPreDelay);
+        }, povWait);
       }
     }
 
@@ -3867,6 +3920,7 @@ if (msg.type === 'quest') {
   }
 
   function updateCinemaSpeedSlider(val) {
+    cinemaPlaybackMode = 'natural';
     cinemaSpeedMultiplier = Math.max(0.25, Math.min(3.0, parseFloat(val)));
     safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
     updateCinemaSpeedUI();
@@ -5044,7 +5098,8 @@ If JSON format is preferred, you can output this JSON structure directly:
       const textLen = msgBody.length;
       let calculatedDelay = Math.max(300, Math.min(1200, textLen * 24));
       if (expr === 'angry') calculatedDelay = Math.max(220, textLen * 16);
-      if (upperTag1 === 'FAST' || upperTag2 === 'FAST') calculatedDelay = 220;
+      const isFast = (upperTag1 === 'FAST' || upperTag2 === 'FAST' || upperTag1 === 'BURST' || upperTag2 === 'BURST');
+      if (isFast) calculatedDelay = 220;
       if (upperTag1 === 'SLOW' || upperTag2 === 'SLOW') calculatedDelay = 1200;
 
       parsedMsgs.push({
@@ -5053,6 +5108,7 @@ If JSON format is preferred, you can output this JSON structure directly:
         charId: char.id,
         text: msgBody,
         expr,
+        fast: isFast,
         preDelayMs: eventPreDelay,
         delayMs: calculatedDelay,
         time: getNextStoryTime()

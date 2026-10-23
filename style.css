@@ -517,9 +517,9 @@
       padding: 10px 12px !important;
     }
 
-    /* Floating Cinema Playback Dock (Mobile Responsive) */
+    /* Floating Cinema Playback Dock (Mobile Responsive - hovering above bottom composer) */
     .cinema-control-dock {
-      bottom: max(10px, env(safe-area-inset-bottom)) !important;
+      bottom: calc(56px + max(8px, env(safe-area-inset-bottom))) !important;
       max-width: calc(100% - 10px) !important;
       padding: 0 !important;
       overflow: visible !important;
@@ -1704,7 +1704,6 @@
     border: 1.5px solid rgba(255, 255, 255, 0.3);
     box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.85);
   }
-  }
 
   /* === DIRECTOR DECK (COLLAPSIBLE CREATOR CONTROLS) === */
   .director-deck {
@@ -2521,7 +2520,7 @@
   /* === SMART DYNAMIC CINEMA PLAYBACK HUD & SCREEN RECORDER === */
   .cinema-control-dock {
     position: absolute;
-    bottom: 14px;
+    bottom: 68px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 150;
@@ -2767,7 +2766,7 @@
     max-width: calc(100% - 10px) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    bottom: 12px !important;
+    bottom: 66px !important;
     width: max-content !important;
   }
 
@@ -4741,23 +4740,35 @@
   /* === NATURAL LIVE TYPING & POV COMPOSER SIMULATION === */
   .wa-text-input.simulated-typing-active {
     border-color: #25d366 !important;
-    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.28), inset 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 0 0 2.5px rgba(37, 211, 102, 0.4), inset 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    background-color: #ffffff !important;
+    color: #111b21 !important;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .phone-wrapper.theme-realistic .wa-text-input.simulated-typing-active {
+    border: 1.5px solid #25d366 !important;
+    box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.35) !important;
   }
 
   .phone-wrapper.app-chatgpt .wa-text-input.simulated-typing-active {
     border-color: #10a37f !important;
-    box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.35), inset 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+    background-color: #161b22 !important;
+    color: #f0fdf4 !important;
+    box-shadow: 0 0 0 2.5px rgba(16, 163, 127, 0.45), inset 0 1px 4px rgba(0, 0, 0, 0.5) !important;
   }
 
   .phone-wrapper.app-gemini .wa-text-input.simulated-typing-active {
     border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), inset 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+    background-color: #17202e !important;
+    color: #f1f5f9 !important;
+    box-shadow: 0 0 0 2.5px rgba(56, 189, 248, 0.45), inset 0 1px 4px rgba(0, 0, 0, 0.4) !important;
   }
 
   .btn-press-anim {
-    transform: scale(0.86) !important;
-    filter: brightness(1.2) !important;
+    transform: scale(0.82) !important;
+    filter: brightness(1.25) !important;
+    box-shadow: 0 0 12px rgba(37, 211, 102, 0.6) !important;
     transition: transform 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   }
 
