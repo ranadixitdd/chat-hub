@@ -47,6 +47,98 @@
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
+  const BUILTIN_EXPRESSIONS = [
+    { key: 'normal', label: 'Normal / Default', emoji: '😊' },
+    { key: 'cry', label: 'Crying / Sad', emoji: '😭' },
+    { key: 'shock', label: 'Shocked / Stunned', emoji: '😱' },
+    { key: 'angry', label: 'Angry / Raging', emoji: '💢' },
+    { key: 'love', label: 'Love / Blushing', emoji: '😍' },
+    { key: 'laugh', label: 'Laughing / Joy', emoji: '🤣' }
+  ];
+
+  function ensureCharacterExpressions(char) {
+    if (!char) return;
+    if (!char.expressions || typeof char.expressions !== 'object') {
+      char.expressions = {};
+    }
+    const nameLower = (char.name || '').toLowerCase();
+    const bg = char.color || '#38bdf8';
+
+    if (!char.expressions.normal) {
+      char.expressions.normal = char.avatar || makeComicAvatarDataUri(char.name, bg, '😊');
+    }
+
+    if (!char.expressions.cry) {
+      if (nameLower.includes('nobita')) {
+        char.expressions.cry = makeComicAvatarDataUri('NO', bg, '😭');
+      } else if (nameLower.includes('doraemon')) {
+        char.expressions.cry = makeComicAvatarDataUri('DO', bg, '😭');
+      } else if (nameLower.includes('shizuka')) {
+        char.expressions.cry = makeComicAvatarDataUri('SH', bg, '😢');
+      } else {
+        char.expressions.cry = makeComicAvatarDataUri(char.name, bg, '😭');
+      }
+    }
+
+    if (!char.expressions.shock) {
+      if (nameLower.includes('nobita')) {
+        char.expressions.shock = makeComicAvatarDataUri('NO', bg, '😱');
+      } else if (nameLower.includes('doraemon')) {
+        char.expressions.shock = makeComicAvatarDataUri('DO', bg, '🐭');
+      } else if (nameLower.includes('shizuka')) {
+        char.expressions.shock = makeComicAvatarDataUri('SH', bg, '😱');
+      } else {
+        char.expressions.shock = makeComicAvatarDataUri(char.name, bg, '😱');
+      }
+    }
+
+    if (!char.expressions.angry) {
+      if (nameLower.includes('nobita')) {
+        char.expressions.angry = makeComicAvatarDataUri('NO', bg, '😠');
+      } else if (nameLower.includes('doraemon')) {
+        char.expressions.angry = makeComicAvatarDataUri('DO', bg, '💢');
+      } else if (nameLower.includes('shizuka')) {
+        char.expressions.angry = makeComicAvatarDataUri('SH', bg, '😤');
+      } else {
+        char.expressions.angry = makeComicAvatarDataUri(char.name, bg, '💢');
+      }
+    }
+
+    if (!char.expressions.love) {
+      if (nameLower.includes('nobita')) {
+        char.expressions.love = makeComicAvatarDataUri('NO', bg, '😍');
+      } else if (nameLower.includes('doraemon')) {
+        char.expressions.love = makeComicAvatarDataUri('DO', bg, '🥞');
+      } else if (nameLower.includes('shizuka')) {
+        char.expressions.love = makeComicAvatarDataUri('SH', bg, '💖');
+      } else {
+        char.expressions.love = makeComicAvatarDataUri(char.name, bg, '😍');
+      }
+    }
+
+    if (!char.expressions.laugh) {
+      if (nameLower.includes('nobita')) {
+        char.expressions.laugh = makeComicAvatarDataUri('NO', bg, '🤣');
+      } else if (nameLower.includes('doraemon')) {
+        char.expressions.laugh = makeComicAvatarDataUri('DO', bg, '🤣');
+      } else if (nameLower.includes('shizuka')) {
+        char.expressions.laugh = makeComicAvatarDataUri('SH', bg, '✨');
+      } else {
+        char.expressions.laugh = makeComicAvatarDataUri(char.name, bg, '🤣');
+      }
+    }
+  }
+
+  function getCharacterAvatarForExpr(char, expr) {
+    if (!char) return '';
+    ensureCharacterExpressions(char);
+    const cleanExpr = (expr || 'normal').toString().trim().toLowerCase();
+    if (char.expressions && char.expressions[cleanExpr]) {
+      return char.expressions[cleanExpr];
+    }
+    return char.expressions?.normal || char.avatar || '';
+  }
+
   let groupProfile = {
     name: 'Anime Squad Hub ⚡',
     status: '',
@@ -82,6 +174,8 @@
       avatar: makeComicAvatarDataUri('SH', '#f472b6', '🌸')
     }
   ];
+
+  characters.forEach(c => ensureCharacterExpressions(c));
 
   let deletedCastIds = [];
 
@@ -1414,6 +1508,7 @@ function playSciFiChimeSound() {
     const raw = safeGetStorage(STORAGE_KEY);
     if (!raw) {
       ensureDefaultCastMembers();
+      characters.forEach(c => ensureCharacterExpressions(c));
       return;
     }
     try {
@@ -1430,6 +1525,7 @@ function playSciFiChimeSound() {
       }
       ensureAiCastMembers();
       ensureDefaultCastMembers();
+      characters.forEach(c => ensureCharacterExpressions(c));
       if (parsed.directorDeckMode) {
         directorDeckMode = parsed.directorDeckMode;
       }
@@ -1850,7 +1946,7 @@ if (msg.type === 'quest') {
     // Completely clean avatar (NO reaction emoji badge, NO mood pill)
     row.innerHTML = `
       <div class="char-avatar-box" onclick="triggerExpressionEffects('${expr}', ${char.pitch || 1.05}, this.closest('.msg-row').querySelector('.speech-bubble, .sticker-card'))" title="${escapeHtml(char.name)}">
-        <img class="char-avatar-img" src="${char.avatar}" alt="${escapeHtml(char.name)}">
+        <img class="char-avatar-img" src="${getCharacterAvatarForExpr(char, expr)}" alt="${escapeHtml(char.name)}">
       </div>
       <div class="bubble-wrapper">
         <div class="sender-name-label" style="color: ${char.color}">
@@ -1912,6 +2008,12 @@ if (msg.type === 'quest') {
       activeTypingTickTimer = null;
     }
     document.querySelectorAll('.typing-indicator-row').forEach(el => el.remove());
+    const statusEl = document.getElementById('headerGroupStatus');
+    if (statusEl) {
+      statusEl.classList.remove('typing-pulse-status');
+      const autoStatus = characters.map(c => c.name).join(', ');
+      statusEl.textContent = groupProfile.status.trim() || autoStatus;
+    }
   }
 
   function flushPendingLiveMessage() {
@@ -1932,13 +2034,14 @@ if (msg.type === 'quest') {
     return '4:15 PM';
   }
 
-  function showTypingIndicatorThenRun(char, durationMs, callback) {
+  function showTypingIndicatorThenRun(char, durationMs, callback, expr = 'normal') {
     clearTypingTimers();
     const stream = document.getElementById('chatStream');
     const typingRow = document.createElement('div');
     typingRow.className = `typing-indicator-row ${char.side}`;
+    const avatarSrc = getCharacterAvatarForExpr(char, expr || currentExpr || 'normal');
     typingRow.innerHTML = `
-      <img src="${char.avatar}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
+      <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
       <div class="typing-bubble">
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
@@ -1949,9 +2052,17 @@ if (msg.type === 'quest') {
     stream.appendChild(typingRow);
     stream.scrollTop = stream.scrollHeight;
 
-    activeTypingTickTimer = setInterval(() => {
-      playTypingTickSound(char.pitch || 1.05);
-    }, 150);
+    const statusEl = document.getElementById('headerGroupStatus');
+    if (statusEl && char.side === 'left') {
+      statusEl.textContent = `${char.name} is typing...`;
+      statusEl.classList.add('typing-pulse-status');
+    }
+
+    if (soundEnabled) {
+      activeTypingTickTimer = setInterval(() => {
+        playTypingTickSound(char.pitch || 1.05);
+      }, 140);
+    }
 
     activeTypingTimer = setTimeout(() => {
       clearTypingTimers();
@@ -2389,11 +2500,33 @@ if (msg.type === 'quest') {
       groupProfile.dp = croppedDataUrl;
       document.getElementById('modalGroupDpPreview').src = croppedDataUrl;
       renderGroupHeader();
+    } else if (typeof cropTargetId === 'string' && cropTargetId.includes('__expr__')) {
+      const parts = cropTargetId.split('__expr__');
+      const charId = parts[0];
+      const exprKey = parts[1];
+      const char = characters.find(c => c.id === charId);
+      if (char) {
+        ensureCharacterExpressions(char);
+        char.expressions[exprKey] = croppedDataUrl;
+        if (exprKey === 'normal') {
+          char.avatar = croppedDataUrl;
+        }
+        renderCastModalList();
+        renderHubCastList();
+        renderDirectorStrip();
+        renderChatStream();
+        if (currentCharWardrobeId === charId) {
+          renderCharacterExpressionWardrobe(charId);
+        }
+      }
     } else {
       const char = characters.find(c => c.id === cropTargetId);
       if (char) {
         char.avatar = croppedDataUrl;
+        ensureCharacterExpressions(char);
+        char.expressions.normal = croppedDataUrl;
         renderCastModalList();
+        renderHubCastList();
         renderDirectorStrip();
         renderChatStream();
       }
@@ -2623,11 +2756,14 @@ if (msg.type === 'quest') {
       </div>
 
       <div class="cast-card-actions-row">
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           ${isCurrentSpeaker ? 
             `<span class="cast-active-speaker-tag">🎤 Active Speaker</span>` :
             `<button type="button" class="cast-set-speaker-btn" onclick="selectActiveSpeaker('${c.id}')" title="Set this character as current dialogue speaker">🎙️ Set Speaker</button>`
           }
+          <button type="button" class="cast-set-speaker-btn" style="background:#4338ca; border-color:#6366f1; color:#fff;" onclick="${inHub ? 'closeGlobalSettingsModal(); ' : ''}openCharExpressionModal('${c.id}')" title="Customize facial expressions & wardrobe">
+            🎭 Expressions (${Object.keys(c.expressions || {}).length || 6})
+          </button>
           ${c.role ? `<span class="cast-role-tag">${escapeHtml(c.role)}</span>` : ''}
         </div>
 
@@ -2687,14 +2823,16 @@ if (msg.type === 'quest') {
     const newId = 'c_' + Date.now();
     const defaultName = 'Hero ' + (idx + 1);
     const color = palette[idx % palette.length];
-    characters.push({
+    const newChar = {
       id: newId,
       name: defaultName,
       side: idx % 2 === 0 ? 'left' : 'right',
       color,
       pitch: 1.05,
       avatar: makeComicAvatarDataUri(defaultName, color, emojis[idx % emojis.length])
-    });
+    };
+    ensureCharacterExpressions(newChar);
+    characters.push(newChar);
     currentCharId = newId;
     saveStudioState();
     renderCastModalList();
@@ -2769,6 +2907,149 @@ if (msg.type === 'quest') {
   }
 
   /* =====================================================================
+     10B. CHARACTER FACIAL EXPRESSIONS WARDROBE SYSTEM
+     ===================================================================== */
+  let currentCharWardrobeId = null;
+
+  function openCharExpressionModal(charId) {
+    currentCharWardrobeId = charId;
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+    ensureCharacterExpressions(char);
+
+    const titleEl = document.getElementById('exprModalTitle');
+    if (titleEl) titleEl.textContent = `🎭 ${char.name}'s Wardrobe & Faces`;
+
+    const roleEl = document.getElementById('exprModalRoleTag');
+    if (roleEl) roleEl.textContent = (char.side === 'left' ? '⬅️ Left Side' : '➡️ Right Side');
+
+    renderCharacterExpressionWardrobe(charId);
+
+    const modal = document.getElementById('charExpressionModal');
+    if (modal) modal.classList.add('open');
+  }
+
+  function closeCharExpressionModal() {
+    const modal = document.getElementById('charExpressionModal');
+    if (modal) modal.classList.remove('open');
+    currentCharWardrobeId = null;
+  }
+
+  function renderCharacterExpressionWardrobe(charId) {
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+    ensureCharacterExpressions(char);
+
+    const grid = document.getElementById('charExpressionGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const standardExprs = [
+      { key: 'normal', label: 'Normal / Default' },
+      { key: 'cry', label: 'Crying / Sad' },
+      { key: 'shock', label: 'Shocked / Stunned' },
+      { key: 'angry', label: 'Angry / Raging' },
+      { key: 'love', label: 'Love / Blushing' },
+      { key: 'laugh', label: 'Laughing / Joy' }
+    ];
+
+    const processedKeys = new Set();
+
+    standardExprs.forEach(std => {
+      processedKeys.add(std.key);
+      const imgData = char.expressions[std.key] || char.avatar;
+      const card = document.createElement('div');
+      card.className = 'char-expr-card';
+      card.innerHTML = `
+        <div class="char-expr-img-wrap" onclick="startAvatarCrop('${char.id}__expr__${std.key}')" title="Click to upload & crop ${std.label}">
+          <img class="char-expr-img" src="${imgData}" alt="${std.label}">
+          <div class="char-expr-overlay">✂️ CROP</div>
+        </div>
+        <div class="char-expr-name" title="${std.label}">${std.label}</div>
+        <div class="char-expr-tag">[${escapeHtml(char.name)}:${std.key}]</div>
+        <button type="button" class="char-expr-crop-btn" onclick="startAvatarCrop('${char.id}__expr__${std.key}')" title="Change ${std.label} image">
+          ✂️ Change Face
+        </button>
+      `;
+      grid.appendChild(card);
+    });
+
+    const allKeys = Object.keys(char.expressions || {});
+    allKeys.forEach(k => {
+      if (processedKeys.has(k)) return;
+      processedKeys.add(k);
+      const imgData = char.expressions[k];
+      const displayLabel = k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ');
+      const card = document.createElement('div');
+      card.className = 'char-expr-card';
+      card.innerHTML = `
+        <div class="char-expr-img-wrap" onclick="startAvatarCrop('${char.id}__expr__${k}')" title="Click to upload & crop ${displayLabel}">
+          <img class="char-expr-img" src="${imgData}" alt="${displayLabel}">
+          <div class="char-expr-overlay">✂️ CROP</div>
+        </div>
+        <div class="char-expr-name" title="${displayLabel}">${displayLabel}</div>
+        <div class="char-expr-tag">[${escapeHtml(char.name)}:${k}]</div>
+        <div style="display:flex; gap:4px; width:100%;">
+          <button type="button" class="char-expr-crop-btn" style="flex:1;" onclick="startAvatarCrop('${char.id}__expr__${k}')" title="Change face image">
+            ✂️ Crop
+          </button>
+          <button type="button" class="char-expr-crop-btn" style="width:30px; padding:4px 0; background:#450a0a; border-color:#991b1b; color:#fca5a5;" onclick="removeCustomEmotionFromCurrentChar('${k}')" title="Remove this emotion">
+            ✕
+          </button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function addNewCustomEmotionToCurrentChar() {
+    if (!currentCharWardrobeId) return;
+    const char = characters.find(c => c.id === currentCharWardrobeId);
+    if (!char) return;
+    ensureCharacterExpressions(char);
+
+    const input = document.getElementById('newCustomExprNameInput');
+    const raw = (input.value || '').trim();
+    if (!raw) {
+      showToast('⚠️ Please enter an emotion name (e.g. Bruised, Dorayaki Bliss, Smirk)!');
+      return;
+    }
+
+    const cleanKey = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    if (!cleanKey) {
+      showToast('⚠️ Invalid emotion name.');
+      return;
+    }
+
+    if (char.expressions[cleanKey]) {
+      showToast(`⚠️ Emotion '${cleanKey}' already exists for ${char.name}!`);
+      return;
+    }
+
+    char.expressions[cleanKey] = makeComicAvatarDataUri(char.name, char.color || '#38bdf8', '✨');
+    input.value = '';
+    saveStudioState();
+    renderCharacterExpressionWardrobe(currentCharWardrobeId);
+    showToast(`✨ Added emotion '${cleanKey}'! Tap ✂️ CROP to upload your custom image.`);
+  }
+
+  function removeCustomEmotionFromCurrentChar(exprKey) {
+    if (!currentCharWardrobeId) return;
+    const char = characters.find(c => c.id === currentCharWardrobeId);
+    if (!char || !char.expressions) return;
+
+    delete char.expressions[exprKey];
+    saveStudioState();
+    renderCharacterExpressionWardrobe(currentCharWardrobeId);
+    showToast(`🗑️ Removed emotion '${exprKey}'.`);
+  }
+
+  window.openCharExpressionModal = openCharExpressionModal;
+  window.closeCharExpressionModal = closeCharExpressionModal;
+  window.addNewCustomEmotionToCurrentChar = addNewCustomEmotionToCurrentChar;
+  window.removeCustomEmotionFromCurrentChar = removeCustomEmotionFromCurrentChar;
+
+  /* =====================================================================
      11. IN-APP MESSAGE EDITOR, QUOTE REPLY & REORDERING
      ===================================================================== */
   let editingMessageId = null;
@@ -2787,6 +3068,35 @@ if (msg.type === 'quest') {
     charSelect.innerHTML = characters.map(c =>
       `<option value="${c.id}" ${c.id === msg.charId ? 'selected' : ''}>${escapeHtml(c.name)} (${c.side})</option>`
     ).join('');
+
+    function updateMsgEditExprOptions(targetCharId, selectedExpr) {
+      const char = characters.find(c => c.id === targetCharId);
+      const standardList = [
+        { key: 'normal', label: '🙂 Normal' },
+        { key: 'cry', label: '😭 Cry' },
+        { key: 'laugh', label: '😂 Laugh' },
+        { key: 'angry', label: '😡 Angry' },
+        { key: 'shock', label: '😱 Shock' },
+        { key: 'love', label: '😍 Love' }
+      ];
+      if (char && char.expressions) {
+        Object.keys(char.expressions).forEach(k => {
+          if (!standardList.some(s => s.key === k)) {
+            const display = k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ');
+            standardList.push({ key: k, label: `✨ ${display}` });
+          }
+        });
+      }
+      exprSelect.innerHTML = standardList.map(e =>
+        `<option value="${e.key}" ${e.key === selectedExpr ? 'selected' : ''}>${e.label}</option>`
+      ).join('');
+    }
+
+    charSelect.onchange = () => {
+      updateMsgEditExprOptions(charSelect.value, exprSelect.value);
+    };
+
+    updateMsgEditExprOptions(msg.charId, msg.expr || 'normal');
 
     if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest') {
       speakerGroup.style.display = 'none';
@@ -3144,25 +3454,114 @@ if (msg.type === 'quest') {
         return;
       }
 
-      const typingTime = Math.max(120, Math.min(420, textLen * 10)) / cinemaSpeedMultiplier;
-
-      showTypingIndicatorThenRun(char, typingTime, () => {
-        if (!isCinemaPlaying) return;
-        if (isCinemaPaused) {
-          cinemaStepTimeout = setTimeout(playNextStep, 200);
-          return;
+      // Natural Human Typing Flow & Delivery Animation
+      if (char.side === 'left') {
+        const statusEl = document.getElementById('headerGroupStatus');
+        if (statusEl) {
+          statusEl.textContent = `${char.name} is typing...`;
+          statusEl.classList.add('typing-pulse-status');
         }
-        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-        stream.appendChild(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
 
-        const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-        triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        const typingRow = document.createElement('div');
+        typingRow.className = `typing-indicator-row ${char.side}`;
+        const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
+        typingRow.innerHTML = `
+          <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
+          <div class="typing-bubble">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span class="typing-text-label">${escapeHtml(char.name)} is typing...</span>
+        `;
+        stream.appendChild(typingRow);
+        stream.scrollTop = stream.scrollHeight;
 
-        stepIndex++;
-        const paceDelay = (nextMsg.delayMs || Math.max(300, Math.min(680, 220 + textLen * 7))) / cinemaSpeedMultiplier;
-        cinemaStepTimeout = setTimeout(playNextStep, paceDelay);
-      });
+        const typingDuration = Math.max(650, Math.min(2200, textLen * 34)) / cinemaSpeedMultiplier;
+
+        if (soundEnabled) {
+          activeTypingTickTimer = setInterval(() => {
+            playTypingTickSound(char.pitch || 1.05);
+          }, 140);
+        }
+
+        // When remote friend starts typing, prior messages flip to double blue ticks (read)
+        document.querySelectorAll('.msg-row.right .read-ticks').forEach(t => {
+          t.textContent = '✓✓';
+          t.style.color = '#0284c7';
+        });
+
+        activeTypingTimer = setTimeout(() => {
+          clearTypingTimers();
+          if (!isCinemaPlaying) return;
+          if (isCinemaPaused) {
+            cinemaStepTimeout = setTimeout(playNextStep, 200);
+            return;
+          }
+
+          if (statusEl) {
+            statusEl.classList.remove('typing-pulse-status');
+            const autoStatus = characters.map(c => c.name).join(', ');
+            statusEl.textContent = groupProfile.status.trim() || autoStatus;
+          }
+
+          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+          stream.appendChild(el);
+          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+
+          if (soundEnabled) playPopSound(char.pitch || 1.05);
+
+          const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
+          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+
+          stepIndex++;
+          const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(650, Math.min(1800, 320 + textLen * 18))) / cinemaSpeedMultiplier;
+          cinemaStepTimeout = setTimeout(playNextStep, readingPause);
+        }, typingDuration);
+
+      } else {
+        // Right side (POV Phone Owner)
+        const typingDuration = Math.max(400, Math.min(1300, textLen * 24)) / cinemaSpeedMultiplier;
+
+        if (soundEnabled) {
+          activeTypingTickTimer = setInterval(() => {
+            playTypingTickSound(char.pitch || 1.05);
+          }, 140);
+        }
+
+        activeTypingTimer = setTimeout(() => {
+          clearTypingTimers();
+          if (!isCinemaPlaying) return;
+          if (isCinemaPaused) {
+            cinemaStepTimeout = setTimeout(playNextStep, 200);
+            return;
+          }
+
+          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+          const tickEl = el.querySelector('.read-ticks');
+          if (tickEl) {
+            tickEl.textContent = '✓';
+            tickEl.style.color = '#94a3b8';
+            setTimeout(() => {
+              if (tickEl && tickEl.textContent === '✓') {
+                tickEl.textContent = '✓✓';
+              }
+            }, 350 / cinemaSpeedMultiplier);
+          }
+
+          stream.appendChild(el);
+          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+
+          if (soundEnabled) playPopSound(char.pitch || 1.05);
+
+          const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
+          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+
+          stepIndex++;
+          const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(500, Math.min(1400, 280 + textLen * 15))) / cinemaSpeedMultiplier;
+          cinemaStepTimeout = setTimeout(playNextStep, readingPause);
+        }, typingDuration);
+      }
     }
 
     playNextStep();
@@ -4186,6 +4585,7 @@ Example:
           pitch: 1.0 + (cIdx % 3) * 0.12,
           avatar: makeComicAvatarDataUri(charName, color, '⚡')
         };
+        ensureCharacterExpressions(char);
         characters.push(char);
       }
 
@@ -4240,13 +4640,15 @@ Example:
 
       // Emotion & Auto-Timing
       let expr = tag1.toLowerCase();
-      if (!validExprs.includes(expr)) {
-        expr = 'normal';
-        if (msgBody.includes('😭') || msgBody.includes('😢')) expr = 'cry';
-        else if (msgBody.includes('😂') || msgBody.includes('🤣')) expr = 'laugh';
-        else if (msgBody.includes('😡') || msgBody.includes('!')) expr = 'angry';
-        else if (msgBody.includes('😱') || msgBody.includes('?!')) expr = 'shock';
-        else if (msgBody.includes('😍') || msgBody.includes('💖') || msgBody.includes('💅')) expr = 'love';
+      const hasCustomExpr = Boolean(char && char.expressions && char.expressions[expr]);
+      if (!validExprs.includes(expr) && !hasCustomExpr) {
+        let autoExpr = 'normal';
+        if (msgBody.includes('😭') || msgBody.includes('😢')) autoExpr = 'cry';
+        else if (msgBody.includes('😂') || msgBody.includes('🤣')) autoExpr = 'laugh';
+        else if (msgBody.includes('😡') || msgBody.includes('!')) autoExpr = 'angry';
+        else if (msgBody.includes('😱') || msgBody.includes('?!')) autoExpr = 'shock';
+        else if (msgBody.includes('😍') || msgBody.includes('💖') || msgBody.includes('💅')) autoExpr = 'love';
+        expr = autoExpr;
       }
 
       // Smart Typing Delay (words pace)

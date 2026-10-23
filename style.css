@@ -2887,6 +2887,116 @@
     display: inline-flex !important;
   }
 
+  
+  /* === CHARACTER FACIAL EXPRESSION WARDROBE === */
+  .char-expr-card {
+    background: #1e293b;
+    border: 1.5px solid #334155;
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .char-expr-card:hover {
+    border-color: #facc15;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .char-expr-img-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2.5px solid #facc15;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    flex-shrink: 0;
+  }
+
+  .char-expr-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #0f172a;
+  }
+
+  .char-expr-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .char-expr-img-wrap:hover .char-expr-overlay {
+    opacity: 1;
+  }
+
+  .char-expr-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: #f8fafc;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .char-expr-tag {
+    font-family: monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    color: #facc15;
+    border: 1px solid rgba(250, 204, 21, 0.2);
+  }
+
+  .char-expr-crop-btn {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 4px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .char-expr-crop-btn:hover {
+    background: #334155;
+    color: #fff;
+    border-color: #facc15;
+  }
+
+  /* Typing Header Subtitle Pulse Animation */
+  .typing-pulse-status {
+    color: #25d366 !important;
+    font-style: italic !important;
+    animation: typingStatusPulse 1.2s infinite ease-in-out;
+  }
+
+  @keyframes typingStatusPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
   /* === MODALS (GROUP SETTINGS, CAST STUDIO, CROPPER, SCRIPT) === */
   .modal-backdrop {
     position: fixed !important;
