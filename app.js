@@ -1270,6 +1270,26 @@ function playSciFiChimeSound() {
     });
   }
 
+  function playAppSwitchSound() {
+    if (!soundEnabled) return;
+    const ctx = ensureAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    } catch (_) {}
+  }
+
   function playPunchSound() {
     if (!soundEnabled) return;
     const ctx = ensureAudioCtx();
@@ -1798,6 +1818,48 @@ function playSciFiChimeSound() {
     love: 'In Love'
   };
 
+  /* Determine character alignment side dynamically based on active app:
+     - In ChatGPT app: ChatGPT is ALWAYS left; any person talking is ALWAYS right.
+     - In Gemini app: Gemini is ALWAYS left; any person talking is ALWAYS right.
+     - In WhatsApp app: follows group chat side (char.side).
+  */
+  function getEffectiveSideForMessage(char, appMode = activeAppMode) {
+    if (!char) return 'left';
+    if (appMode === 'chatgpt') {
+      const isAi = (char.id === 'c_gpt' || (char.name && char.name.toLowerCase().includes('chatgpt')) || char.role === 'AI Sage' || (char.role && char.role.toLowerCase().includes('ai')));
+      return isAi ? 'left' : 'right';
+    }
+    if (appMode === 'gemini') {
+      const isAi = (char.id === 'c_gem' || (char.name && char.name.toLowerCase().includes('gemini')) || char.role === 'Lore Master');
+      return isAi ? 'left' : 'right';
+    }
+    return char.side || 'left';
+  }
+
+  function showAppSwitchTransition(targetApp, info) {
+    const wrapper = document.getElementById('phoneWrapper');
+    const overlay = document.getElementById('phoneAppSwitchOverlay');
+    const iconEl = document.getElementById('appSwitchBadgeIcon');
+    const titleEl = document.getElementById('appSwitchBadgeTitle');
+    const subEl = document.getElementById('appSwitchBadgeSub');
+
+    if (wrapper) wrapper.classList.add('app-switching');
+    if (iconEl) {
+      iconEl.className = `app-switch-badge-icon ${targetApp}`;
+      iconEl.textContent = (info && info.icon) || '📱';
+    }
+    if (titleEl) titleEl.textContent = (info && info.title) || targetApp;
+    if (subEl) subEl.textContent = (info && info.sub) || 'Switching app...';
+    if (overlay) overlay.classList.add('active');
+  }
+
+  function hideAppSwitchTransition() {
+    const wrapper = document.getElementById('phoneWrapper');
+    const overlay = document.getElementById('phoneAppSwitchOverlay');
+    if (overlay) overlay.classList.remove('active');
+    if (wrapper) wrapper.classList.remove('app-switching');
+  }
+
   function createMessageRowElement(msg, index, listToRender) {
     if (msg.type === 'app_switch') {
       const banner = document.createElement('div');
@@ -1865,22 +1927,24 @@ if (msg.type === 'quest') {
 
     const char = characters.find(c => c.id === msg.charId) || characters[0];
     const expr = msg.expr || 'normal';
+    const effectiveSide = getEffectiveSideForMessage(char, activeAppMode);
 
     // Check consecutive speaker grouping
     const prevMsg = index > 0 ? listToRender[index - 1] : null;
     const prevChar = prevMsg && prevMsg.charId ? (characters.find(c => c.id === prevMsg.charId) || characters[0]) : null;
+    const prevEffectiveSide = prevChar ? getEffectiveSideForMessage(prevChar, activeAppMode) : null;
     const isGroupedFollowup = groupConsecutiveMessages &&
       prevMsg &&
       prevMsg.type !== 'divider' &&
       prevMsg.type !== 'system' &&
       prevMsg.charId === char.id &&
-      prevChar && prevChar.side === char.side &&
+      prevChar && prevEffectiveSide === effectiveSide &&
       (prevMsg.expr || 'normal') === expr;
 
     const row = document.createElement('div');
-    row.className = `msg-row ${char.side} expr-style-${expr}${isGroupedFollowup ? ' grouped-followup' : ''}`;
+    row.className = `msg-row ${effectiveSide} expr-style-${expr}${isGroupedFollowup ? ' grouped-followup' : ''}`;
 
-    const tickHtml = char.side === 'right' ? '<span class="read-ticks">✓✓</span>' : '';
+    const tickHtml = effectiveSide === 'right' ? '<span class="read-ticks">✓✓</span>' : '';
 
     // Quoted Reply Box HTML
     let replyBoxHtml = '';
@@ -3383,6 +3447,7 @@ if (msg.type === 'quest') {
     clearTypingTimers();
     resetCinemaCamera();
     hideSpeedPopover();
+    hideAppSwitchTransition();
     closeCastPickerPopover();
     isCinemaPlaying = true;
     isCinemaPaused = false;
@@ -3424,6 +3489,14 @@ if (msg.type === 'quest') {
     const fullQueue = [...messages];
     const stream = document.getElementById('chatStream');
     stream.innerHTML = ''; // Start clean for scene recording
+
+    // Multi-App Scene Isolation: Keep each app's conversation separated
+    let currentCinemaApp = activeAppMode || 'whatsapp';
+    const appSceneStreams = {
+      whatsapp: [],
+      chatgpt: [],
+      gemini: []
+    };
 
     let stepIndex = 0;
 
@@ -3477,14 +3550,17 @@ if (msg.type === 'quest') {
         setCinemaCamera('cam-zoom-climax', 3200);
       } else if (nextMsg.expr === 'angry' || nextMsg.expr === 'shock' || nextMsg.expr === 'cry' || nextMsg.type === 'sfx') {
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
-        const sideClass = (char.side === 'left') ? 'cam-zoom-left' : 'cam-zoom-right';
+        const effectiveSide = getEffectiveSideForMessage(char, activeAppMode);
+        const sideClass = (effectiveSide === 'left') ? 'cam-zoom-left' : 'cam-zoom-right';
         setCinemaCamera(sideClass, 2800);
       } else if (nextMsg.type === 'text' || nextMsg.type === 'sticker') {
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
+        const effectiveSide = getEffectiveSideForMessage(char, activeAppMode);
         const prevMsg = stepIndex > 0 ? fullQueue[stepIndex - 1] : null;
         const prevChar = prevMsg ? (characters.find(c => c.id === prevMsg.charId) || null) : null;
-        if (!prevChar || prevChar.side !== char.side) {
-          const sideClass = (char.side === 'left') ? 'cam-zoom-left' : 'cam-zoom-right';
+        const prevEffectiveSide = prevChar ? getEffectiveSideForMessage(prevChar, activeAppMode) : null;
+        if (!prevChar || prevEffectiveSide !== effectiveSide) {
+          const sideClass = (effectiveSide === 'left') ? 'cam-zoom-left' : 'cam-zoom-right';
           setCinemaCamera(sideClass, 3200);
         }
       } else {
@@ -3494,30 +3570,62 @@ if (msg.type === 'quest') {
       // App Switch Scene Transition (WhatsApp <-> ChatGPT <-> Gemini)
       if (nextMsg.type === 'app_switch') {
         const targetApp = nextMsg.targetApp || 'whatsapp';
-        const appTitles = { whatsapp: '📱 WhatsApp', chatgpt: '🤖 ChatGPT', gemini: '✨ Gemini' };
-        if (statusText) statusText.textContent = `🚀 ${appTitles[targetApp] || targetApp}`;
+        const appInfo = {
+          whatsapp: { title: 'WhatsApp', icon: '📱', sub: 'Switching to WhatsApp Group Chat...' },
+          chatgpt: { title: 'ChatGPT', icon: '🤖', sub: 'Launching ChatGPT Assistant...' },
+          gemini: { title: 'Google Gemini', icon: '✨', sub: 'Launching Google Gemini AI...' }
+        }[targetApp] || { title: targetApp, icon: '🚀', sub: 'Switching App...' };
 
-        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-        stream.appendChild(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        if (statusText) statusText.textContent = `🚀 ${appInfo.title}`;
 
-        if (soundEnabled) playSciFiChimeSound();
+        // 1. Sleek audio whoosh chime
+        playAppSwitchSound();
+
+        // 2. Realistic Mobile OS App-Switcher transition animation
+        showAppSwitchTransition(targetApp, appInfo);
+
+        // 3. Save current active stream children
+        appSceneStreams[currentCinemaApp] = Array.from(stream.children);
 
         setTimeout(() => {
           if (!isCinemaPlaying) return;
-          // Seamless app morph without corrupting playback queue or hiding composer
+
+          // 4. Switch app mode shell & theme
           switchAppMode(targetApp, true);
+          currentCinemaApp = targetApp;
+
           document.getElementById('directorDeck').classList.add('hidden');
           const switchWaBar = document.getElementById('waInputBar');
           if (switchWaBar) switchWaBar.style.display = 'flex';
           if (dock) dock.classList.add('active');
 
-          // Preserve message history across scene transitions
-          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          // 5. SEPARATE CHAT STREAM PER APP:
+          // Clear current screen so previous app's messages NEVER leak into this app!
+          stream.innerHTML = '';
+
+          if (targetApp === 'gemini') {
+            const hero = document.getElementById('geminiHeroContainer');
+            if (hero) stream.appendChild(hero);
+          }
+
+          // Restore only this app's conversation history
+          if (appSceneStreams[targetApp] && appSceneStreams[targetApp].length > 0) {
+            appSceneStreams[targetApp].forEach(node => {
+              if (node.id !== 'geminiHeroContainer') {
+                stream.appendChild(node);
+              }
+            });
+          }
+
+          stream.scrollTop = stream.scrollHeight;
+
+          setTimeout(() => {
+            hideAppSwitchTransition();
+          }, 140);
 
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, 800 / cinemaSpeedMultiplier);
-        }, 450 / cinemaSpeedMultiplier);
+          cinemaStepTimeout = setTimeout(playNextStep, 750 / cinemaSpeedMultiplier);
+        }, 550 / cinemaSpeedMultiplier);
         return;
       }
 
@@ -3532,6 +3640,7 @@ if (msg.type === 'quest') {
       if (nextMsg.type === 'divider' || nextMsg.type === 'system' || nextMsg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
+        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
         stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
         if (soundEnabled) {
           if (nextMsg.type === 'quest') playSciFiChimeSound();
@@ -3545,6 +3654,7 @@ if (msg.type === 'quest') {
       if (nextMsg.type === 'sfx') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
+        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
         stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
         if (soundEnabled) {
@@ -3564,12 +3674,14 @@ if (msg.type === 'quest') {
       // 5. Multimedia Story Events (Sticker, Image, Video, Audio)
       if (nextMsg.type === 'sticker' || nextMsg.type === 'image' || nextMsg.type === 'video' || nextMsg.type === 'audio') {
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
+        const effectiveSide = getEffectiveSideForMessage(char, activeAppMode);
         
         // Instant Playback mode (Skip delays)
         if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
           clearTypingTimers();
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
+          if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
           stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
           if (soundEnabled) playPopSound(char.pitch || 1.05);
           stepIndex++;
@@ -3581,13 +3693,13 @@ if (msg.type === 'quest') {
         const sendDuration = (mediaPreDelay > 0 ? mediaPreDelay : (550 / cinemaSpeedMultiplier));
 
         const statusEl = document.getElementById('headerGroupStatus');
-        if (char.side === 'left') {
-          if (statusEl) {
+        if (effectiveSide === 'left') {
+          if (statusEl && activeAppMode === 'whatsapp') {
             statusEl.textContent = `${char.name} is typing...`;
             statusEl.classList.add('typing-pulse-status');
           }
           const typingRow = document.createElement('div');
-          typingRow.className = `typing-indicator-row ${char.side}`;
+          typingRow.className = `typing-indicator-row ${effectiveSide}`;
           const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
           typingRow.innerHTML = `
             <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
@@ -3609,13 +3721,14 @@ if (msg.type === 'quest') {
             cinemaStepTimeout = setTimeout(playNextStep, 200);
             return;
           }
-          if (statusEl) {
+          if (statusEl && activeAppMode === 'whatsapp') {
             statusEl.classList.remove('typing-pulse-status');
             const autoStatus = characters.map(c => c.name).join(', ');
             statusEl.textContent = groupProfile.status.trim() || autoStatus;
           }
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
+          if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
           stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
           if (soundEnabled) playPopSound(char.pitch || 1.05);
 
@@ -3629,7 +3742,8 @@ if (msg.type === 'quest') {
       }
 
       const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
-      const isPovSide = (char.side === 'right');
+      const effectiveSide = getEffectiveSideForMessage(char, activeAppMode);
+      const isPovSide = (effectiveSide === 'right');
       const timing = calculateAdaptiveTypingTiming(nextMsg.text || '', cinemaSpeedMultiplier, isPovSide);
 
       // Instant Playback mode (Skip typing delays entirely)
@@ -3637,6 +3751,7 @@ if (msg.type === 'quest') {
         clearTypingTimers();
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
+        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
         stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
         if (soundEnabled) playPopSound(char.pitch || 1.05);
         stepIndex++;
@@ -3649,6 +3764,7 @@ if (msg.type === 'quest') {
       if (isExplicitFast) {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
+        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
         stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
         if (soundEnabled) playPopSound(char.pitch || 1.05);
         const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
@@ -3677,7 +3793,7 @@ if (msg.type === 'quest') {
           }
 
           const typingRow = document.createElement('div');
-          typingRow.className = `typing-indicator-row ${char.side}`;
+          typingRow.className = `typing-indicator-row ${effectiveSide}`;
           const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
 
           if (isGpt) {
@@ -3740,6 +3856,7 @@ if (msg.type === 'quest') {
 
             const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
             stream.appendChild(el);
+            if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
             stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
 
             if (soundEnabled) playPopSound(char.pitch || 1.05);
@@ -3857,6 +3974,7 @@ if (msg.type === 'quest') {
                 }
 
                 stream.appendChild(el);
+                if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
                 stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
 
                 if (soundEnabled) playPopSound(char.pitch || 1.05);
@@ -3889,6 +4007,7 @@ if (msg.type === 'quest') {
     clearTypingTimers();
     resetCinemaCamera();
     hideSpeedPopover();
+    hideAppSwitchTransition();
     
     const rBtn = document.getElementById('cinemaRestartBtn');
     if (rBtn) rBtn.classList.remove('pulse-glow');
@@ -4237,6 +4356,7 @@ if (msg.type === 'quest') {
     clearTypingTimers();
     resetCinemaCamera();
     hideSpeedPopover();
+    hideAppSwitchTransition();
 
     if (isBuiltinRecording) {
       stopBuiltinRecording();
