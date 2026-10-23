@@ -260,6 +260,7 @@
 
   let customStickers = [];
   let customAudioClips = [];
+  let vaultFitMode = safeGetStorage('wh_vault_fit_mode') || 'contain';
 
   let messages = [
     { id: 'm1', type: 'divider', text: 'EPISODE 1: THE 4D POCKET CRISIS' },
@@ -1969,14 +1970,17 @@ if (msg.type === 'quest') {
 
     if (msg.type === 'sticker') {
       const st = msg.stickerData || builtInStickers[0];
+      const fitMode = (st && st.fitMode) || vaultFitMode || 'contain';
+      const fitClass = fitMode === 'cover' ? ' fit-cover' : '';
+      const fitStyle = fitMode === 'cover' ? 'object-fit:cover;' : 'object-fit:contain;';
       const innerArt = st.isVideo
-        ? `<video src="${st.imageUrl}" autoplay loop muted playsinline style="max-width:160px; max-height:160px; border-radius:12px; object-fit:cover;"></video>`
+        ? `<video src="${st.imageUrl}" autoplay loop muted playsinline style="max-width:170px; max-height:170px; width:auto; height:auto; border-radius:12px; ${fitStyle}"></video>`
         : (st.imageUrl
-            ? `<img src="${st.imageUrl}" alt="${escapeHtml(st.label || 'Sticker')}">`
+            ? `<img src="${st.imageUrl}" alt="${escapeHtml(st.label || 'Sticker')}" style="max-width:170px; max-height:170px; width:auto; height:auto; ${fitStyle}">`
             : `<div class="sticker-emoji-art" style="background:${st.bg || '#fef08a'}">${st.emoji || '🎭'}</div>`);
 
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
+        <div class="sticker-card${fitClass}" onclick="openMessageEditModal('${msg.id}')">
           ${innerArt}
           ${st.label ? `<span class="sticker-caption">${escapeHtml(st.label)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
@@ -1986,9 +1990,12 @@ if (msg.type === 'quest') {
       `;
     } else if (msg.type === 'image') {
       const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
+      const fitMode = msg.fitMode || vaultFitMode || 'contain';
+      const fitClass = fitMode === 'cover' ? ' fit-cover' : '';
+      const fitStyle = fitMode === 'cover' ? 'object-fit:cover;' : 'object-fit:contain;';
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
-          <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Image')}" style="max-width:240px; max-height:240px; border-radius:12px; object-fit:cover; display:block;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '🖼️');">
+        <div class="sticker-card${fitClass}" onclick="openMessageEditModal('${msg.id}')">
+          <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Image')}" style="max-width:240px; max-height:240px; width:auto; height:auto; border-radius:12px; ${fitStyle} display:block;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '🖼️');">
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -1997,9 +2004,12 @@ if (msg.type === 'quest') {
       `;
     } else if (msg.type === 'video') {
       const srcUrl = msg.videoUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
+      const fitMode = msg.fitMode || vaultFitMode || 'contain';
+      const fitClass = fitMode === 'cover' ? ' fit-cover' : '';
+      const fitStyle = fitMode === 'cover' ? 'object-fit:cover;' : 'object-fit:contain;';
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
-          <video src="${srcUrl}" controls playsinline style="max-width:240px; max-height:240px; border-radius:12px; object-fit:cover; display:block;"></video>
+        <div class="sticker-card${fitClass}" onclick="openMessageEditModal('${msg.id}')">
+          <video src="${srcUrl}" controls playsinline style="max-width:240px; max-height:240px; width:auto; height:auto; border-radius:12px; ${fitStyle} display:block;"></video>
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -2437,6 +2447,36 @@ if (msg.type === 'quest') {
           };
           subBar.appendChild(b);
         });
+      } else if (activeDrawerTab === 'uploads') {
+        subBar.classList.add('active');
+        subBar.innerHTML = '';
+
+        const countSpan = document.createElement('span');
+        countSpan.style.cssText = 'font-size:11px; font-weight:800; color:#94a3b8; align-self:center; margin-right:4px;';
+        countSpan.textContent = `${customStickers.length} item${customStickers.length !== 1 ? 's' : ''}`;
+        subBar.appendChild(countSpan);
+
+        const containBtn = document.createElement('button');
+        containBtn.type = 'button';
+        containBtn.className = `subbar-pill ${vaultFitMode === 'contain' ? 'active' : ''}`;
+        containBtn.innerHTML = '🔍 Full (No Crop)';
+        containBtn.title = 'Display full stickers without any cut-off (default)';
+        containBtn.onclick = (e) => {
+          e.stopPropagation();
+          setVaultFitMode('contain');
+        };
+        subBar.appendChild(containBtn);
+
+        const coverBtn = document.createElement('button');
+        coverBtn.type = 'button';
+        coverBtn.className = `subbar-pill ${vaultFitMode === 'cover' ? 'active' : ''}`;
+        coverBtn.innerHTML = '🔲 Square (Fill)';
+        coverBtn.title = 'Crop into square tiles';
+        coverBtn.onclick = (e) => {
+          e.stopPropagation();
+          setVaultFitMode('cover');
+        };
+        subBar.appendChild(coverBtn);
       } else {
         subBar.classList.remove('active');
       }
@@ -2472,18 +2512,21 @@ if (msg.type === 'quest') {
       }
 
       customStickers.forEach((st) => {
+        const isCover = (st.fitMode || vaultFitMode) === 'cover';
         const card = document.createElement('div');
-        card.className = 'sticker-option-item';
+        card.className = `sticker-option-item ${isCover ? 'fit-cover' : ''}`;
         card.onclick = () => sendStickerItem(st);
 
+        const fitStyle = isCover ? 'object-fit:cover;' : 'object-fit:contain; background:rgba(0,0,0,0.05);';
         const mediaPreview = st.isVideo
-          ? `<video src="${st.imageUrl}" muted autoplay loop playsinline style="width:58px; height:58px; border-radius:8px; object-fit:cover; pointer-events:none;"></video>`
-          : `<img src="${st.imageUrl}" alt="Media" style="width:58px; height:58px; border-radius:8px; object-fit:cover;">`;
+          ? `<video src="${st.imageUrl}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; ${fitStyle} pointer-events:none;"></video>`
+          : `<img src="${st.imageUrl}" alt="Media" style="width:52px; height:52px; border-radius:8px; ${fitStyle}">`;
 
         card.innerHTML = `
+          <div class="edit-custom-btn" onclick="event.stopPropagation(); renameCustomSticker('${st.id}')" title="Rename file label">✏️</div>
           <div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete from Vault">✕</div>
           ${mediaPreview}
-          <span class="sticker-option-label">${escapeHtml(st.label || 'Media')}</span>
+          <span class="sticker-option-label" onclick="event.stopPropagation(); renameCustomSticker('${st.id}')" title="Click to rename label">${escapeHtml(st.label || 'Media')}</span>
         `;
         grid.appendChild(card);
       });
@@ -2551,7 +2594,8 @@ if (msg.type === 'quest') {
     files.forEach((file, idx) => {
       const reader = new FileReader();
       const isVideo = file.type.startsWith('video');
-      const baseLabel = file.name.replace(/\.[^/.]+$/, '').slice(0, 14).toUpperCase() || 'MEDIA';
+      const cleanBase = file.name.replace(/\.[^/.]+$/, '').trim();
+      const baseLabel = cleanBase.replace(/[\-_]/g, ' ').slice(0, 20).toUpperCase() || 'MEDIA';
 
       reader.onload = (ev) => {
         customStickers.unshift({
@@ -2573,6 +2617,28 @@ if (msg.type === 'quest') {
       reader.readAsDataURL(file);
     });
     e.target.value = '';
+  }
+
+  function setVaultFitMode(mode) {
+    vaultFitMode = mode;
+    safeSetStorage('wh_vault_fit_mode', vaultFitMode);
+    renderDrawerContent();
+    renderChatStream();
+    showToast(vaultFitMode === 'contain' ? '🔍 Stickers: Full Artwork (No Crop)' : '🔲 Stickers: Square Fit (Cover)');
+  }
+
+  function renameCustomSticker(id) {
+    const st = customStickers.find(s => s.id === id);
+    if (!st) return;
+    const current = st.label || '';
+    const newName = prompt('✏️ Rename sticker/media label (used in scripts e.g. [Char:STICKER]: LABEL):', current);
+    if (newName === null) return;
+    const clean = newName.trim().toUpperCase() || 'STICKER';
+    st.label = clean;
+    saveStudioState();
+    renderDrawerContent();
+    renderChatStream();
+    showToast(`✏️ Renamed sticker to "${clean}"`);
   }
 
   document.getElementById('hiddenSoundInput').addEventListener('change', (e) => {

@@ -1594,12 +1594,24 @@
     transform: scale(0.95);
   }
 
-  .sticker-card img {
+  .sticker-card img,
+  .sticker-card video {
+    max-width: 170px;
+    max-height: 170px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    display: block;
+    background: transparent;
+  }
+
+  .sticker-card.fit-cover img,
+  .sticker-card.fit-cover video {
     width: 135px;
     height: 135px;
     object-fit: cover;
-    border-radius: 12px;
-    border: 1.5px solid #e2e8f0;
   }
 
   .sticker-emoji-art {
@@ -2489,11 +2501,42 @@
     background: #fef9c3;
   }
 
-  .sticker-option-item img {
+  .sticker-option-item img,
+  .sticker-option-item video {
     width: 48px;
     height: 48px;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 8px;
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .sticker-option-item.fit-cover img,
+  .sticker-option-item.fit-cover video {
+    object-fit: cover;
+  }
+
+  .edit-custom-btn {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0284c7;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 900;
+    border: 1px solid #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: transform 0.12s;
+  }
+  .edit-custom-btn:hover {
+    transform: scale(1.15);
+    background: #0369a1;
   }
 
   .sticker-option-emoji {
