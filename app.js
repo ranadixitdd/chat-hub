@@ -3456,8 +3456,11 @@ if (msg.type === 'quest') {
 
       // Natural Human Typing Flow & Delivery Animation
       if (char.side === 'left') {
+        const isGpt = (activeAppMode === 'chatgpt');
+        const isGemini = (activeAppMode === 'gemini');
+
         const statusEl = document.getElementById('headerGroupStatus');
-        if (statusEl) {
+        if (statusEl && !isGpt && !isGemini) {
           statusEl.textContent = `${char.name} is typing...`;
           statusEl.classList.add('typing-pulse-status');
         }
@@ -3465,15 +3468,34 @@ if (msg.type === 'quest') {
         const typingRow = document.createElement('div');
         typingRow.className = `typing-indicator-row ${char.side}`;
         const avatarSrc = getCharacterAvatarForExpr(char, nextMsg.expr);
-        typingRow.innerHTML = `
-          <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
-          <div class="typing-bubble">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-          <span class="typing-text-label">${escapeHtml(char.name)} is typing...</span>
-        `;
+
+        if (isGpt) {
+          typingRow.innerHTML = `
+            <img src="${avatarSrc}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
+            <div class="typing-bubble">
+              <span class="gpt-thinking-dot"></span>
+              <span class="gpt-thinking-label">${escapeHtml(char.name || 'ChatGPT')} is thinking...</span>
+            </div>
+          `;
+        } else if (isGemini) {
+          typingRow.innerHTML = `
+            <img src="${avatarSrc}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
+            <div class="typing-bubble">
+              <span class="gemini-sparkle-dot">✦</span>
+              <span class="gemini-thinking-label">${escapeHtml(char.name || 'Gemini')} is thinking...</span>
+            </div>
+          `;
+        } else {
+          typingRow.innerHTML = `
+            <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
+            <div class="typing-bubble">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+            <span class="typing-text-label">${escapeHtml(char.name)} is typing...</span>
+          `;
+        }
         stream.appendChild(typingRow);
         stream.scrollTop = stream.scrollHeight;
 
@@ -3485,11 +3507,13 @@ if (msg.type === 'quest') {
           }, 140);
         }
 
-        // When remote friend starts typing, prior messages flip to double blue ticks (read)
-        document.querySelectorAll('.msg-row.right .read-ticks').forEach(t => {
-          t.textContent = '✓✓';
-          t.style.color = '#0284c7';
-        });
+        // When remote friend starts typing in WhatsApp, prior messages flip to double blue ticks (read)
+        if (!isGpt && !isGemini) {
+          document.querySelectorAll('.msg-row.right .read-ticks').forEach(t => {
+            t.textContent = '✓✓';
+            t.style.color = '#0284c7';
+          });
+        }
 
         activeTypingTimer = setTimeout(() => {
           clearTypingTimers();
@@ -3499,7 +3523,7 @@ if (msg.type === 'quest') {
             return;
           }
 
-          if (statusEl) {
+          if (statusEl && !isGpt && !isGemini) {
             statusEl.classList.remove('typing-pulse-status');
             const autoStatus = characters.map(c => c.name).join(', ');
             statusEl.textContent = groupProfile.status.trim() || autoStatus;
@@ -4397,34 +4421,86 @@ if (msg.type === 'quest') {
   }
 
   function copyChatGptTemplate() {
-    const prompt = `Write an anime/manhwa comic chat dialogue script in this exact format so my chat studio app can play it directly:
+    const prompt = `You are a professional Anime & Manhwa Webtoon Screenwriter. Write a dynamic multi-scene comic chat dialogue script using this EXACT syntax so my Chat Studio app can direct and auto-play it with realistic typing animations, sound effects, facial expressions, and interface switching:
 
-[CharacterName]: normal dialogue text
-[CharacterName:cry]: dialogue text with crying emotion
-[CharacterName:angry]: dialogue text with angry emotion
-[CharacterName:laugh]: dialogue text with laughing emotion
-[CharacterName:shock]: dialogue text with shock emotion
-[CharacterName:love]: dialogue text with love emotion
-[CharacterName:SFX]: 💥 BAM!! (or 👊 POW!!, ⚡ NANI?!, 🤣 BWAHAHA!, 💀 OMAE WA MOU..., 🔥 AWAKEN!!)
-[CharacterName:STICKER]: dorayaki (or label of any sticker/GIF from your vault)
-[CharacterName:MEDIA]: punch (or label of any image/video from your vault)
-[QUEST: URGENT - Solo Leveling style system quest hologram alert]
-[SYSTEM: Episode Banner or Scene Description]
-[PAUSE: 1.5s]
-[APP: whatsapp / chatgpt / gemini]
+=== SCRIPT SYNTAX CHEAT SHEET ===
+1. CHARACTER DIALOGUE & FACIAL EXPRESSIONS:
+   [CharacterName]: normal dialogue text
+   [CharacterName:cry]: dialogue with crying / sad face
+   [CharacterName:shock]: dialogue with shocked / stunned face
+   [CharacterName:angry]: dialogue with angry / raging face
+   [CharacterName:love]: dialogue with blushing / in-love face
+   [CharacterName:laugh]: dialogue with laughing / joy face
+   [CharacterName:custom_face]: dialogue with custom uploaded expression (e.g. [Nobita:bliss], [Nobita:smirk], [Nobita:bruised])
 
-Example:
+2. WAITING SECONDS & SUSPENSE PAUSES:
+   [PAUSE: 2s] -> Pauses replay for 2 seconds before the next event
+   [PAUSE: 1.5s] -> Pauses for 1.5 seconds
+   [PAUSE: 800ms] -> Pauses for 800 milliseconds
+
+3. MULTI-APP SCENE MORPHING (WhatsApp <-> ChatGPT <-> Gemini):
+   [SCENE: whatsapp] -> Switches interface to WhatsApp (header typing pulse, double read ticks ✓✓)
+   [SCENE: chatgpt] -> Switches interface to ChatGPT (authentic ChatGPT thinking indicator ●)
+   [SCENE: gemini] -> Switches interface to Google Gemini (authentic Gemini sparkle thinking ✦)
+
+4. ACTION SOUND EFFECT (SFX) BURSTS & SCREENSHAKE:
+   [CharacterName:SFX]: 💥 BAM!! (or 👊 POW!!, 🥊 ORA ORA!!, ⚔️ CLASH!!, ⚡ NANI?!, 💀 OMAE WA MOU..., 😭 WAAAHH!!, 🤣 BWAHAHA!)
+
+5. STICKERS & MEDIA VAULT:
+   [CharacterName:STICKER]: dorayaki (or name of any sticker/GIF)
+   [CharacterName:MEDIA]: punch (or name of photo/clip)
+
+6. SYSTEM NOTIFICATIONS & QUEST ALERTS:
+   [SYSTEM: Episode Title or Location Banner]
+   [QUEST: SURVIVAL QUEST: Solo Leveling holographic alert text]
+
+7. PLAYBACK PACING & SPEED:
+   [SPEED: 1.0x] (or 1.25x, 1.5x)
+   [CharacterName:FAST]: rapid fire comic texting
+   [CharacterName:SLOW]: deliberate dramatic delivery
+
+=== EXAMPLE FULL EPISODE SCRIPT ===
 [SYSTEM: EPISODE 1: GIAN'S REVENGE]
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
 [Nobita:SFX]: 😭 WAAAHH!!
+[PAUSE: 1s]
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
 [Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
 [Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
-[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
+[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without 4D gadgets!]
 [Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
 [Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
-[Nobita:SFX]: 💨 NIGERUNDAYO!!`;
+[PAUSE: 1.5s]
+[SCENE: chatgpt]
+[Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
+[ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
+[PAUSE: 1.5s]
+[SCENE: whatsapp]
+[Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
+[Doraemon:love]: Only if it's NOT my Dorayaki!
+[Nobita:SFX]: 💨 NIGERUNDAYO!!
+
+=== ALTERNATIVE: JSON FORMAT SCHEMA ===
+If JSON format is preferred, you can output this JSON structure directly:
+{
+  "title": "Episode 1: Gian's Revenge",
+  "activeApp": "whatsapp",
+  "style": "realistic",
+  "characters": [
+    { "id": "c1", "name": "Nobita", "side": "left", "color": "#eab308" },
+    { "id": "c2", "name": "Doraemon", "side": "right", "color": "#0284c7" },
+    { "id": "c3", "name": "ChatGPT", "side": "left", "color": "#10a37f" }
+  ],
+  "messages": [
+    { "id": "m1", "type": "divider", "text": "EPISODE 1: GIAN'S REVENGE" },
+    { "id": "m2", "type": "text", "charId": "c1", "text": "Doraemon!! Help me!", "expr": "cry" },
+    { "id": "m3", "type": "pause", "delayMs": 1500 },
+    { "id": "m4", "type": "app_switch", "targetApp": "chatgpt" },
+    { "id": "m5", "type": "text", "charId": "c1", "text": "ChatGPT, give me an escape plan!", "expr": "normal" },
+    { "id": "m6", "type": "text", "charId": "c3", "text": "Tactical advice: 1. Apologize. 2. Run!", "expr": "normal" }
+  ]
+}`;
 
     const fallbackCopy = (text) => {
       try {
@@ -4454,15 +4530,24 @@ Example:
 
   function loadDemoScriptIntoModal() {
     document.getElementById('scriptInputBox').value = `[SYSTEM: EPISODE 1: GIAN'S REVENGE]
-[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with a baseball bat!
+[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
 [Nobita:SFX]: 😭 WAAAHH!!
+[PAUSE: 1s]
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
 [Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
 [Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
-[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using 4D gadgets!]
+[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
 [Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
 [Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
+[PAUSE: 1.5s]
+[SCENE: chatgpt]
+[Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
+[ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
+[PAUSE: 1.5s]
+[SCENE: whatsapp]
+[Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
+[Doraemon:love]: Only if it's NOT my Dorayaki!
 [Nobita:SFX]: 💨 NIGERUNDAYO!!`;
     showToast('⚡ Rich sample script loaded!');
   }

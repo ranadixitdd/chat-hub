@@ -15,7 +15,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="style.css?v=2.7">
+<link rel="stylesheet" href="style.css?v=2.8">
 </head>
 <body>
 
@@ -37,6 +37,7 @@
       <span style="font-size:10px; opacity:0.7;">▾</span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
+      <button type="button" class="gpt-header-btn" onclick="startCinemaPlayback()" title="Auto-Play Story (Cinema Mode)">🎬</button>
       <button type="button" class="gpt-header-btn" onclick="promptNewGptChat()" title="New Chat Scene">✏️</button>
     </div>
   </div>
@@ -103,6 +104,7 @@
       <span style="font-size:10px; opacity:0.7;">▾</span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
+      <button type="button" class="gemini-header-btn" onclick="startCinemaPlayback()" title="Auto-Play Story (Cinema Mode)">🎬</button>
       <button type="button" class="gemini-header-btn" onclick="promptNewGeminiChat()" title="New Gemini Chat">✏️</button>
     </div>
   </div>
@@ -829,11 +831,14 @@
         <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
           <div class="script-format-tags">
             <span class="script-tag-pill" title="Character dialogue with emotion">[Name:emotion]: text</span>
+            <span class="script-tag-pill" title="Custom wardrobe face expression">[Name:custom_face]: text</span>
+            <span class="script-tag-pill" title="Waiting seconds / suspense pause">[PAUSE: 2s]</span>
+            <span class="script-tag-pill" title="Switch interface to WhatsApp, ChatGPT, or Gemini">[SCENE: chatgpt]</span>
             <span class="script-tag-pill" title="Action sound effect burst">[Name:SFX]: 💥 BAM!!</span>
             <span class="script-tag-pill" title="Reaction sticker from vault">[Name:STICKER]: label</span>
             <span class="script-tag-pill" title="Solo Leveling holographic quest alert">[QUEST: text]</span>
             <span class="script-tag-pill" title="Episode or scene title banner">[SYSTEM: text]</span>
-            <span class="script-tag-pill" title="Dramatic suspense pause">[PAUSE: 1.5s]</span>
+            <span class="script-tag-pill" title="Playback speed change">[SPEED: 1.2x]</span>
           </div>
           <div style="display:flex; gap:5px; margin-left:auto;">
             <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template for ChatGPT / Claude / Gemini">📋 Copy AI Prompt</button>
@@ -845,6 +850,7 @@
         <textarea class="form-textarea" id="scriptInputBox" rows="8" placeholder="[SYSTEM: EPISODE 1: GIAN'S REVENGE]
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
 [Nobita:SFX]: 😭 WAAAHH!!
+[PAUSE: 1s]
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
 [Nobita]: I accidentally stepped on his prized baseball card...
 [Gian:SFX]: 👊 POW!!
@@ -852,6 +858,14 @@
 [QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
 [Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
 [Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
+[PAUSE: 1.5s]
+[SCENE: chatgpt]
+[Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
+[ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
+[PAUSE: 1.5s]
+[SCENE: whatsapp]
+[Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
+[Doraemon:love]: Only if it's NOT my Dorayaki!
 [Nobita:SFX]: 💨 NIGERUNDAYO!!"></textarea>
       </div>
 
@@ -1059,6 +1073,6 @@
   </div>
 </div>
 
-<script src="app.js?v=2.7"></script>
+<script src="app.js?v=2.8"></script>
 </body>
 </html>

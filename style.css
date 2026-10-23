@@ -3801,6 +3801,40 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9) !important;
   }
 
+  /* ChatGPT Authentic Thinking Indicator */
+  .phone-wrapper.app-chatgpt .typing-indicator-row {
+    align-self: flex-start !important;
+    gap: 10px !important;
+    margin: 8px 0 !important;
+  }
+  .phone-wrapper.app-chatgpt .typing-indicator-row .typing-bubble {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 2px 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .phone-wrapper.app-chatgpt .gpt-thinking-dot {
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50%;
+    animation: gptThinkingPulse 1.2s infinite ease-in-out;
+    display: inline-block;
+  }
+  .phone-wrapper.app-chatgpt .gpt-thinking-label {
+    font-size: 13.5px;
+    color: #9ca3af;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @keyframes gptThinkingPulse {
+    0%, 100% { transform: scale(0.65); opacity: 0.35; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+
   /* =====================================================================
      GEMINI: ELECTRIC CYAN & SLATE TITANIUM SKIN (CLEAN & SHARP)
      ===================================================================== */
@@ -3922,6 +3956,43 @@
   }
   .phone-wrapper.app-gemini .sender-name-text {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95) !important;
+  }
+
+  /* Gemini Authentic Thinking Indicator */
+  .phone-wrapper.app-gemini .typing-indicator-row {
+    align-self: flex-start !important;
+    gap: 10px !important;
+    margin: 8px 0 !important;
+  }
+  .phone-wrapper.app-gemini .typing-indicator-row .typing-bubble {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 2px 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .phone-wrapper.app-gemini .gemini-sparkle-dot {
+    font-size: 16px;
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: geminiThinkingSpin 1.4s infinite ease-in-out;
+    display: inline-block;
+  }
+  .phone-wrapper.app-gemini .gemini-thinking-label {
+    font-size: 13.5px;
+    background: linear-gradient(90deg, #7dd3fc, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @keyframes geminiThinkingSpin {
+    0% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
+    50% { transform: scale(1.2) rotate(45deg); opacity: 1; }
+    100% { transform: scale(0.8) rotate(90deg); opacity: 0.5; }
   }
 
 
