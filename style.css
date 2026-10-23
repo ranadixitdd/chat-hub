@@ -1616,16 +1616,17 @@
   }
 
   .sticker-emoji-art {
-    width: 125px;
-    height: 115px;
+    width: var(--chat-sticker-size, 120px);
+    height: calc(var(--chat-sticker-size, 120px) * 0.92);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 54px;
+    font-size: calc(var(--chat-sticker-size, 120px) * 0.44);
     position: relative;
     border: 1.5px solid #0f172a;
+    transition: width 0.15s ease, height 0.15s ease, font-size 0.15s ease;
   }
 
   .sticker-caption {

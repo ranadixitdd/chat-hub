@@ -181,15 +181,52 @@
 
   // Built-in Comic Stickers
   const builtInStickers = [
-    { id: 's1', emoji: '🤣', label: '', bg: '#fef08a', expr: 'laugh', sfx: 'boing' },
-    { id: 's2', emoji: '😭', label: '', bg: '#bfdbfe', expr: 'cry', sfx: 'sad' },
-    { id: 's3', emoji: '🤬', label: '', bg: '#fecaca', expr: 'angry', sfx: 'boom' },
-    { id: 's4', emoji: '😱', label: '', bg: '#e9d5ff', expr: 'shock', sfx: 'shock' },
-    { id: 's5', emoji: '😍', label: '', bg: '#fbcfe8', expr: 'love', sfx: 'sparkle' },
-    { id: 's6', emoji: '🫡', label: '', bg: '#bbf7d0', expr: 'normal', sfx: 'pop' },
-    { id: 's7', emoji: '💀', label: '', bg: '#e2e8f0', expr: 'shock', sfx: 'boom' },
-    { id: 's8', emoji: '🎉', label: '', bg: '#fde68a', expr: 'laugh', sfx: 'sparkle' }
+    { id: 's1', emoji: '🤣', label: 'ROFL', bg: '#fef08a', expr: 'laugh', sfx: 'boing' },
+    { id: 's2', emoji: '😭', label: 'WAAH', bg: '#bfdbfe', expr: 'cry', sfx: 'sad' },
+    { id: 's3', emoji: '🤬', label: 'RAGE', bg: '#fecaca', expr: 'angry', sfx: 'boom' },
+    { id: 's4', emoji: '😱', label: 'SHOCK', bg: '#e9d5ff', expr: 'shock', sfx: 'shock' },
+    { id: 's5', emoji: '😍', label: 'LOVE', bg: '#fbcfe8', expr: 'love', sfx: 'sparkle' },
+    { id: 's6', emoji: '🫡', label: 'SALUTE', bg: '#bbf7d0', expr: 'normal', sfx: 'pop' },
+    { id: 's7', emoji: '💀', label: 'DEAD', bg: '#e2e8f0', expr: 'shock', sfx: 'boom' },
+    { id: 's8', emoji: '🎉', label: 'PARTY', bg: '#fde68a', expr: 'laugh', sfx: 'sparkle' },
+    { id: 's9', emoji: '🤡', label: 'CLOWN', bg: '#fed7aa', expr: 'shock', sfx: 'vineboom' },
+    { id: 's10', emoji: '🗿', label: 'CHAD', bg: '#cbd5e1', expr: 'normal', sfx: 'vineboom' },
+    { id: 's11', emoji: '🔥', label: 'FIRE', bg: '#ffedd5', expr: 'angry', sfx: 'boom' },
+    { id: 's12', emoji: '👀', label: 'STARE', bg: '#f1f5f9', expr: 'normal', sfx: 'shock' },
+    { id: 's13', emoji: '🥺', label: 'PLEASE', bg: '#fee2e2', expr: 'cry', sfx: 'sad' },
+    { id: 's14', emoji: '🥶', label: 'COLD', bg: '#bae6fd', expr: 'shock', sfx: 'shock' },
+    { id: 's15', emoji: '🤯', label: 'BLOWN', bg: '#fef08a', expr: 'shock', sfx: 'boom' },
+    { id: 's16', emoji: '💅', label: 'SLAY', bg: '#fce7f3', expr: 'love', sfx: 'sparkle' },
+    { id: 's17', emoji: '😎', label: 'COOL', bg: '#fef9c3', expr: 'normal', sfx: 'pop' },
+    { id: 's18', emoji: '🤫', label: 'SECRET', bg: '#e2e8f0', expr: 'normal', sfx: 'pop' },
+    { id: 's19', emoji: '😴', label: 'SLEEPY', bg: '#e0e7ff', expr: 'normal', sfx: 'sad' },
+    { id: 's20', emoji: '🤤', label: 'DROOL', bg: '#fef3c7', expr: 'love', sfx: 'boing' },
+    { id: 's21', emoji: '🤢', label: 'CRINGE', bg: '#dcfce7', expr: 'shock', sfx: 'sad' },
+    { id: 's22', emoji: '🫠', label: 'MELT', bg: '#fef08a', expr: 'cry', sfx: 'sad' },
+    { id: 's23', emoji: '🥳', label: 'HYPE', bg: '#fbcfe8', expr: 'laugh', sfx: 'sparkle' },
+    { id: 's24', emoji: '🤔', label: 'THINK', bg: '#ede9fe', expr: 'normal', sfx: 'pop' },
+    { id: 's25', emoji: '😈', label: 'DEVIL', bg: '#f3e8ff', expr: 'angry', sfx: 'boom' },
+    { id: 's26', emoji: '👻', label: 'SPOOKY', bg: '#f1f5f9', expr: 'shock', sfx: 'shock' },
+    { id: 's27', emoji: '⚡', label: 'BOLT', bg: '#fef08a', expr: 'shock', sfx: 'shock' },
+    { id: 's28', emoji: '💖', label: 'HEART', bg: '#ffe4e6', expr: 'love', sfx: 'sparkle' },
+    { id: 's29', emoji: '🍰', label: 'CAKE', bg: '#fed7aa', expr: 'love', sfx: 'boing' },
+    { id: 's30', emoji: '💣', label: 'BOMB', bg: '#fee2e2', expr: 'angry', sfx: 'boom' },
+    { id: 's31', emoji: '👑', label: 'CROWN', bg: '#fef08a', expr: 'normal', sfx: 'sparkle' },
+    { id: 's32', emoji: '🥊', label: 'PUNCH', bg: '#fee2e2', expr: 'angry', sfx: 'punch' }
   ];
+
+  let customBuiltInLabels = {};
+  try {
+    const rawLabels = safeGetStorage('wh_builtin_sticker_labels');
+    if (rawLabels) {
+      customBuiltInLabels = JSON.parse(rawLabels);
+      builtInStickers.forEach(s => {
+        if (customBuiltInLabels[s.id]) {
+          s.label = customBuiltInLabels[s.id];
+        }
+      });
+    }
+  } catch (_) {}
 
   // Built-in Manga Quick Reactions
   const builtInReactions = [
@@ -260,6 +297,7 @@
 
   let customStickers = [];
   let customAudioClips = [];
+  let isDrawerEditMode = false;
   let isVaultEditMode = false;
   let chatStickerSize = parseInt(safeGetStorage('wh_chat_sticker_size'), 10) || 120;
   try {
@@ -2442,36 +2480,37 @@ if (msg.type === 'quest') {
           };
           subBar.appendChild(b);
         });
-      } else if (activeDrawerTab === 'uploads') {
+      } else if (activeDrawerTab === 'stickers' || activeDrawerTab === 'uploads') {
         subBar.classList.add('active');
         subBar.innerHTML = '';
 
-        // Live Size Slider (Suggestion B)
+        // Live Size Slider
         const sliderWrap = document.createElement('div');
         sliderWrap.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:11px; color:#cbd5e1; flex-shrink:0;';
         sliderWrap.innerHTML = `
           <span title="Adjust sticker display size in chat">📏 Size:</span>
-          <input type="range" id="vaultStickerSizeSlider" min="70" max="170" step="5" value="${chatStickerSize}" oninput="updateChatStickerSize(this.value)" style="width:70px; accent-color:#facc15; cursor:pointer;">
-          <span id="vaultStickerSizeLabel" style="font-size:10px; font-weight:800; color:#facc15; min-width:32px;">${chatStickerSize}px</span>
+          <input type="range" id="drawerStickerSizeSlider" min="70" max="170" step="5" value="${chatStickerSize}" oninput="updateChatStickerSize(this.value)" style="width:70px; accent-color:#facc15; cursor:pointer;">
+          <span id="drawerStickerSizeLabel" style="font-size:10px; font-weight:800; color:#facc15; min-width:32px;">${chatStickerSize}px</span>
         `;
         subBar.appendChild(sliderWrap);
 
-        // Edit Mode Toggle Button (Option 2)
+        // Edit Mode Toggle Button
         const editModeBtn = document.createElement('button');
         editModeBtn.type = 'button';
-        editModeBtn.className = `subbar-pill ${isVaultEditMode ? 'active' : ''}`;
-        editModeBtn.style.cssText = isVaultEditMode ? 'background:#facc15; color:#0f172a; font-weight:900;' : '';
-        editModeBtn.innerHTML = isVaultEditMode ? '✅ Done' : '✏️ Edit Mode';
-        editModeBtn.title = isVaultEditMode ? 'Done editing (return to tap-to-send)' : 'Toggle edit mode to rename or delete stickers';
+        editModeBtn.className = `subbar-pill ${isDrawerEditMode ? 'active' : ''}`;
+        editModeBtn.style.cssText = isDrawerEditMode ? 'background:#facc15; color:#0f172a; font-weight:900;' : '';
+        editModeBtn.innerHTML = isDrawerEditMode ? '✅ Done' : '✏️ Edit Mode';
+        editModeBtn.title = isDrawerEditMode ? 'Done editing (return to tap-to-send)' : 'Toggle edit mode to rename sticker labels';
         editModeBtn.onclick = (e) => {
           e.stopPropagation();
-          toggleVaultEditMode();
+          toggleDrawerEditMode();
         };
         subBar.appendChild(editModeBtn);
 
+        const count = (activeDrawerTab === 'stickers') ? builtInStickers.length : customStickers.length;
         const countSpan = document.createElement('span');
         countSpan.style.cssText = 'font-size:11px; font-weight:800; color:#94a3b8; align-self:center; margin-left:auto;';
-        countSpan.textContent = `${customStickers.length} item${customStickers.length !== 1 ? 's' : ''}`;
+        countSpan.textContent = activeDrawerTab === 'stickers' ? `${count} Stickers` : `${count} Uploads`;
         subBar.appendChild(countSpan);
       } else {
         subBar.classList.remove('active');
@@ -2481,14 +2520,21 @@ if (msg.type === 'quest') {
     if (activeDrawerTab === 'stickers') {
       builtInStickers.forEach((st) => {
         const card = document.createElement('div');
-        card.className = 'sticker-option-item';
-        card.onclick = () => sendStickerItem(st);
+        card.className = `sticker-option-item ${isDrawerEditMode ? 'vault-edit-mode' : ''}`;
+        card.onclick = () => {
+          if (isDrawerEditMode) {
+            renameBuiltInSticker(st.id);
+          } else {
+            sendStickerItem(st);
+          }
+        };
 
         const artHtml = st.imageUrl
           ? `<img src="${st.imageUrl}" alt="Sticker">`
           : `<span class="sticker-option-emoji">${st.emoji}</span>`;
 
         card.innerHTML = `
+          ${isDrawerEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
           ${artHtml}
           <span class="sticker-option-label">${escapeHtml(st.label || 'Sticker')}</span>
         `;
@@ -2509,9 +2555,9 @@ if (msg.type === 'quest') {
 
       customStickers.forEach((st) => {
         const card = document.createElement('div');
-        card.className = `sticker-option-item ${isVaultEditMode ? 'vault-edit-mode' : ''}`;
+        card.className = `sticker-option-item ${isDrawerEditMode ? 'vault-edit-mode' : ''}`;
         card.onclick = () => {
-          if (isVaultEditMode) {
+          if (isDrawerEditMode) {
             renameCustomSticker(st.id);
           } else {
             sendStickerItem(st);
@@ -2523,8 +2569,8 @@ if (msg.type === 'quest') {
           : `<img src="${st.imageUrl}" alt="Media" style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05);">`;
 
         card.innerHTML = `
-          ${isVaultEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
-          ${isVaultEditMode ? `<div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete from Vault">✕</div>` : ''}
+          ${isDrawerEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
+          ${isDrawerEditMode ? `<div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete from Vault">✕</div>` : ''}
           ${mediaPreview}
           <span class="sticker-option-label">${escapeHtml(st.label || 'Media')}</span>
         `;
@@ -2625,14 +2671,31 @@ if (msg.type === 'quest') {
       document.documentElement.style.setProperty('--chat-sticker-size', `${chatStickerSize}px`);
     } catch (_) {}
     safeSetStorage('wh_chat_sticker_size', chatStickerSize.toString());
-    const label = document.getElementById('vaultStickerSizeLabel');
-    if (label) label.textContent = `${chatStickerSize}px`;
+    const labels = document.querySelectorAll('#vaultStickerSizeLabel, #drawerStickerSizeLabel');
+    labels.forEach(l => l.textContent = `${chatStickerSize}px`);
   }
 
-  function toggleVaultEditMode() {
-    isVaultEditMode = !isVaultEditMode;
+  function toggleDrawerEditMode() {
+    isDrawerEditMode = !isDrawerEditMode;
+    isVaultEditMode = isDrawerEditMode;
     renderDrawerContent();
-    showToast(isVaultEditMode ? '✏️ Edit Mode ON: Click any sticker to rename label' : '✅ Edit Mode OFF: Tapping sends stickers');
+    showToast(isDrawerEditMode ? '✏️ Edit Mode ON: Click any sticker to rename label' : '✅ Edit Mode OFF: Tapping sends stickers');
+  }
+  const toggleVaultEditMode = toggleDrawerEditMode;
+
+  function renameBuiltInSticker(id) {
+    const st = builtInStickers.find(s => s.id === id);
+    if (!st) return;
+    const current = st.label || '';
+    const newName = prompt(`✏️ Rename sticker "${st.emoji}" label (used in scripts e.g. [Char:STICKER]: LABEL):`, current);
+    if (newName === null) return;
+    const clean = newName.trim().toUpperCase() || 'STICKER';
+    st.label = clean;
+    customBuiltInLabels[id] = clean;
+    safeSetStorage('wh_builtin_sticker_labels', JSON.stringify(customBuiltInLabels));
+    renderDrawerContent();
+    renderChatStream();
+    showToast(`✏️ Renamed "${st.emoji}" sticker to "${clean}"`);
   }
 
   function setVaultFitMode(mode) {
