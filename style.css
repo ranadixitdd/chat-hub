@@ -1426,12 +1426,18 @@
     background: #ffffff !important;
     border: none !important;
     box-shadow: 0 1px 2px rgba(11, 20, 26, 0.1) !important;
-    border-radius: 26px !important;
-    padding: 11px 18px !important;
-    font-size: 16px !important;
+    border-radius: 24px !important;
+    padding: 10px 16px !important;
+    font-size: 15px !important;
     font-weight: 400 !important;
     color: #111b21 !important;
     outline: none !important;
+    min-height: 40px !important;
+    max-height: 120px !important;
+    resize: none !important;
+    overflow-y: auto !important;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
   }
 
   .phone-wrapper.theme-realistic .wa-text-input::placeholder {
@@ -2163,7 +2169,7 @@
     background-color: #f0f2f5;
     padding: 8px 10px;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 7px;
     z-index: 20;
     border-top: var(--comic-border);
@@ -2206,6 +2212,14 @@
     color: #0f172a;
     outline: none;
     min-width: 0;
+    min-height: 40px;
+    max-height: 120px;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.4;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: height 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .wa-text-input:focus {
@@ -2520,7 +2534,7 @@
   /* === SMART DYNAMIC CINEMA PLAYBACK HUD & SCREEN RECORDER === */
   .cinema-control-dock {
     position: absolute;
-    bottom: 68px;
+    bottom: calc(var(--composer-height, 56px) + 12px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 150;
@@ -2766,7 +2780,7 @@
     max-width: calc(100% - 10px) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    bottom: 66px !important;
+    bottom: calc(var(--composer-height, 56px) + 10px) !important;
     width: max-content !important;
   }
 
@@ -3713,7 +3727,14 @@
     background: #161b22 !important;
     border: 1.5px solid rgba(16, 163, 127, 0.45) !important;
     color: #f0fdf4 !important;
-    border-radius: 26px !important;
+    border-radius: 22px !important;
+    min-height: 40px !important;
+    max-height: 120px !important;
+    resize: none !important;
+    overflow-y: auto !important;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
+    padding: 10px 16px !important;
     box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5), 0 0 8px rgba(16, 163, 127, 0.1) !important;
   }
   .phone-wrapper.app-chatgpt .wa-text-input::placeholder {
@@ -3872,7 +3893,14 @@
     background: #17202e !important;
     border: 1.5px solid #334155 !important;
     color: #f1f5f9 !important;
-    border-radius: 28px !important;
+    border-radius: 22px !important;
+    min-height: 40px !important;
+    max-height: 120px !important;
+    resize: none !important;
+    overflow-y: auto !important;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
+    padding: 10px 16px !important;
     box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4) !important;
   }
   .phone-wrapper.app-gemini .wa-text-input:focus {

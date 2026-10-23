@@ -234,20 +234,19 @@
   <div class="cinema-control-dock" id="cinemaDock">
     <!-- Popover for Instant One-Tap Speed Presets -->
     <div class="cinema-speed-popover" id="cinemaSpeedPopover">
-      <div class="speed-popover-title">⚡ Playback Speed</div>
-      <div class="speed-presets-grid">
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(0.5); hideSpeedPopover();">0.5x</button>
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(0.75); hideSpeedPopover();">0.75x</button>
-        <button type="button" class="speed-pill-btn active" onclick="setQuickCinemaSpeed(1.0); hideSpeedPopover();">1.0x</button>
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(1.25); hideSpeedPopover();">1.25x</button>
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(1.5); hideSpeedPopover();">1.5x</button>
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(2.0); hideSpeedPopover();">2.0x</button>
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed(3.0); hideSpeedPopover();">3.0x</button>
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('instant'); hideSpeedPopover();" title="Instant Playback (Bypass simulated typing)">⚡ Instant</button>
+      <div class="speed-popover-title">⚡ Typing & Pacing Speed</div>
+      <div class="speed-presets-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
+        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('slow'); hideSpeedPopover();" id="speedChoiceSlow">🐢 Slow (0.6x)</button>
+        <button type="button" class="speed-pill-btn active" onclick="setQuickCinemaSpeed('normal'); hideSpeedPopover();" id="speedChoiceNormal">🚶 Normal (1.0x)</button>
+        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('fast'); hideSpeedPopover();" id="speedChoiceFast">🏃 Fast (1.6x)</button>
+        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('very_fast'); hideSpeedPopover();" id="speedChoiceVeryFast">⚡ Very Fast (2.5x)</button>
       </div>
-      <div class="speed-slider-row">
+      <div style="margin-top: 6px;">
+        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('instant'); hideSpeedPopover();" id="speedChoiceInstant" style="width: 100%; justify-content: center; background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.5); color: #facc15;" title="Instant Playback (Bypass simulated typing)">⚡ Instant (Zero Typing Delay)</button>
+      </div>
+      <div class="speed-slider-row" style="margin-top: 8px;">
         <span style="font-size:10px; color:#94a3b8;">Slow</span>
-        <input type="range" min="0.25" max="3.0" step="0.05" value="1.0" id="cinemaQuickSpeedSlider" oninput="updateCinemaSpeedSlider(this.value)" class="cinema-mini-slider">
+        <input type="range" min="0.4" max="3.0" step="0.1" value="1.0" id="cinemaQuickSpeedSlider" oninput="updateCinemaSpeedSlider(this.value)" class="cinema-mini-slider">
         <span style="font-size:10px; color:#94a3b8;">Fast</span>
       </div>
       <div style="display:flex; justify-content:space-between; margin-top:8px; border-top:1px solid #334155; padding-top:6px;">
@@ -374,7 +373,7 @@
   <div class="wa-input-bar" id="waInputBar">
     <button type="button" class="input-action-btn global-settings-btn" id="globalSettingsBtn" onclick="openGlobalSettingsModal()" title="Global Studio Settings & App Switcher">🌐</button>
     <button class="input-action-btn" id="stickerToggleBtn" onclick="toggleStickerDrawer()" title="Open Stickers, Reactions & Sound FX">😊</button>
-    <input type="text" class="wa-text-input" id="chatMessageInput" placeholder="Type a message..." autocomplete="off">
+    <textarea rows="1" class="wa-text-input" id="chatMessageInput" placeholder="Type a message..." autocomplete="off"></textarea>
     <button class="wa-send-btn" onclick="sendUserMessage()" title="Send Message">
       <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" style="transform: translate(1px, 0);"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
     </button>

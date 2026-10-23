@@ -2063,7 +2063,10 @@ if (msg.type === 'quest') {
     const input = document.getElementById('chatMessageInput');
     if (input) {
       input.classList.remove('simulated-typing-active');
-      if (isCinemaPlaying) input.value = '';
+      if (isCinemaPlaying) {
+        input.value = '';
+        autoResizeComposerInput(input);
+      }
     }
     const statusEl = document.getElementById('headerGroupStatus');
     if (statusEl) {
@@ -2071,6 +2074,62 @@ if (msg.type === 'quest') {
       const autoStatus = characters.map(c => c.name).join(', ');
       statusEl.textContent = groupProfile.status.trim() || autoStatus;
     }
+  }
+
+  /* Dynamically auto-expand composer textarea up to 120px and adjust Cinema HUD dock position */
+  function autoResizeComposerInput(el) {
+    if (!el) el = document.getElementById('chatMessageInput');
+    if (!el) return;
+    el.style.height = 'auto';
+    const computedH = Math.min(Math.max(el.scrollHeight, 40), 120);
+    el.style.height = computedH + 'px';
+    if (el.scrollHeight > 120) {
+      el.style.overflowY = 'auto';
+    } else {
+      el.style.overflowY = 'hidden';
+    }
+    const bar = document.getElementById('waInputBar');
+    const barH = bar ? bar.offsetHeight : (computedH + 16);
+    document.documentElement.style.setProperty('--composer-height', `${barH}px`);
+  }
+
+  /* Adaptive message-length-aware timing calculation for snappy short messages & smooth long paragraphs */
+  function calculateAdaptiveTypingTiming(text, speedMultiplier = 1.0, isPov = false) {
+    const mult = Math.max(0.2, speedMultiplier || 1.0);
+    const rawLen = (text || '').trim().length;
+    const len = Math.max(1, rawLen);
+
+    // Adaptive typing duration based on character length using sub-linear curve
+    // Short messages (3-15 chars): ~220ms - 450ms
+    // Medium messages (20-60 chars): ~500ms - 1200ms
+    // Long messages (100-300+ chars): ~1200ms - 2200ms max
+    const rawTypingDuration = 220 + Math.pow(len, 0.76) * 24;
+    const maxCap = isPov ? 2200 : 2400;
+    const minCap = isPov ? 220 : 300;
+    const clampedBaseDuration = Math.max(minCap, Math.min(maxCap, rawTypingDuration));
+    const typingDuration = clampedBaseDuration / mult;
+
+    // Per-character delay for POV composer typing
+    const baseCharDelay = clampedBaseDuration / len;
+    const charDelay = Math.max(14, baseCharDelay / mult);
+
+    // Pre-typing think pause (reaction time before typing starts)
+    const rawThink = isPov
+      ? (140 + Math.min(len * 2, 140))
+      : (180 + Math.min(len * 3, 200));
+    const thinkPause = Math.max(100, rawThink / mult);
+
+    // Post-bubble reading pause (time viewers need to read the message on screen)
+    const rawReading = Math.max(450, Math.min(1800, 320 + Math.pow(len, 0.72) * 20));
+    const readingPause = rawReading / mult;
+
+    return {
+      typingDuration,
+      charDelay,
+      thinkPause,
+      readingPause,
+      baseCharDelay
+    };
   }
 
   function flushPendingLiveMessage() {
@@ -2138,6 +2197,7 @@ if (msg.type === 'quest') {
       const qText = text.slice(7).trim();
       if (!qText) return;
       input.value = '';
+      autoResizeComposerInput(input);
       messages.push({
         id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         type: 'quest',
@@ -2155,6 +2215,7 @@ if (msg.type === 'quest') {
     const exprToUse = currentExpr;
     const replyIdToUse = activeReplyMsgId;
     input.value = '';
+    autoResizeComposerInput(input);
     clearActiveReply();
 
     const commitFn = () => {
@@ -2222,12 +2283,18 @@ if (msg.type === 'quest') {
     triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05);
   }
 
-  document.getElementById('chatMessageInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendUserMessage();
-    }
-  });
+  const composerInputElement = document.getElementById('chatMessageInput');
+  if (composerInputElement) {
+    composerInputElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendUserMessage();
+      }
+    });
+    composerInputElement.addEventListener('input', () => {
+      autoResizeComposerInput(composerInputElement);
+    });
+  }
 
   /* =====================================================================
      8. STICKER, REACTIONS, SFX & SOUNDBOARD DRAWER
@@ -3321,7 +3388,8 @@ if (msg.type === 'quest') {
     isCinemaPaused = false;
 
     document.getElementById('directorDeck').classList.add('hidden');
-    document.getElementById('waInputBar').style.display = 'flex';
+    const initialWaBar = document.getElementById('waInputBar');
+    if (initialWaBar) initialWaBar.style.display = 'flex';
     document.getElementById('composerReplyBar').classList.remove('open');
     document.getElementById('stickerDrawer').classList.remove('open');
 
@@ -3329,6 +3397,7 @@ if (msg.type === 'quest') {
     if (composerInput) {
       userComposerDraftBackup = composerInput.value || '';
       composerInput.value = '';
+      autoResizeComposerInput(composerInput);
     }
     
     const dock = document.getElementById('cinemaDock');
@@ -3388,6 +3457,7 @@ if (msg.type === 'quest') {
           } else {
             composer.value = '';
           }
+          autoResizeComposerInput(composer);
         }
 
         if (isBuiltinRecording) {
@@ -3435,18 +3505,19 @@ if (msg.type === 'quest') {
 
         setTimeout(() => {
           if (!isCinemaPlaying) return;
-          // Seamless app morph without corrupting playback queue
+          // Seamless app morph without corrupting playback queue or hiding composer
           switchAppMode(targetApp, true);
           document.getElementById('directorDeck').classList.add('hidden');
-          document.getElementById('waInputBar').style.display = 'none';
+          const switchWaBar = document.getElementById('waInputBar');
+          if (switchWaBar) switchWaBar.style.display = 'flex';
           if (dock) dock.classList.add('active');
 
-          // Clean slate for new app conversation
-          stream.innerHTML = '';
+          // Preserve message history across scene transitions
+          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
 
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, 950 / cinemaSpeedMultiplier);
-        }, 500 / cinemaSpeedMultiplier);
+          cinemaStepTimeout = setTimeout(playNextStep, 800 / cinemaSpeedMultiplier);
+        }, 450 / cinemaSpeedMultiplier);
         return;
       }
 
@@ -3558,7 +3629,8 @@ if (msg.type === 'quest') {
       }
 
       const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
-      const textLen = nextMsg.text ? nextMsg.text.trim().length : 12;
+      const isPovSide = (char.side === 'right');
+      const timing = calculateAdaptiveTypingTiming(nextMsg.text || '', cinemaSpeedMultiplier, isPovSide);
 
       // Instant Playback mode (Skip typing delays entirely)
       if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
@@ -3592,7 +3664,7 @@ if (msg.type === 'quest') {
       // ==========================================
       // BEHAVIOR A: INCOMING CHARACTER (LEFT SIDE)
       // ==========================================
-      if (char.side === 'left') {
+      if (!isPovSide) {
         const isGpt = (activeAppMode === 'chatgpt');
         const isGemini = (activeAppMode === 'gemini');
         const statusEl = document.getElementById('headerGroupStatus');
@@ -3676,7 +3748,7 @@ if (msg.type === 'quest') {
             triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
 
             stepIndex++;
-            const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(650, Math.min(1800, 320 + textLen * 18))) / cinemaSpeedMultiplier;
+            const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
             cinemaStepTimeout = setTimeout(playNextStep, readingPause);
           }, durationMs);
         }
@@ -3686,21 +3758,18 @@ if (msg.type === 'quest') {
           startIncomingTypingIndicator(configuredPreDelay);
         } else {
           // Natural human thinking pause before typing starts
-          const thinkPause = Math.max(250, 420 / cinemaSpeedMultiplier);
-          const typingDuration = Math.max(700, Math.min(2200, textLen * 34)) / cinemaSpeedMultiplier;
-
           activePreDelayTimer = setTimeout(() => {
             if (!isCinemaPlaying) return;
-            startIncomingTypingIndicator(typingDuration);
-          }, thinkPause);
+            startIncomingTypingIndicator(timing.typingDuration);
+          }, timing.thinkPause);
         }
 
       // ==========================================
       // BEHAVIOR B: POV CHARACTER (RIGHT SIDE)
       // ==========================================
       } else {
-        // Step 1: Wait for any preceding delay (from /delay command or natural human pause)
-        const povWait = configuredPreDelay > 0 ? configuredPreDelay : (250 / cinemaSpeedMultiplier);
+        // Step 1: Pre-typing wait
+        const povWait = configuredPreDelay > 0 ? configuredPreDelay : timing.thinkPause;
 
         activePreDelayTimer = setTimeout(() => {
           if (!isCinemaPlaying) return;
@@ -3716,12 +3785,10 @@ if (msg.type === 'quest') {
 
           if (composerInput) {
             composerInput.value = '';
+            autoResizeComposerInput(composerInput);
             composerInput.classList.add('simulated-typing-active');
             composerInput.focus();
           }
-
-          const totalTypingTime = Math.max(380, Math.min(2000, fullText.length * 36)) / cinemaSpeedMultiplier;
-          const charDelay = Math.max(18, totalTypingTime / Math.max(1, fullText.length));
 
           let charIdx = 0;
 
@@ -3735,7 +3802,12 @@ if (msg.type === 'quest') {
             charIdx++;
             if (composerInput) {
               composerInput.value = fullText.slice(0, charIdx);
+              autoResizeComposerInput(composerInput);
+              composerInput.scrollTop = composerInput.scrollHeight;
               composerInput.scrollLeft = composerInput.scrollWidth;
+              try {
+                composerInput.setSelectionRange(charIdx, charIdx);
+              } catch (_) {}
             }
 
             if (soundEnabled && charIdx % 2 === 0) {
@@ -3743,13 +3815,16 @@ if (msg.type === 'quest') {
             }
 
             if (charIdx < fullText.length) {
-              activePovComposerTimer = setTimeout(typeNextChar, charDelay);
+              // Dynamic speed scaling: evaluate multiplier on every character
+              const currentMultiplier = Math.max(0.2, cinemaSpeedMultiplier || 1.0);
+              const dynamicCharDelay = Math.max(14, timing.baseCharDelay / currentMultiplier);
+              activePovComposerTimer = setTimeout(typeNextChar, dynamicCharDelay);
             } else {
               // Simulated typing complete! Brief sending pause
               if (composerInput) {
                 composerInput.classList.remove('simulated-typing-active');
               }
-              const sendPause = Math.max(120, 220 / cinemaSpeedMultiplier);
+              const sendPause = Math.max(100, 200 / cinemaSpeedMultiplier);
 
               activePovComposerTimer = setTimeout(() => {
                 if (!isCinemaPlaying) return;
@@ -3758,9 +3833,10 @@ if (msg.type === 'quest') {
                   return;
                 }
 
-                // Clear composer & trigger send button animation
+                // Clear composer & reset auto-expand height
                 if (composerInput) {
                   composerInput.value = '';
+                  autoResizeComposerInput(composerInput);
                 }
                 if (sendBtn) {
                   sendBtn.classList.add('btn-press-anim');
@@ -3789,7 +3865,7 @@ if (msg.type === 'quest') {
                 triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
 
                 stepIndex++;
-                const readingPause = (nextMsg.delayMs ? nextMsg.delayMs : Math.max(500, Math.min(1400, 280 + textLen * 15))) / cinemaSpeedMultiplier;
+                const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
                 cinemaStepTimeout = setTimeout(playNextStep, readingPause);
               }, sendPause);
             }
@@ -3843,21 +3919,38 @@ if (msg.type === 'quest') {
 
   function updateCinemaSpeedUI() {
     const isInstant = (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0);
-    const speedStr = isInstant ? 'Instant' : `${cinemaSpeedMultiplier.toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`;
+    const speedStr = isInstant ? 'Instant' : `${cinemaSpeedMultiplier.toFixed(1).replace(/\.0$/, '')}x`;
     const speedTextEl = document.getElementById('cinemaSpeedText');
     if (speedTextEl) speedTextEl.textContent = speedStr;
 
     const btn = document.getElementById('cinemaSpeedBtn');
     if (btn) btn.title = `Playback Speed: ${speedStr} (Tap to change)`;
 
+    // Update active state in named choice buttons
+    const slowBtn = document.getElementById('speedChoiceSlow');
+    if (slowBtn) slowBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 0.6) < 0.1);
+
+    const normBtn = document.getElementById('speedChoiceNormal');
+    if (normBtn) normBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 1.0) < 0.1);
+
+    const fastBtn = document.getElementById('speedChoiceFast');
+    if (fastBtn) fastBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 1.6) < 0.15);
+
+    const vFastBtn = document.getElementById('speedChoiceVeryFast');
+    if (vFastBtn) vFastBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 2.5) < 0.2);
+
+    const instantBtn = document.getElementById('speedChoiceInstant');
+    if (instantBtn) instantBtn.classList.toggle('active', isInstant);
+
     // Update active state in popover pill buttons
     document.querySelectorAll('.speed-pill-btn').forEach(pill => {
+      if (['speedChoiceSlow', 'speedChoiceNormal', 'speedChoiceFast', 'speedChoiceVeryFast', 'speedChoiceInstant'].includes(pill.id)) return;
       const text = pill.textContent.trim().toLowerCase();
       if (isInstant && text.includes('instant')) {
         pill.classList.add('active');
       } else if (!isInstant && !text.includes('instant')) {
         const pillVal = parseFloat(text);
-        if (!isNaN(pillVal) && Math.abs(pillVal - cinemaSpeedMultiplier) < 0.05) {
+        if (!isNaN(pillVal) && Math.abs(pillVal - cinemaSpeedMultiplier) < 0.08) {
           pill.classList.add('active');
         } else {
           pill.classList.remove('active');
@@ -3899,8 +3992,8 @@ if (msg.type === 'quest') {
   }
 
   function cycleCinemaSpeed() {
-    const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-    const curr = parseFloat(cinemaSpeedMultiplier.toFixed(2));
+    const speeds = [0.6, 1.0, 1.6, 2.5];
+    const curr = parseFloat(cinemaSpeedMultiplier.toFixed(1));
     const nextIdx = (speeds.indexOf(curr) + 1) % speeds.length;
     setQuickCinemaSpeed(speeds[nextIdx]);
   }
@@ -3912,16 +4005,21 @@ if (msg.type === 'quest') {
       showToast('⚡ Instant Playback Mode (Zero delay)');
     } else {
       cinemaPlaybackMode = 'natural';
-      cinemaSpeedMultiplier = parseFloat(val);
+      if (val === 'slow') cinemaSpeedMultiplier = 0.6;
+      else if (val === 'normal') cinemaSpeedMultiplier = 1.0;
+      else if (val === 'fast') cinemaSpeedMultiplier = 1.6;
+      else if (val === 'very_fast') cinemaSpeedMultiplier = 2.5;
+      else cinemaSpeedMultiplier = Math.max(0.4, Math.min(3.0, parseFloat(val) || 1.0));
+
       safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
-      showToast(`⚡ Playback Speed: ${cinemaSpeedMultiplier}x`);
+      showToast(`⚡ Playback Speed: ${cinemaSpeedMultiplier.toFixed(1)}x`);
     }
     updateCinemaSpeedUI();
   }
 
   function updateCinemaSpeedSlider(val) {
     cinemaPlaybackMode = 'natural';
-    cinemaSpeedMultiplier = Math.max(0.25, Math.min(3.0, parseFloat(val)));
+    cinemaSpeedMultiplier = Math.max(0.4, Math.min(3.0, parseFloat(val)));
     safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
     updateCinemaSpeedUI();
   }
@@ -4151,7 +4249,8 @@ if (msg.type === 'quest') {
     }
 
     document.getElementById('directorDeck').classList.remove('hidden');
-    document.getElementById('waInputBar').style.display = 'flex';
+    const exitWaBar = document.getElementById('waInputBar');
+    if (exitWaBar) exitWaBar.style.display = 'flex';
 
     // Safely restore user composer draft if one was active before playback
     const composer = document.getElementById('chatMessageInput');
@@ -4163,6 +4262,7 @@ if (msg.type === 'quest') {
       } else {
         composer.value = '';
       }
+      autoResizeComposerInput(composer);
     }
 
     const wrapper = document.getElementById('phoneWrapper');
@@ -5227,6 +5327,11 @@ If JSON format is preferred, you can output this JSON structure directly:
       return;
     }
 
+    // If script explicitly begins with an app scene directive (e.g. [SCENE: chatgpt]), activate it immediately
+    if (parsedMsgs.length > 0 && parsedMsgs[0].type === 'app_switch') {
+      switchAppMode(parsedMsgs[0].targetApp, true);
+    }
+
     if (replaceExisting) {
       messages = parsedMsgs;
     } else {
@@ -5522,6 +5627,7 @@ If JSON format is preferred, you can output this JSON structure directly:
   renderChatStream();
   renderDrawerContent();
   updateCinemaSpeedUI();
+  autoResizeComposerInput(document.getElementById('chatMessageInput'));
   initTurboGestures();
 
   // Cinema Dock Auto-Hide Interaction Listeners (keeps video capture crystal clean)
