@@ -1596,8 +1596,8 @@
 
   .sticker-card img,
   .sticker-card video {
-    max-width: 170px;
-    max-height: 170px;
+    max-width: var(--chat-sticker-size, 120px);
+    max-height: var(--chat-sticker-size, 120px);
     width: auto;
     height: auto;
     object-fit: contain;
@@ -1605,6 +1605,7 @@
     border: 1.5px solid #e2e8f0;
     display: block;
     background: transparent;
+    transition: max-width 0.15s ease, max-height 0.15s ease;
   }
 
   .sticker-card.fit-cover img,
@@ -2513,6 +2514,18 @@
   .sticker-option-item.fit-cover img,
   .sticker-option-item.fit-cover video {
     object-fit: cover;
+  }
+
+  .sticker-option-item.vault-edit-mode {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    box-shadow: 0 0 0 2.5px rgba(2, 132, 199, 0.45);
+    cursor: default;
+  }
+
+  .sticker-option-item.vault-edit-mode:hover {
+    background: #e0f2fe;
+    transform: scale(1.03);
   }
 
   .edit-custom-btn {

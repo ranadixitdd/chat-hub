@@ -260,7 +260,11 @@
 
   let customStickers = [];
   let customAudioClips = [];
-  let vaultFitMode = safeGetStorage('wh_vault_fit_mode') || 'contain';
+  let isVaultEditMode = false;
+  let chatStickerSize = parseInt(safeGetStorage('wh_chat_sticker_size'), 10) || 120;
+  try {
+    document.documentElement.style.setProperty('--chat-sticker-size', `${chatStickerSize}px`);
+  } catch (_) {}
 
   let messages = [
     { id: 'm1', type: 'divider', text: 'EPISODE 1: THE 4D POCKET CRISIS' },
@@ -1970,17 +1974,14 @@ if (msg.type === 'quest') {
 
     if (msg.type === 'sticker') {
       const st = msg.stickerData || builtInStickers[0];
-      const fitMode = (st && st.fitMode) || vaultFitMode || 'contain';
-      const fitClass = fitMode === 'cover' ? ' fit-cover' : '';
-      const fitStyle = fitMode === 'cover' ? 'object-fit:cover;' : 'object-fit:contain;';
       const innerArt = st.isVideo
-        ? `<video src="${st.imageUrl}" autoplay loop muted playsinline style="max-width:170px; max-height:170px; width:auto; height:auto; border-radius:12px; ${fitStyle}"></video>`
+        ? `<video src="${st.imageUrl}" autoplay loop muted playsinline style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain;"></video>`
         : (st.imageUrl
-            ? `<img src="${st.imageUrl}" alt="${escapeHtml(st.label || 'Sticker')}" style="max-width:170px; max-height:170px; width:auto; height:auto; ${fitStyle}">`
+            ? `<img src="${st.imageUrl}" alt="${escapeHtml(st.label || 'Sticker')}" style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; object-fit:contain;">`
             : `<div class="sticker-emoji-art" style="background:${st.bg || '#fef08a'}">${st.emoji || '🎭'}</div>`);
 
       bubbleContentHtml = `
-        <div class="sticker-card${fitClass}" onclick="openMessageEditModal('${msg.id}')">
+        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
           ${innerArt}
           ${st.label ? `<span class="sticker-caption">${escapeHtml(st.label)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
@@ -1990,12 +1991,9 @@ if (msg.type === 'quest') {
       `;
     } else if (msg.type === 'image') {
       const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
-      const fitMode = msg.fitMode || vaultFitMode || 'contain';
-      const fitClass = fitMode === 'cover' ? ' fit-cover' : '';
-      const fitStyle = fitMode === 'cover' ? 'object-fit:cover;' : 'object-fit:contain;';
       bubbleContentHtml = `
-        <div class="sticker-card${fitClass}" onclick="openMessageEditModal('${msg.id}')">
-          <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Image')}" style="max-width:240px; max-height:240px; width:auto; height:auto; border-radius:12px; ${fitStyle} display:block;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '🖼️');">
+        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
+          <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Image')}" style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain; display:block;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '🖼️');">
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -2004,12 +2002,9 @@ if (msg.type === 'quest') {
       `;
     } else if (msg.type === 'video') {
       const srcUrl = msg.videoUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
-      const fitMode = msg.fitMode || vaultFitMode || 'contain';
-      const fitClass = fitMode === 'cover' ? ' fit-cover' : '';
-      const fitStyle = fitMode === 'cover' ? 'object-fit:cover;' : 'object-fit:contain;';
       bubbleContentHtml = `
-        <div class="sticker-card${fitClass}" onclick="openMessageEditModal('${msg.id}')">
-          <video src="${srcUrl}" controls playsinline style="max-width:240px; max-height:240px; width:auto; height:auto; border-radius:12px; ${fitStyle} display:block;"></video>
+        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
+          <video src="${srcUrl}" controls playsinline style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain; display:block;"></video>
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -2451,32 +2446,33 @@ if (msg.type === 'quest') {
         subBar.classList.add('active');
         subBar.innerHTML = '';
 
+        // Live Size Slider (Suggestion B)
+        const sliderWrap = document.createElement('div');
+        sliderWrap.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:11px; color:#cbd5e1; flex-shrink:0;';
+        sliderWrap.innerHTML = `
+          <span title="Adjust sticker display size in chat">📏 Size:</span>
+          <input type="range" id="vaultStickerSizeSlider" min="70" max="170" step="5" value="${chatStickerSize}" oninput="updateChatStickerSize(this.value)" style="width:70px; accent-color:#facc15; cursor:pointer;">
+          <span id="vaultStickerSizeLabel" style="font-size:10px; font-weight:800; color:#facc15; min-width:32px;">${chatStickerSize}px</span>
+        `;
+        subBar.appendChild(sliderWrap);
+
+        // Edit Mode Toggle Button (Option 2)
+        const editModeBtn = document.createElement('button');
+        editModeBtn.type = 'button';
+        editModeBtn.className = `subbar-pill ${isVaultEditMode ? 'active' : ''}`;
+        editModeBtn.style.cssText = isVaultEditMode ? 'background:#facc15; color:#0f172a; font-weight:900;' : '';
+        editModeBtn.innerHTML = isVaultEditMode ? '✅ Done' : '✏️ Edit Mode';
+        editModeBtn.title = isVaultEditMode ? 'Done editing (return to tap-to-send)' : 'Toggle edit mode to rename or delete stickers';
+        editModeBtn.onclick = (e) => {
+          e.stopPropagation();
+          toggleVaultEditMode();
+        };
+        subBar.appendChild(editModeBtn);
+
         const countSpan = document.createElement('span');
-        countSpan.style.cssText = 'font-size:11px; font-weight:800; color:#94a3b8; align-self:center; margin-right:4px;';
+        countSpan.style.cssText = 'font-size:11px; font-weight:800; color:#94a3b8; align-self:center; margin-left:auto;';
         countSpan.textContent = `${customStickers.length} item${customStickers.length !== 1 ? 's' : ''}`;
         subBar.appendChild(countSpan);
-
-        const containBtn = document.createElement('button');
-        containBtn.type = 'button';
-        containBtn.className = `subbar-pill ${vaultFitMode === 'contain' ? 'active' : ''}`;
-        containBtn.innerHTML = '🔍 Full (No Crop)';
-        containBtn.title = 'Display full stickers without any cut-off (default)';
-        containBtn.onclick = (e) => {
-          e.stopPropagation();
-          setVaultFitMode('contain');
-        };
-        subBar.appendChild(containBtn);
-
-        const coverBtn = document.createElement('button');
-        coverBtn.type = 'button';
-        coverBtn.className = `subbar-pill ${vaultFitMode === 'cover' ? 'active' : ''}`;
-        coverBtn.innerHTML = '🔲 Square (Fill)';
-        coverBtn.title = 'Crop into square tiles';
-        coverBtn.onclick = (e) => {
-          e.stopPropagation();
-          setVaultFitMode('cover');
-        };
-        subBar.appendChild(coverBtn);
       } else {
         subBar.classList.remove('active');
       }
@@ -2512,21 +2508,25 @@ if (msg.type === 'quest') {
       }
 
       customStickers.forEach((st) => {
-        const isCover = (st.fitMode || vaultFitMode) === 'cover';
         const card = document.createElement('div');
-        card.className = `sticker-option-item ${isCover ? 'fit-cover' : ''}`;
-        card.onclick = () => sendStickerItem(st);
+        card.className = `sticker-option-item ${isVaultEditMode ? 'vault-edit-mode' : ''}`;
+        card.onclick = () => {
+          if (isVaultEditMode) {
+            renameCustomSticker(st.id);
+          } else {
+            sendStickerItem(st);
+          }
+        };
 
-        const fitStyle = isCover ? 'object-fit:cover;' : 'object-fit:contain; background:rgba(0,0,0,0.05);';
         const mediaPreview = st.isVideo
-          ? `<video src="${st.imageUrl}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; ${fitStyle} pointer-events:none;"></video>`
-          : `<img src="${st.imageUrl}" alt="Media" style="width:52px; height:52px; border-radius:8px; ${fitStyle}">`;
+          ? `<video src="${st.imageUrl}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05); pointer-events:none;"></video>`
+          : `<img src="${st.imageUrl}" alt="Media" style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05);">`;
 
         card.innerHTML = `
-          <div class="edit-custom-btn" onclick="event.stopPropagation(); renameCustomSticker('${st.id}')" title="Rename file label">✏️</div>
-          <div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete from Vault">✕</div>
+          ${isVaultEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
+          ${isVaultEditMode ? `<div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete from Vault">✕</div>` : ''}
           ${mediaPreview}
-          <span class="sticker-option-label" onclick="event.stopPropagation(); renameCustomSticker('${st.id}')" title="Click to rename label">${escapeHtml(st.label || 'Media')}</span>
+          <span class="sticker-option-label">${escapeHtml(st.label || 'Media')}</span>
         `;
         grid.appendChild(card);
       });
@@ -2617,6 +2617,22 @@ if (msg.type === 'quest') {
       reader.readAsDataURL(file);
     });
     e.target.value = '';
+  }
+
+  function updateChatStickerSize(size) {
+    chatStickerSize = Math.max(65, Math.min(180, parseInt(size, 10) || 120));
+    try {
+      document.documentElement.style.setProperty('--chat-sticker-size', `${chatStickerSize}px`);
+    } catch (_) {}
+    safeSetStorage('wh_chat_sticker_size', chatStickerSize.toString());
+    const label = document.getElementById('vaultStickerSizeLabel');
+    if (label) label.textContent = `${chatStickerSize}px`;
+  }
+
+  function toggleVaultEditMode() {
+    isVaultEditMode = !isVaultEditMode;
+    renderDrawerContent();
+    showToast(isVaultEditMode ? '✏️ Edit Mode ON: Click any sticker to rename label' : '✅ Edit Mode OFF: Tapping sends stickers');
   }
 
   function setVaultFitMode(mode) {
