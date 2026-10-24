@@ -4,6 +4,7 @@
   const STORAGE_KEY = 'manhwa_whatsapp_comic_studio_v3';
   const STORIES_LIB_KEY = 'manhwa_saved_stories_library';
   let currentStoryTitle = safeGetStorage('wh_current_story_title') || 'Episode 1: The Dorayaki Crisis';
+  let currentStoryId = safeGetStorage('wh_current_story_id') || '';
   let savedStories = [];
   try {
     const rawStories = safeGetStorage(STORIES_LIB_KEY);
@@ -661,6 +662,19 @@
     if (badgeGpt) badgeGpt.textContent = (activeAppMode === 'chatgpt') ? 'ACTIVE' : 'SWITCH';
     if (badgeGem) badgeGem.textContent = (activeAppMode === 'gemini') ? 'ACTIVE' : 'SWITCH';
 
+    const chipWa = document.getElementById('quickChipWa');
+    const chipGpt = document.getElementById('quickChipGpt');
+    const chipGem = document.getElementById('quickChipGemini');
+    if (chipWa) chipWa.classList.toggle('active', activeAppMode === 'whatsapp');
+    if (chipGpt) chipGpt.classList.toggle('active', activeAppMode === 'chatgpt');
+    if (chipGem) chipGem.classList.toggle('active', activeAppMode === 'gemini');
+
+    const deckBtn = document.getElementById('deckQuickAppBtn');
+    if (deckBtn) {
+      const appEmojis = { whatsapp: '💬 WA', chatgpt: '🤖 GPT', gemini: '✨ Gemini' };
+      deckBtn.textContent = appEmojis[activeAppMode] || '📱 App';
+    }
+
     const waStats = document.getElementById('waSceneStats');
     if (waStats) waStats.textContent = `Group squad chat • ${(storyScenes.whatsapp || []).length} lines`;
 
@@ -684,6 +698,15 @@
     const soundIcon = document.getElementById('globalSoundIcon');
     if (soundLabel) soundLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
     if (soundIcon) soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+  }
+
+  function cycleQuickAppMode() {
+    const apps = ['whatsapp', 'chatgpt', 'gemini'];
+    const curIdx = apps.indexOf(activeAppMode);
+    const nextApp = apps[(curIdx + 1) % apps.length];
+    switchAppMode(nextApp);
+    const appTitles = { whatsapp: 'WhatsApp', chatgpt: 'ChatGPT', gemini: 'Google Gemini' };
+    showToast(`📱 Active App: ${appTitles[nextApp]}`);
   }
 
   /* === AI MODEL PICKER (CHATGPT & GEMINI DEDICATED) === */
@@ -3300,9 +3323,14 @@ if (msg.type === 'quest') {
         </div>
         <div class="char-expr-name" title="${std.label}">${std.label}</div>
         <div class="char-expr-tag">[${escapeHtml(char.name)}:${std.key}]</div>
-        <button type="button" class="char-expr-crop-btn" onclick="startAvatarCrop('${char.id}__expr__${std.key}')" title="Change ${std.label} image">
-          ✂️ Change Face
-        </button>
+        <div style="display:flex; gap:4px; width:100%;">
+          <button type="button" class="char-expr-crop-btn" style="flex:1;" onclick="startAvatarCrop('${char.id}__expr__${std.key}')" title="Change ${std.label} image">
+            ✂️ Crop
+          </button>
+          <button type="button" class="char-expr-edit-btn" style="padding:4px 8px;" onclick="openExprEditModal('${char.id}', '${std.key}')" title="Edit expression">
+            ✏️
+          </button>
+        </div>
       `;
       grid.appendChild(card);
     });
@@ -3326,13 +3354,94 @@ if (msg.type === 'quest') {
           <button type="button" class="char-expr-crop-btn" style="flex:1;" onclick="startAvatarCrop('${char.id}__expr__${k}')" title="Change face image">
             ✂️ Crop
           </button>
-          <button type="button" class="char-expr-crop-btn" style="width:30px; padding:4px 0; background:#450a0a; border-color:#991b1b; color:#fca5a5;" onclick="removeCustomEmotionFromCurrentChar('${k}')" title="Remove this emotion">
+          <button type="button" class="char-expr-edit-btn" style="padding:4px 8px;" onclick="openExprEditModal('${char.id}', '${k}')" title="Rename or edit expression tag">
+            ✏️
+          </button>
+          <button type="button" class="char-expr-crop-btn" style="width:28px; padding:4px 0; background:#450a0a; border-color:#991b1b; color:#fca5a5;" onclick="removeCustomEmotionFromCurrentChar('${k}')" title="Remove this emotion">
             ✕
           </button>
         </div>
       `;
       grid.appendChild(card);
     });
+  }
+
+  /* === EDIT EXPRESSION SYSTEM === */
+  let editingExprCharId = null;
+  let editingExprKey = null;
+
+  function openExprEditModal(charId, exprKey) {
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+    ensureCharacterExpressions(char);
+    editingExprCharId = charId;
+    editingExprKey = exprKey;
+
+    const charNameEl = document.getElementById('exprEditCharName');
+    const tagEl = document.getElementById('exprEditCurrentTag');
+    const imgEl = document.getElementById('exprEditAvatarImg');
+    const inputEl = document.getElementById('exprEditNameInput');
+
+    if (charNameEl) charNameEl.textContent = char.name;
+    if (tagEl) tagEl.textContent = `Current Tag: [${char.name}:${exprKey}]`;
+    if (imgEl) imgEl.src = char.expressions[exprKey] || char.avatar;
+    if (inputEl) inputEl.value = exprKey;
+
+    const modal = document.getElementById('exprEditModal');
+    if (modal) modal.classList.add('open');
+  }
+
+  function closeExprEditModal() {
+    const modal = document.getElementById('exprEditModal');
+    if (modal) modal.classList.remove('open');
+    editingExprCharId = null;
+    editingExprKey = null;
+  }
+
+  function saveEditedExpression() {
+    if (!editingExprCharId || !editingExprKey) return;
+    const char = characters.find(c => c.id === editingExprCharId);
+    if (!char) return;
+    ensureCharacterExpressions(char);
+
+    const input = document.getElementById('exprEditNameInput');
+    const rawVal = (input.value || '').trim();
+    if (!rawVal) {
+      showToast('⚠️ Please enter an expression tag name!');
+      return;
+    }
+    const cleanKey = rawVal.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    if (!cleanKey) {
+      showToast('⚠️ Invalid expression tag!');
+      return;
+    }
+
+    if (cleanKey !== editingExprKey) {
+      const imgData = char.expressions[editingExprKey] || char.avatar;
+      char.expressions[cleanKey] = imgData;
+
+      const standardKeys = ['normal', 'cry', 'shock', 'angry', 'love', 'laugh'];
+      if (!standardKeys.includes(editingExprKey)) {
+        delete char.expressions[editingExprKey];
+      }
+
+      // Update any active chat messages using the old tag
+      if (Array.isArray(messages)) {
+        messages.forEach(m => {
+          if (m.charId === char.id && m.expr === editingExprKey) {
+            m.expr = cleanKey;
+          }
+        });
+      }
+      showToast(`✏️ Emotion tag updated to "[${char.name}:${cleanKey}]"!`);
+    } else {
+      showToast('👍 Expression tag saved!');
+    }
+
+    saveStudioState();
+    closeExprEditModal();
+    renderCharacterExpressionWardrobe(char.id);
+    renderChatStream();
   }
 
   function addNewCustomEmotionToCurrentChar() {
@@ -3732,6 +3841,10 @@ if (msg.type === 'quest') {
         // 3. Save current active stream children
         appSceneStreams[currentCinemaApp] = Array.from(stream.children);
 
+        // Calculate transition hold time: respect explicit preDelayMs (e.g. from /delay 3sec), delayMs, or minimum 1200ms
+        const configuredHoldMs = nextMsg.preDelayMs || nextMsg.delayMs || 1500;
+        const transitionHold = Math.max(1200, configuredHoldMs) / cinemaSpeedMultiplier;
+
         setTimeout(() => {
           if (!isCinemaPlaying) return;
 
@@ -3766,11 +3879,11 @@ if (msg.type === 'quest') {
 
           setTimeout(() => {
             hideAppSwitchTransition();
-          }, 140);
+          }, 220);
 
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, 750 / cinemaSpeedMultiplier);
-        }, 550 / cinemaSpeedMultiplier);
+          cinemaStepTimeout = setTimeout(playNextStep, 800 / cinemaSpeedMultiplier);
+        }, transitionHold);
         return;
       }
 
@@ -4617,33 +4730,49 @@ if (msg.type === 'quest') {
     document.getElementById('storiesModal').classList.remove('open');
   }
 
-  function saveCurrentStory() {
-    const title = (document.getElementById('currentStoryTitleInput').value || '').trim() || 'Untitled Episode';
+  function saveCurrentStory(isSaveAsNew = false) {
+    const titleInput = document.getElementById('currentStoryTitleInput');
+    const title = ((titleInput && titleInput.value) || '').trim() || 'Untitled Episode';
     currentStoryTitle = title;
     safeSetStorage('wh_current_story_title', currentStoryTitle);
 
-    const existingIdx = savedStories.findIndex(s => s.id === currentStoryTitle || s.title.toLowerCase() === title.toLowerCase());
+    // Sync active messages before saving
+    syncCurrentAppMessagesToStorage();
+
+    const storyId = (isSaveAsNew || !currentStoryId) ? ('story_' + Date.now()) : currentStoryId;
+    currentStoryId = storyId;
+    safeSetStorage('wh_current_story_id', currentStoryId);
+
     const storyData = {
-      id: existingIdx >= 0 ? savedStories[existingIdx].id : 'story_' + Date.now(),
+      id: storyId,
       title: title,
       date: new Date().toLocaleDateString(),
-      messageCount: messages.length,
+      activeAppMode: activeAppMode,
+      messageCount: Array.isArray(messages) ? messages.length : 0,
       groupProfile: JSON.parse(JSON.stringify(groupProfile)),
       characters: JSON.parse(JSON.stringify(characters)),
-      messages: JSON.parse(JSON.stringify(messages)),
-      customStickers: JSON.parse(JSON.stringify(customStickers))
+      messages: JSON.parse(JSON.stringify(messages || [])),
+      storyScenes: JSON.parse(JSON.stringify(storyScenes || {})),
+      gptThreads: (typeof storyScenes !== 'undefined' && storyScenes.chatgptThreads) ? JSON.parse(JSON.stringify(storyScenes.chatgptThreads)) : [],
+      geminiThreads: (typeof storyScenes !== 'undefined' && storyScenes.geminiThreads) ? JSON.parse(JSON.stringify(storyScenes.geminiThreads)) : [],
+      customStickers: JSON.parse(JSON.stringify(customStickers || []))
     };
 
-    if (existingIdx >= 0) {
-      savedStories[existingIdx] = storyData;
-    } else {
+    if (isSaveAsNew) {
       savedStories.unshift(storyData);
+    } else {
+      const existingIdx = savedStories.findIndex(s => s.id === storyId);
+      if (existingIdx >= 0) {
+        savedStories[existingIdx] = storyData;
+      } else {
+        savedStories.unshift(storyData);
+      }
     }
 
     safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
     saveStudioState();
     renderStoriesList();
-    showToast(`💾 Story "${title}" saved!`);
+    showToast(isSaveAsNew ? `💾 Saved as new episode "${title}"!` : `💾 Story "${title}" updated!`);
   }
 
   function renderStoriesList() {
@@ -4661,22 +4790,25 @@ if (msg.type === 'quest') {
       return;
     }
 
-    savedStories.forEach((story, idx) => {
-      const isCurrent = (story.title || '').toLowerCase() === currentStoryTitle.toLowerCase();
+    savedStories.forEach((story) => {
+      const isCurrent = (story.id === currentStoryId) || (!currentStoryId && (story.title || '').toLowerCase() === currentStoryTitle.toLowerCase());
       const card = document.createElement('div');
       card.className = `story-item-card ${isCurrent ? 'current' : ''}`;
+      const appIcon = { whatsapp: '💬 WA', chatgpt: '🤖 GPT', gemini: '✨ Gemini' }[story.activeAppMode] || '💬 WA';
       card.innerHTML = `
         <div style="flex:1; overflow:hidden;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <strong style="font-size:12.5px; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(story.title)}</strong>
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <strong style="font-size:12.5px; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${escapeHtml(story.title || 'Untitled')}</strong>
             ${isCurrent ? '<span style="background:#00a884; color:#fff; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:10px;">ACTIVE</span>' : ''}
           </div>
-          <p style="font-size:11px; color:#94a3b8; margin:2px 0 0 0;">${story.messageCount || (story.messages ? story.messages.length : 0)} lines • ${story.date || 'Saved'}</p>
+          <p style="font-size:11px; color:#94a3b8; margin:2px 0 0 0;">${story.messageCount || (story.messages ? story.messages.length : 0)} lines • ${appIcon} • ${story.date || 'Saved'}</p>
         </div>
-        <div style="display:flex; gap:5px; flex-shrink:0;">
-          <button class="icon-btn" style="background:#3b82f6; font-size:11px; padding:4px 9px;" onclick="loadStoryById('${story.id}')" title="Load this story">📂 Load</button>
-          <button class="icon-btn" style="background:#475569; font-size:11px; padding:4px 7px;" onclick="exportStoryById('${story.id}')" title="Export as JSON">💾</button>
-          <button class="icon-btn" style="background:#ef4444; font-size:11px; padding:4px 7px;" onclick="deleteStoryById(${idx})" title="Delete story">🗑️</button>
+        <div style="display:flex; gap:4px; flex-shrink:0; align-items:center;">
+          <button class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 8px;" onclick="loadStoryById('${story.id}')" title="Load this story">📂 Load</button>
+          <button class="icon-btn" style="background:#475569; color:#fff; font-size:11px; padding:4px 7px;" onclick="renameStoryById('${story.id}')" title="Rename story title">✏️</button>
+          <button class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 7px;" onclick="duplicateStoryById('${story.id}')" title="Duplicate story copy">📑</button>
+          <button class="icon-btn" style="background:#334155; color:#cbd5e1; font-size:11px; padding:4px 7px;" onclick="exportStoryById('${story.id}')" title="Export as JSON">💾</button>
+          <button class="icon-btn danger" style="background:#ef4444; color:#fff; font-size:11px; padding:4px 7px;" onclick="deleteStoryById('${story.id}')" title="Delete story">🗑️</button>
         </div>
       `;
       container.appendChild(card);
@@ -4687,37 +4819,102 @@ if (msg.type === 'quest') {
     const story = savedStories.find(s => s.id === storyId);
     if (!story) return;
 
-    currentStoryTitle = story.title;
+    currentStoryId = story.id;
+    safeSetStorage('wh_current_story_id', currentStoryId);
+    currentStoryTitle = story.title || 'Untitled Story';
     safeSetStorage('wh_current_story_title', currentStoryTitle);
 
-    if (Array.isArray(story.messages)) messages = story.messages;
+    const titleInput = document.getElementById('currentStoryTitleInput');
+    if (titleInput) titleInput.value = currentStoryTitle;
+
     if (Array.isArray(story.characters) && story.characters.length > 0) characters = story.characters;
     if (story.groupProfile) groupProfile = { ...groupProfile, ...story.groupProfile };
     if (Array.isArray(story.customStickers)) customStickers = story.customStickers;
 
+    if (story.storyScenes) {
+      storyScenes = story.storyScenes;
+      if (Array.isArray(story.gptThreads)) storyScenes.chatgptThreads = story.gptThreads;
+      if (Array.isArray(story.geminiThreads)) storyScenes.geminiThreads = story.geminiThreads;
+    }
+
+    const targetMode = story.activeAppMode || 'whatsapp';
+    activeAppMode = targetMode;
+
+    if (Array.isArray(story.messages)) {
+      messages = story.messages;
+    } else if (storyScenes && storyScenes[targetMode]) {
+      messages = storyScenes[targetMode];
+    } else {
+      messages = [];
+    }
+
+    switchAppMode(activeAppMode, false);
     saveStudioState();
     renderGroupHeader();
     renderDirectorStrip();
     renderChatStream();
     renderDrawerContent();
+    renderStoriesList();
     closeStoriesModal();
     showToast(`📂 Loaded "${story.title}"`);
   }
 
-  function deleteStoryById(idx) {
-    const target = savedStories[idx];
+  function deleteStoryById(storyId) {
+    const target = savedStories.find(s => s.id === storyId);
     if (!target) return;
     openCustomPromptModal({
       title: '🗑️ Delete Saved Story',
       desc: `Are you sure you want to permanently delete "${target.title}"?`,
       showInput: false,
       onConfirm: () => {
-        savedStories.splice(idx, 1);
+        savedStories = savedStories.filter(s => s.id !== storyId);
+        if (currentStoryId === storyId) {
+          currentStoryId = '';
+          safeSetStorage('wh_current_story_id', '');
+        }
         safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
         renderStoriesList();
         showToast('🗑️ Story deleted');
       }
     });
+  }
+
+  function renameStoryById(storyId) {
+    const target = savedStories.find(s => s.id === storyId);
+    if (!target) return;
+    openCustomPromptModal({
+      title: '✏️ Rename Story Title',
+      desc: 'Enter new episode title:',
+      defaultValue: target.title,
+      showInput: true,
+      onConfirm: (newTitle) => {
+        if (!newTitle || !newTitle.trim()) return;
+        const clean = newTitle.trim();
+        target.title = clean;
+        if (currentStoryId === storyId) {
+          currentStoryTitle = clean;
+          safeSetStorage('wh_current_story_title', currentStoryTitle);
+          const titleInput = document.getElementById('currentStoryTitleInput');
+          if (titleInput) titleInput.value = currentStoryTitle;
+        }
+        safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+        renderStoriesList();
+        showToast(`✏️ Renamed story to "${clean}"`);
+      }
+    });
+  }
+
+  function duplicateStoryById(storyId) {
+    const target = savedStories.find(s => s.id === storyId);
+    if (!target) return;
+    const clone = JSON.parse(JSON.stringify(target));
+    clone.id = 'story_' + Date.now();
+    clone.title = (target.title || 'Story') + ' (Copy)';
+    clone.date = new Date().toLocaleDateString();
+    savedStories.unshift(clone);
+    safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+    renderStoriesList();
+    showToast(`📑 Duplicated "${clone.title}"`);
   }
 
   function startNewBlankStory() {
@@ -4729,6 +4926,8 @@ if (msg.type === 'quest') {
       onConfirm: (title) => {
         if (!title) return;
         currentStoryTitle = title.trim();
+        currentStoryId = 'story_' + Date.now();
+        safeSetStorage('wh_current_story_id', currentStoryId);
         safeSetStorage('wh_current_story_title', currentStoryTitle);
         messages = [
           {
@@ -4739,6 +4938,7 @@ if (msg.type === 'quest') {
         ];
         saveStudioState();
         renderChatStream();
+        renderStoriesList();
         closeStoriesModal();
         showToast(`✨ Started "${currentStoryTitle}"`);
       }
@@ -5025,10 +5225,136 @@ if (msg.type === 'quest') {
     });
   }
 
+  function copyScriptInputText() {
+    const box = document.getElementById('scriptInputBox');
+    if (!box || !box.value.trim()) {
+      showToast('⚠️ Script editor is empty!');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(box.value).then(() => {
+        showToast('📋 Script copied to clipboard!');
+      }).catch(() => {
+        box.select();
+        document.execCommand('copy');
+        showToast('📋 Script copied to clipboard!');
+      });
+    } else {
+      box.select();
+      document.execCommand('copy');
+      showToast('📋 Script copied to clipboard!');
+    }
+  }
+
+  function pasteScriptInputText() {
+    const box = document.getElementById('scriptInputBox');
+    if (!box) return;
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(text => {
+        if (!text) {
+          showToast('⚠️ Clipboard is empty!');
+          return;
+        }
+        box.value = text;
+        showToast('📥 Script pasted from clipboard!');
+      }).catch(() => {
+        box.focus();
+        showToast('👉 Press Ctrl+V (or tap paste) into the box');
+      });
+    } else {
+      box.focus();
+      showToast('👉 Press Ctrl+V to paste');
+    }
+  }
+
+  function clearScriptInputText() {
+    const box = document.getElementById('scriptInputBox');
+    if (!box || !box.value.trim()) return;
+    box.value = '';
+    showToast('🗑️ Script editor cleared!');
+  }
+
+  function copyScriptJsonText() {
+    const box = document.getElementById('scriptJsonBox');
+    if (!box || !box.value.trim()) {
+      showToast('⚠️ JSON editor is empty!');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(box.value).then(() => {
+        showToast('📋 JSON copied to clipboard!');
+      }).catch(() => {
+        box.select();
+        document.execCommand('copy');
+        showToast('📋 JSON copied to clipboard!');
+      });
+    } else {
+      box.select();
+      document.execCommand('copy');
+      showToast('📋 JSON copied to clipboard!');
+    }
+  }
+
+  function pasteScriptJsonText() {
+    const box = document.getElementById('scriptJsonBox');
+    if (!box) return;
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(text => {
+        if (!text) {
+          showToast('⚠️ Clipboard is empty!');
+          return;
+        }
+        box.value = text;
+        showToast('📥 JSON pasted from clipboard!');
+      }).catch(() => {
+        box.focus();
+        showToast('👉 Press Ctrl+V (or tap paste) into the box');
+      });
+    } else {
+      box.focus();
+      showToast('👉 Press Ctrl+V to paste');
+    }
+  }
+
+  function clearScriptJsonText() {
+    const box = document.getElementById('scriptJsonBox');
+    if (!box || !box.value.trim()) return;
+    box.value = '';
+    showToast('🗑️ JSON editor cleared!');
+  }
+
   function copyChatGptTemplate() {
+    // 1. Build live cast section
+    let castRosterList = '';
+    if (Array.isArray(characters) && characters.length > 0) {
+      characters.forEach(c => {
+        const exprKeys = Object.keys(c.expressions || {});
+        const allTags = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
+        const sideDesc = (c.side === 'right') ? 'POV User (Right side)' : 'Partner / Squad (Left side)';
+        castRosterList += `• ${c.name} [${sideDesc}]:\n  Available emotion tags: ${allTags.map(t => `[${c.name}:${t}]`).join(', ')}\n`;
+      });
+    } else {
+      castRosterList += `• Nobita: [Nobita:normal], [Nobita:cry], [Nobita:shock], [Nobita:angry], [Nobita:love], [Nobita:laugh]\n`;
+      castRosterList += `• Doraemon: [Doraemon:normal], [Doraemon:laugh], [Doraemon:angry]\n`;
+    }
+
+    // 2. Build live stickers & vault section
+    let stickersList = '';
+    if (Array.isArray(customStickers) && customStickers.length > 0) {
+      stickersList += `• Custom Vault Stickers (Use [Character:STICKER]: label):\n  `;
+      stickersList += customStickers.map(s => s.label).join(', ') + '\n';
+    }
+    if (typeof builtInStickers !== 'undefined' && Array.isArray(builtInStickers) && builtInStickers.length > 0) {
+      stickersList += `• Built-in Comic Stickers:\n  `;
+      stickersList += builtInStickers.slice(0, 16).map(s => s.label || s.id).join(', ') + '\n';
+    }
+
     const prompt = `You are a professional Anime & Manhwa Webtoon Screenwriter. Write a dynamic multi-scene comic chat dialogue script using this EXACT syntax so my Chat Studio app can direct and auto-play it with realistic typing animations, sound effects, facial expressions, and interface switching:
 
-=== SCRIPT SYNTAX CHEAT SHEET ===
+=== YOUR CONFIGURED CAST ROSTER & EXPRESSIONS ===
+${castRosterList.trim()}
+
+${stickersList ? `=== CONFIGURED MEDIA VAULT & STICKERS ===\n${stickersList.trim()}\n` : ''}=== SCRIPT SYNTAX CHEAT SHEET ===
 1. NATURAL LIVE TYPING & CUSTOM DELAYS (High Recommended):
    /delay 3sec  -> Displays realistic typing for 3 seconds before next message
    /delay 1.5s  -> 1.5 seconds typing delay
@@ -5037,12 +5363,7 @@ if (msg.type === 'quest') {
 
 2. CHARACTER DIALOGUE & FACIAL EXPRESSIONS:
    [CharacterName]: normal dialogue text
-   [CharacterName:cry]: dialogue with crying / sad face
-   [CharacterName:shock]: dialogue with shocked / stunned face
-   [CharacterName:angry]: dialogue with angry / raging face
-   [CharacterName:love]: dialogue with blushing / in-love face
-   [CharacterName:laugh]: dialogue with laughing / joy face
-   [CharacterName:custom_face]: dialogue with custom uploaded expression (e.g. [Nobita:bliss], [Nobita:smirk], [Nobita:bruised])
+   [CharacterName:emotion]: dialogue with specific facial expression (e.g. cry, shock, angry, love, laugh, or any custom tag listed above)
 
 3. WAITING SECONDS & SUSPENSE SILENCE:
    [PAUSE: 2s] -> Dramatic silent pause before next event
@@ -5056,10 +5377,10 @@ if (msg.type === 'quest') {
    [CharacterName:SFX]: 💥 BAM!! (or 👊 POW!!, 🥊 ORA ORA!!, ⚔️ CLASH!!, ⚡ NANI?!, 💀 OMAE WA MOU..., 😭 WAAAHH!!, 🤣 BWAHAHA!)
 
 6. MULTIMEDIA & STICKERS:
+   [CharacterName:STICKER]: label (Use any sticker label from the vault list above)
    [CharacterName:IMAGE]: https://example.com/photo.jpg (or [IMAGE: url])
    [CharacterName:VIDEO]: https://example.com/video.mp4 (or [VIDEO: url])
    [CharacterName:AUDIO]: https://example.com/voice.mp3 (or [AUDIO: url])
-   [CharacterName:STICKER]: dorayaki (or name of sticker/GIF)
 
 7. SYSTEM NOTIFICATIONS & QUEST ALERTS:
    [SYSTEM: Episode Title or Location Banner]
@@ -5129,7 +5450,7 @@ If JSON format is preferred, you can output this JSON structure directly:
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        showToast('📋 AI Prompt Template copied!');
+        showToast('📋 AI Prompt copied with your characters, expressions & stickers!');
       } catch (err) {
         showToast('⚠️ Could not auto-copy. Please copy manually.');
       }
@@ -5137,7 +5458,7 @@ If JSON format is preferred, you can output this JSON structure directly:
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(prompt).then(() => {
-        showToast('📋 AI Prompt Template copied to clipboard!');
+        showToast('📋 AI Prompt copied with your characters, expressions & stickers!');
       }).catch(() => fallbackCopy(prompt));
     } else {
       fallbackCopy(prompt);
@@ -5221,8 +5542,8 @@ If JSON format is preferred, you can output this JSON structure directly:
     let pendingDelayMs = 0;
 
     lines.forEach((line, idx) => {
-      // 0. Custom delay command: /delay 3sec, /delay 1.5s, /delay 800ms, /delay 2.5sec
-      const delayCmdMatch = line.match(/^\/delay\s+([\d\.]+)\s*(s|sec|secs|second|seconds|ms)?$/i);
+      // 0. Custom delay command: /delay 3sec, /delay 1.5s, /delay 800ms, /delay 2.5sec, /delay 3sec[push]
+      const delayCmdMatch = line.match(/^\/delay\s+([\d\.]+)\s*(seconds|second|secs|sec|ms|s)?(?:\s*\[?([a-zA-Z0-9_\-]+)\]?)?/i);
       if (delayCmdMatch) {
         const val = parseFloat(delayCmdMatch[1]);
         if (!isNaN(val) && val > 0) {
@@ -5235,7 +5556,7 @@ If JSON format is preferred, you can output this JSON structure directly:
       }
 
       // [PAUSE: 1.5s] or [PAUSE: 2000]
-      const pauseMatch = line.match(/^\[PAUSE:\s*([\d\.]+)\s*(s|sec|secs|second|seconds|ms)?\]$/i);
+      const pauseMatch = line.match(/^\[PAUSE:\s*([\d\.]+)\s*(seconds|second|secs|sec|ms|s)?\]/i);
       if (pauseMatch) {
         const val = parseFloat(pauseMatch[1]);
         if (!isNaN(val) && val > 0) {
@@ -5277,15 +5598,22 @@ If JSON format is preferred, you can output this JSON structure directly:
         return;
       }
 
-      // 3. [APP: appName] or [SCENE: appName]
-      const appMatch = line.match(/^\[(?:APP|SCENE):\s*(whatsapp|chatgpt|gemini)\]$/i);
+      // 3. [APP: appName] or [SCENE: appName] or [SCENE: appName : 3s]
+      const appMatch = line.match(/^\[(?:APP|SCENE):\s*(whatsapp|chatgpt|gemini)(?:\s*[:,\-]?\s*([\d\.]+\s*(?:seconds|second|secs|sec|ms|s)?))?(?:\s*[:,\-]?\s*\[?([a-zA-Z0-9_\-]+)\]?)?\]$/i);
       if (appMatch) {
+        let customSceneDelay = 0;
+        if (appMatch[2]) {
+          const rawVal = parseFloat(appMatch[2]);
+          if (!isNaN(rawVal) && rawVal > 0) {
+            customSceneDelay = /ms/i.test(appMatch[2]) ? rawVal : (rawVal * 1000);
+          }
+        }
         parsedMsgs.push({
           id: 'm_app_' + Date.now() + '_' + idx,
           type: 'app_switch',
           targetApp: appMatch[1].toLowerCase(),
-          preDelayMs: eventPreDelay,
-          delayMs: 900
+          preDelayMs: eventPreDelay || customSceneDelay,
+          delayMs: customSceneDelay || 1400
         });
         return;
       }

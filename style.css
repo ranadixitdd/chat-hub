@@ -4966,3 +4966,112 @@
     background: rgba(0, 0, 0, 0.05);
   }
 
+  /* Quick App Switcher Chips (in 3-dots dropdown menu) */
+  .btn-app-quick-chip {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    border-radius: 8px;
+    padding: 7px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    user-select: none;
+  }
+  .btn-app-quick-chip:hover {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .btn-app-quick-chip.active {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+
+  /* Mobile Cast Studio & Expressions Responsiveness */
+  @media (max-width: 640px) {
+    .cast-grid-layout {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+    }
+    .cast-card {
+      padding: 12px 14px !important;
+      border-radius: 16px !important;
+      gap: 10px !important;
+    }
+    .cast-controls-row {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+    }
+    .cast-controls-row .cast-select {
+      flex: 1 1 120px !important;
+      min-width: 100px !important;
+      font-size: 11.5px !important;
+      padding: 6px 8px !important;
+    }
+    .cast-card-actions-row {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      justify-content: space-between !important;
+    }
+    .preset-char-strip {
+      padding-bottom: 6px !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+    .preset-char-chip {
+      padding: 6px 11px !important;
+      font-size: 12px !important;
+      white-space: nowrap !important;
+    }
+    #charExpressionGrid {
+      grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)) !important;
+      gap: 10px !important;
+    }
+    .char-expr-card {
+      padding: 8px !important;
+      gap: 6px !important;
+    }
+    .char-expr-img-wrap {
+      width: 52px !important;
+      height: 52px !important;
+    }
+    .char-expr-name {
+      font-size: 11px !important;
+    }
+    .char-expr-tag {
+      font-size: 9.5px !important;
+    }
+  }
+
+  /* Expression edit button */
+  .char-expr-edit-btn {
+    background: #334155;
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .char-expr-edit-btn:hover {
+    background: #6366f1;
+    border-color: #818cf8;
+    color: #fff;
+  }
+
+

@@ -196,7 +196,15 @@
   </div>
 
   <!-- === 3-DOTS STUDIO DROPDOWN MENU (STREAMLINED & UNCLUTTERED) === -->
-  <div class="dropdown-menu" id="studioDropdown" style="width:250px;">
+  <div class="dropdown-menu" id="studioDropdown" style="width:260px;">
+    <div style="padding:6px 12px 4px 12px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">
+      <span>📱</span><span>Active App Interface</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; padding:2px 10px 8px 10px; border-bottom:1px solid #334155;">
+      <button type="button" class="btn-app-quick-chip" id="quickChipWa" onclick="switchAppMode('whatsapp'); closeDropdownMenu();">💬 WA</button>
+      <button type="button" class="btn-app-quick-chip" id="quickChipGpt" onclick="switchAppMode('chatgpt'); closeDropdownMenu();">🤖 GPT</button>
+      <button type="button" class="btn-app-quick-chip" id="quickChipGemini" onclick="switchAppMode('gemini'); closeDropdownMenu();">✨ Gemini</button>
+    </div>
     <div class="dropdown-item" style="color:#38bdf8; font-weight:800;" onclick="restartCinemaPlayback(); closeDropdownMenu();">⏮️ Restart Auto-Play from Start</div>
     <div class="dropdown-item" id="menuThemeToggleItem" onclick="toggleChatStyle(); closeDropdownMenu();">🎨 Style: <b>Realistic WhatsApp</b></div>
     <div class="dropdown-item" onclick="openStoriesModal(); closeDropdownMenu();">📁 Saved Stories & Episodes</div>
@@ -325,6 +333,7 @@
       <div class="deck-actions-right">
         <button type="button" class="side-switch-btn" id="sideSwitchBtn" onclick="toggleCurrentCharSide()" title="Toggle bubble side (Left / Right)">⇄ Side: Left</button>
         <button type="button" class="deck-toggle-mode-btn" id="deckToggleModeBtn" onclick="toggleDirectorDeckMode()" title="Toggle between single character and all characters strip">👥 All</button>
+        <button type="button" class="deck-toggle-mode-btn" id="deckQuickAppBtn" onclick="cycleQuickAppMode()" title="Switch Interface (WhatsApp / ChatGPT / Gemini)" style="background:#0284c7; border-color:#38bdf8; color:#fff;">📱 App</button>
       </div>
     </div>
 
@@ -334,6 +343,7 @@
       <div class="deck-actions-right">
         <button type="button" class="side-switch-btn" id="sideSwitchBtnStrip" onclick="toggleCurrentCharSide()" title="Toggle bubble side (Left / Right)">⇄ Side: Left</button>
         <button type="button" class="deck-toggle-mode-btn" onclick="toggleDirectorDeckMode()" title="Back to Single Selected Character mode">👤 Single</button>
+        <button type="button" class="deck-toggle-mode-btn" onclick="cycleQuickAppMode()" title="Switch Interface (WhatsApp / ChatGPT / Gemini)" style="background:#0284c7; border-color:#38bdf8; color:#fff;">📱 App</button>
       </div>
     </div>
 
@@ -779,6 +789,38 @@
 </div>
 
 <!-- ===================================================================== -->
+<!-- MODAL: EDIT EXPRESSION (RENAME & TWEAK EMOTION TAG)                   -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop" id="exprEditModal" style="z-index:10030;">
+  <div class="modal-window" style="max-width:390px; border-color:#818cf8;">
+    <div class="modal-header" style="background:#1e1b4b; border-bottom:2px solid #6366f1;">
+      <span class="modal-title" style="color:#c7d2fe; font-size:15px;">✏️ Edit Facial Expression</span>
+      <button class="modal-close-btn" onclick="closeExprEditModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:18px 20px; display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div id="exprEditAvatarPreview" style="width:54px; height:54px; border-radius:50%; border:2px solid #818cf8; overflow:hidden; flex-shrink:0;">
+          <img id="exprEditAvatarImg" src="" alt="Expression" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <div>
+          <strong id="exprEditCharName" style="font-size:14px; color:#f8fafc;">Character</strong>
+          <p id="exprEditCurrentTag" style="font-size:11.5px; color:#94a3b8; margin:2px 0 0 0;">Tag: [Name:tag]</p>
+        </div>
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Emotion / Tag Name</label>
+        <input type="text" class="form-input" id="exprEditNameInput" placeholder="e.g. dorayaki_bliss, smirk, angry" style="margin-top:4px;">
+        <p style="font-size:10.5px; color:#64748b; margin:4px 0 0 0;">In scripts, messages matching <code style="color:#facc15;">[Character:tag]</code> use this face.</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn-secondary-comic" style="flex:1;" onclick="closeExprEditModal()">Cancel</button>
+        <button type="button" class="btn-primary-comic" style="flex:1.2; background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);" onclick="saveEditedExpression()">💾 Save Expression</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
 <!-- MODAL: INTERACTIVE CIRCULAR AVATAR CROPPER                            -->
 <!-- ===================================================================== -->
 <div class="modal-backdrop" id="cropperModal" style="z-index:10020;">
@@ -850,10 +892,19 @@
             <span class="script-tag-pill" title="Episode or scene title banner">[SYSTEM: text]</span>
             <span class="script-tag-pill" title="Playback speed change">[SPEED: 1.2x]</span>
           </div>
-          <div style="display:flex; gap:5px; margin-left:auto;">
-            <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template for ChatGPT / Claude / Gemini">📋 Copy AI Prompt</button>
+          <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap;">
+            <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template with characters, custom expressions & vault stickers">📋 Copy AI Prompt</button>
             <button type="button" class="icon-btn" style="background:#8b5cf6; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertScriptToJsonView()" title="Convert script into JSON">🔄 To JSON</button>
             <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a; font-size:11px; padding:4px 9px;" onclick="loadDemoScriptIntoModal()">⚡ Sample</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin:4px 0 2px 0; flex-wrap:wrap;">
+          <span style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase;">Dialogue Script Editor</span>
+          <div style="display:flex; gap:5px;">
+            <button type="button" class="icon-btn" style="background:#1e293b; border:1px solid #334155; font-size:11px; padding:3px 9px;" onclick="copyScriptInputText()" title="Copy script to clipboard">📋 Copy</button>
+            <button type="button" class="icon-btn" style="background:#1e293b; border:1px solid #334155; font-size:11px; padding:3px 9px;" onclick="pasteScriptInputText()" title="Paste text from clipboard">📥 Paste</button>
+            <button type="button" class="icon-btn danger" style="background:#450a0a; border:1px solid #991b1b; color:#fca5a5; font-size:11px; padding:3px 9px;" onclick="clearScriptInputText()" title="Clear script editor">🗑️ Clear</button>
           </div>
         </div>
 
@@ -886,7 +937,10 @@
           <p style="font-size:11px; color:#cbd5e1; margin:0;">
             Paste full story JSON or convert your current script to inspect automatic timings & sound attributes.
           </p>
-          <div style="display:flex; gap:5px;">
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <button type="button" class="icon-btn" style="background:#1e293b; border:1px solid #334155; font-size:11px; padding:3px 9px;" onclick="copyScriptJsonText()" title="Copy JSON to clipboard">📋 Copy</button>
+            <button type="button" class="icon-btn" style="background:#1e293b; border:1px solid #334155; font-size:11px; padding:3px 9px;" onclick="pasteScriptJsonText()" title="Paste JSON from clipboard">📥 Paste</button>
+            <button type="button" class="icon-btn danger" style="background:#450a0a; border:1px solid #991b1b; color:#fca5a5; font-size:11px; padding:3px 9px;" onclick="clearScriptJsonText()" title="Clear JSON editor">🗑️ Clear</button>
             <button type="button" class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 9px;" onclick="exportCurrentChatToJsonBox()">📥 Current Chat ➔ JSON</button>
             <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertJsonToScriptView()">🔄 To Script</button>
           </div>
@@ -1061,9 +1115,10 @@
       <!-- CURRENT STORY TITLE & SAVE -->
       <div style="background:#0f172a; border:1.5px solid #334155; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px;">
         <label class="form-label" style="margin:0; font-size:11px; color:#94a3b8; text-transform:uppercase;">Current Episode Title</label>
-        <div style="display:flex; gap:8px;">
-          <input type="text" class="form-input" id="currentStoryTitleInput" placeholder="e.g. Episode 1: Dorayaki Crisis" style="flex:1;">
-          <button class="icon-btn" style="background:#00a884; color:#fff; padding:6px 14px;" onclick="saveCurrentStory()">💾 Save</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="text" class="form-input" id="currentStoryTitleInput" placeholder="e.g. Episode 1: Dorayaki Crisis" style="flex:1; min-width:160px;">
+          <button class="icon-btn" style="background:#00a884; color:#fff; padding:6px 13px; font-weight:700;" onclick="saveCurrentStory(false)" title="Update current saved story">💾 Save</button>
+          <button class="icon-btn" style="background:#3b82f6; color:#fff; padding:6px 11px; font-weight:700;" onclick="saveCurrentStory(true)" title="Save as a new episode copy">+ Copy</button>
         </div>
       </div>
 
@@ -1079,11 +1134,11 @@
       <input type="file" id="hiddenStoryImportInput" accept=".json,application/json" style="display:none;" onchange="importStoryFromFile(event)">
 
       <!-- STORIES LIST CONTAINER -->
-      <div id="storiesListContainer" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; padding-right:2px;"></div>
+      <div id="storiesListContainer" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding-right:2px;"></div>
     </div>
   </div>
 </div>
 
-<script src="app.js?v=3.0"></script>
+<script src="app.js?v=3.2"></script>
 </body>
 </html>
