@@ -22,9 +22,11 @@
 <!-- Fullscreen Particle Canvas (Laughing Tears, Crying Rain, Rage Fire, Hearts) -->
 <!-- Hidden File Inputs for Custom Uploads -->
 <input type="file" id="hiddenAvatarInput" accept="image/*" style="display:none">
-<input type="file" id="hiddenMediaInput" multiple accept="image/*,video/*" style="display:none" onchange="handleMultipleMediaUpload(event)">
+<input type="file" id="hiddenMediaInput" multiple accept="image/*,video/*,audio/*" style="display:none" onchange="handleMultipleMediaUpload(event)">
+<input type="file" id="hiddenImageOnlyInput" multiple accept="image/*" style="display:none" onchange="handleMultipleMediaUpload(event, 'image')">
+<input type="file" id="hiddenVideoOnlyInput" multiple accept="video/*" style="display:none" onchange="handleMultipleMediaUpload(event, 'video')">
 <input type="file" id="hiddenWallpaperInput" accept="image/*" style="display:none">
-<input type="file" id="hiddenSoundInput" accept="audio/*" style="display:none">
+<input type="file" id="hiddenSoundInput" accept="audio/*" style="display:none" onchange="handleSoundUpload(event)">
 
 <div class="phone-wrapper ratio-9-16 app-whatsapp" id="phoneWrapper">
 
@@ -197,13 +199,21 @@
 
   <!-- === 3-DOTS STUDIO DROPDOWN MENU (STREAMLINED & UNCLUTTERED) === -->
   <div class="dropdown-menu" id="studioDropdown" style="width:260px;">
-    <div style="padding:6px 12px 4px 12px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">
+    <div style="padding:6px 12px 2px 12px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">
       <span>📱</span><span>Active App Interface</span>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; padding:2px 10px 8px 10px; border-bottom:1px solid #334155;">
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; padding:2px 10px 6px 10px;">
       <button type="button" class="btn-app-quick-chip" id="quickChipWa" onclick="switchAppMode('whatsapp'); closeDropdownMenu();">💬 WA</button>
       <button type="button" class="btn-app-quick-chip" id="quickChipGpt" onclick="switchAppMode('chatgpt'); closeDropdownMenu();">🤖 GPT</button>
       <button type="button" class="btn-app-quick-chip" id="quickChipGemini" onclick="switchAppMode('gemini'); closeDropdownMenu();">✨ Gemini</button>
+    </div>
+    <div style="padding:4px 12px 2px 12px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px; border-top:1px solid #1e293b;">
+      <span>💬</span><span>WhatsApp Chat Mode</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; padding:2px 10px 8px 10px; border-bottom:1px solid #334155;">
+      <button type="button" class="btn-app-quick-chip" id="quickWaModeGroup" onclick="setWhatsAppChatType('group'); closeDropdownMenu();">👥 Group</button>
+      <button type="button" class="btn-app-quick-chip" id="quickWaModePrivate" onclick="setWhatsAppChatType('private'); closeDropdownMenu();">🔒 Private</button>
+      <button type="button" class="btn-app-quick-chip" id="quickWaModeGlobal" onclick="setWhatsAppChatType('global'); closeDropdownMenu();">🌍 Global</button>
     </div>
     <div class="dropdown-item" style="color:#38bdf8; font-weight:800;" onclick="restartCinemaPlayback(); closeDropdownMenu();">⏮️ Restart Auto-Play from Start</div>
     <div class="dropdown-item" id="menuThemeToggleItem" onclick="toggleChatStyle(); closeDropdownMenu();">🎨 Style: <b>Realistic WhatsApp</b></div>
@@ -365,11 +375,14 @@
     <div class="drawer-tabs">
       <div class="drawer-tab-group">
         <button class="drawer-tab active" id="tabBtnStickers" onclick="switchDrawerTab('stickers')">🎭 Stickers</button>
+        <button class="drawer-tab" id="tabBtnImages" onclick="switchDrawerTab('images')">🖼️ Images</button>
+        <button class="drawer-tab" id="tabBtnVideos" onclick="switchDrawerTab('videos')">🎬 Videos</button>
+        <button class="drawer-tab" id="tabBtnAudio" onclick="switchDrawerTab('audio')">🎵 Songs</button>
         <button class="drawer-tab" id="tabBtnUploads" onclick="switchDrawerTab('uploads')">📁 Vault</button>
         <button class="drawer-tab" id="tabBtnSfx" onclick="switchDrawerTab('sfx')">💥 Manga SFX</button>
-        <button class="drawer-tab" id="tabBtnSounds" onclick="switchDrawerTab('sounds')">🔊 Soundboard</button>
+        <button class="drawer-tab" id="tabBtnSounds" onclick="switchDrawerTab('sounds')">🔊 Sounds</button>
       </div>
-      <button class="icon-btn" style="padding:3px 9px; font-size:11px; background:#00a884;" onclick="triggerCustomUploadForDrawer()" title="Upload multiple images, stickers, GIFs, or short videos">+ Upload</button>
+      <button class="icon-btn" style="padding:3px 9px; font-size:11px; background:#00a884;" onclick="triggerCustomUploadForDrawer()" title="Upload media files (Images, Videos, Songs, Stickers)">+ Upload</button>
     </div>
     <!-- FIXED SUB-FILTER BAR (ALWAYS VISIBLE, NEVER SCROLLS AWAY OR OVERLAPS) -->
     <div class="drawer-subbar" id="drawerSubBar"></div>
@@ -388,6 +401,7 @@
   <!-- === WHATSAPP BOTTOM COMPOSER BAR === -->
   <div class="wa-input-bar" id="waInputBar">
     <button type="button" class="input-action-btn global-settings-btn" id="globalSettingsBtn" onclick="openGlobalSettingsModal()" title="Global Studio Settings & App Switcher">🌐</button>
+    <button type="button" class="input-action-btn" id="attachToggleBtn" onclick="toggleAttachMenu()" title="Attach Images, Videos, Songs & Files">📎</button>
     <button class="input-action-btn" id="stickerToggleBtn" onclick="toggleStickerDrawer()" title="Open Stickers, Reactions & Sound FX">😊</button>
     <textarea rows="1" class="wa-text-input" id="chatMessageInput" placeholder="Type a message..." autocomplete="off"></textarea>
     <button class="wa-send-btn" onclick="sendUserMessage()" title="Send Message">
@@ -630,24 +644,61 @@
 <div class="modal-backdrop" id="groupModal" style="z-index:9999;">
   <div class="modal-window" style="max-width:440px;">
     <div class="modal-header">
-      <span class="modal-title">🖼️ Group & Stage Settings</span>
+      <span class="modal-title">💬 WhatsApp Chat Mode & Stage</span>
       <button class="modal-close-btn" onclick="closeGroupModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div class="cast-dp-btn" style="width:64px; height:64px;" onclick="startAvatarCrop('GROUP')">
-          <img id="modalGroupDpPreview" src="" alt="Group DP">
-          <div class="cast-dp-overlay" style="opacity:1; top:auto; height:18px;">CROP</div>
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
-          <label class="form-label">Group Title</label>
-          <input type="text" class="form-input" id="groupNameInput" placeholder="Enter Group Name">
+      <!-- CONVERSATION TYPE SWITCHER -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label" style="font-size:11px; text-transform:uppercase; color:#94a3b8;">WhatsApp Chat Mode</label>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+          <button type="button" class="icon-btn wa-mode-chip active" id="modalWaModeGroup" onclick="setWhatsAppChatType('group')">👥 Group</button>
+          <button type="button" class="icon-btn wa-mode-chip" id="modalWaModePrivate" onclick="setWhatsAppChatType('private')">🔒 Private DM</button>
+          <button type="button" class="icon-btn wa-mode-chip" id="modalWaModeGlobal" onclick="setWhatsAppChatType('global')">🌍 Global</button>
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Subtitle / Participants Status</label>
-        <input type="text" class="form-input" id="groupStatusInput" placeholder="Leave blank to auto-list cast names">
+      <!-- GROUP MODE SECTION -->
+      <div id="waGroupModeSection">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="cast-dp-btn" style="width:64px; height:64px;" onclick="startAvatarCrop('GROUP')">
+            <img id="modalGroupDpPreview" src="" alt="Group DP">
+            <div class="cast-dp-overlay" style="opacity:1; top:auto; height:18px;">CROP</div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+            <label class="form-label">Group Title</label>
+            <input type="text" class="form-input" id="groupNameInput" placeholder="Enter Group Name">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label class="form-label">Subtitle / Participants Status</label>
+          <input type="text" class="form-input" id="groupStatusInput" placeholder="Leave blank to auto-list cast names">
+        </div>
+      </div>
+
+      <!-- PRIVATE DM MODE SECTION -->
+      <div id="waPrivateModeSection" style="display:none; background:#090d16; border:1px solid #334155; border-radius:12px; padding:12px; margin-bottom:10px;">
+        <div class="form-group">
+          <label class="form-label">Private Chat Partner (Character to DM 1-on-1)</label>
+          <select class="form-select" id="groupPrivateCharSelect" onchange="onPrivateCharSelectChange(this.value)"></select>
+        </div>
+        <div class="form-group" style="margin-top:8px;">
+          <label class="form-label">Header Status (e.g. online, typing..., last seen)</label>
+          <input type="text" class="form-input" id="groupPrivateStatusInput" placeholder="e.g. online" value="online">
+        </div>
+      </div>
+
+      <!-- GLOBAL CHANNEL MODE SECTION -->
+      <div id="waGlobalModeSection" style="display:none; background:#090d16; border:1px solid #334155; border-radius:12px; padding:12px; margin-bottom:10px;">
+        <div class="form-group">
+          <label class="form-label">Global Channel / Community Name</label>
+          <input type="text" class="form-input" id="groupGlobalNameInput" placeholder="e.g. 🌍 Global Hunters Network" value="🌍 Global Hunters Network">
+        </div>
+        <div class="form-group" style="margin-top:8px;">
+          <label class="form-label">Channel Members / Broadcast Subtitle</label>
+          <input type="text" class="form-input" id="groupGlobalMembersInput" placeholder="e.g. 1,420,500 members • Public Broadcast" value="1,420,500 members • Public Broadcast">
+        </div>
       </div>
 
       <div class="form-group">
@@ -983,6 +1034,40 @@
       <button class="modal-close-btn" onclick="closeMessageEditModal()">✕</button>
     </div>
     <div class="modal-body">
+      <!-- MESSAGE FORMAT / TYPE SELECTOR -->
+      <div class="form-group" id="msgEditTypeGroup" style="margin-bottom:8px;">
+        <label class="form-label" style="font-size:11px; text-transform:uppercase; color:#94a3b8;">Message Format & Media</label>
+        <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:4px;">
+          <button type="button" class="icon-btn msg-type-chip active" id="msgTypeChipText" onclick="setEditingMessageType('text')" style="justify-content:center; padding:5px 2px; font-size:11px;">📝 Text</button>
+          <button type="button" class="icon-btn msg-type-chip" id="msgTypeChipImage" onclick="setEditingMessageType('image')" style="justify-content:center; padding:5px 2px; font-size:11px;">🖼️ Image</button>
+          <button type="button" class="icon-btn msg-type-chip" id="msgTypeChipSticker" onclick="setEditingMessageType('sticker')" style="justify-content:center; padding:5px 2px; font-size:11px;">🎭 Sticker</button>
+          <button type="button" class="icon-btn msg-type-chip" id="msgTypeChipVideo" onclick="setEditingMessageType('video')" style="justify-content:center; padding:5px 2px; font-size:11px;">🎬 Video</button>
+          <button type="button" class="icon-btn msg-type-chip" id="msgTypeChipAudio" onclick="setEditingMessageType('audio')" style="justify-content:center; padding:5px 2px; font-size:11px;">🎵 Audio</button>
+        </div>
+      </div>
+
+      <!-- MEDIA ATTACHMENT & PREVIEW BOX -->
+      <div id="msgEditMediaSection" style="display:none; background:#090d16; border:1px solid #334155; border-radius:12px; padding:10px; margin-bottom:10px; flex-direction:column; gap:8px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span id="msgEditMediaTitle" style="font-size:11px; font-weight:800; color:#facc15; text-transform:uppercase;">Attach Media</span>
+          <button type="button" class="icon-btn danger" style="padding:2px 7px; font-size:10px;" onclick="clearEditingMediaAttachment()" title="Remove attached media">✕ Remove</button>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div id="msgEditMediaPreviewWrap" style="width:62px; height:62px; border-radius:8px; background:#1e293b; border:1px dashed #475569; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
+            <span style="font-size:22px; color:#64748b;">📷</span>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="icon-btn" style="background:#00a884; font-size:11px; padding:5px 9px;" onclick="triggerMsgEditFilePick()">📁 Choose File</button>
+              <button type="button" class="icon-btn" id="msgEditVaultPickBtn" style="background:#3b82f6; font-size:11px; padding:5px 9px;" onclick="pickMediaFromVaultForEdit()">📦 From Vault</button>
+            </div>
+            <input type="text" class="form-input" id="msgEditMediaUrlInput" placeholder="Or paste media URL..." style="font-size:11px; padding:5px 8px;" oninput="onMsgEditUrlInput(this.value)">
+          </div>
+        </div>
+        <input type="file" id="msgEditFileInput" style="display:none;" onchange="handleMsgEditFileUpload(event)">
+      </div>
+
       <div class="form-group" id="msgEditSpeakerGroup">
         <label class="form-label">Speaking Character & Expression</label>
         <div style="display:flex; gap:8px;">
@@ -999,7 +1084,7 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Dialogue / Text Content</label>
+        <label class="form-label" id="msgEditContentLabel">Dialogue / Text Content</label>
         <textarea class="form-textarea" id="msgEditTextarea" rows="3"></textarea>
       </div>
 
@@ -1135,6 +1220,19 @@
 
       <!-- STORIES LIST CONTAINER -->
       <div id="storiesListContainer" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding-right:2px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- === VAULT MEDIA PICKER MODAL (FOR EDITING & ATTACHMENTS) === -->
+<div class="modal-backdrop" id="vaultPickModal">
+  <div class="modal-window" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title" id="vaultPickModalTitle">📁 Select Media from Vault</span>
+      <button class="modal-close-btn" onclick="closeVaultPickModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
+      <div id="vaultPickModalGrid" class="drawer-media-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
     </div>
   </div>
 </div>

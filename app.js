@@ -141,9 +141,15 @@
   }
 
   let groupProfile = {
+    chatType: 'group', // 'group' | 'private' | 'global'
     name: 'Anime Squad Hub ⚡',
     status: '',
     dp: makeComicAvatarDataUri('AS', '#f59e0b', '⚡'),
+    privateCharId: 'c1',
+    privateStatus: 'online',
+    globalName: '🌍 Global Hunters Network',
+    globalMembers: '1,420,500 members • Public Broadcast',
+    globalDp: makeComicAvatarDataUri('GL', '#0284c7', '🌍'),
     wallpaper: 'wall-doodle',
     customWallpaperData: null,
     aspectRatio: 'ratio-9-16'
@@ -1652,11 +1658,43 @@ function playSciFiChimeSound() {
      5. RENDER GROUP HEADER, WALLPAPER & DIRECTOR STRIP
      ===================================================================== */
   function renderGroupHeader() {
-    document.getElementById('headerGroupDp').src = groupProfile.dp;
-    document.getElementById('headerGroupName').textContent = groupProfile.name;
+    const chatType = groupProfile.chatType || 'group';
+    const headerDp = document.getElementById('headerGroupDp');
+    const headerName = document.getElementById('headerGroupName');
+    const headerStatus = document.getElementById('headerGroupStatus');
 
-    const autoStatus = characters.map(c => c.name).join(', ');
-    document.getElementById('headerGroupStatus').textContent = groupProfile.status.trim() || autoStatus;
+    if (chatType === 'private') {
+      let pChar = characters.find(c => c.id === groupProfile.privateCharId);
+      if (!pChar && characters.length > 0) pChar = characters[0];
+      if (headerDp) headerDp.src = pChar ? pChar.avatar : groupProfile.dp;
+      if (headerName) headerName.textContent = pChar ? pChar.name : 'Private Chat';
+      if (headerStatus) {
+        headerStatus.innerHTML = `<span class="wa-online-pulse"></span>${escapeHtml(groupProfile.privateStatus || 'online')}`;
+      }
+    } else if (chatType === 'global') {
+      if (headerDp) headerDp.src = groupProfile.globalDp || groupProfile.dp;
+      if (headerName) {
+        headerName.innerHTML = `${escapeHtml(groupProfile.globalName || '🌍 Global Hunters Network')} <span class="wa-verified-badge" title="Official Broadcast Channel">✓</span>`;
+      }
+      if (headerStatus) {
+        headerStatus.textContent = groupProfile.globalMembers || '1,420,500 members • Public Broadcast';
+      }
+    } else {
+      // Squad Group Chat
+      if (headerDp) headerDp.src = groupProfile.dp;
+      if (headerName) headerName.textContent = groupProfile.name;
+      const autoStatus = characters.map(c => c.name).join(', ');
+      if (headerStatus) headerStatus.textContent = groupProfile.status.trim() || autoStatus;
+    }
+
+    // Update active chips in dropdown & modal
+    ['Group', 'Private', 'Global'].forEach(m => {
+      const modeLower = m.toLowerCase();
+      const qBtn = document.getElementById('quickWaMode' + m);
+      if (qBtn) qBtn.classList.toggle('active', chatType === modeLower);
+      const mBtn = document.getElementById('modalWaMode' + m);
+      if (mBtn) mBtn.classList.toggle('active', chatType === modeLower);
+    });
 
     const wallEl = document.getElementById('wallpaperLayer');
     wallEl.className = 'wallpaper-layer ' + (groupProfile.wallpaper || 'wall-doodle');
@@ -2118,9 +2156,10 @@ if (msg.type === 'quest') {
         <img class="char-avatar-img" src="${getCharacterAvatarForExpr(char, expr)}" alt="${escapeHtml(char.name)}">
       </div>
       <div class="bubble-wrapper">
+        ${(activeAppMode === 'whatsapp' && (groupProfile.chatType || 'group') === 'private') ? '' : `
         <div class="sender-name-label" style="color: ${char.color}">
           <span>${escapeHtml(char.name)}</span>
-        </div>
+        </div>`}
         ${bubbleContentHtml}
       </div>
     `;
@@ -2437,16 +2476,70 @@ if (msg.type === 'quest') {
     if (isOpen) renderDrawerContent();
   }
 
+  function toggleAttachMenu() {
+    const drawer = document.getElementById('stickerDrawer');
+    if (!drawer) return;
+    const isOpen = drawer.classList.contains('open');
+    if (!isOpen) {
+      drawer.classList.add('open');
+      const sBtn = document.getElementById('stickerToggleBtn');
+      if (sBtn) sBtn.classList.add('active');
+      switchDrawerTab('images');
+    } else {
+      if (activeDrawerTab === 'images' || activeDrawerTab === 'videos' || activeDrawerTab === 'audio') {
+        drawer.classList.remove('open');
+        const sBtn = document.getElementById('stickerToggleBtn');
+        if (sBtn) sBtn.classList.remove('active');
+      } else {
+        switchDrawerTab('images');
+      }
+    }
+  }
+
+  function sendMediaItemToChat(mediaItem, explicitType = null) {
+    flushPendingLiveMessage();
+    const char = characters.find(c => c.id === currentCharId) || characters[0];
+    const isVideo = explicitType === 'video' || (!explicitType && (mediaItem.isVideo || mediaItem.mediaType === 'video'));
+    const isAudio = explicitType === 'audio' || (!explicitType && (mediaItem.isAudio || mediaItem.mediaType === 'audio' || mediaItem.data));
+    const isImage = explicitType === 'image' || (!isVideo && !isAudio);
+
+    let newMsgType = 'image';
+    if (isVideo) newMsgType = 'video';
+    else if (isAudio) newMsgType = 'audio';
+
+    const newMsg = {
+      id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      type: newMsgType,
+      charId: char.id,
+      expr: currentExpr || 'normal',
+      replyToId: activeReplyMsgId || null,
+      time: getNextStoryTime(),
+      imageUrl: isImage ? (mediaItem.imageUrl || mediaItem.url || '') : null,
+      videoUrl: isVideo ? (mediaItem.videoUrl || mediaItem.imageUrl || mediaItem.url || '') : null,
+      audioUrl: isAudio ? (mediaItem.data || mediaItem.audioUrl || mediaItem.url || '') : null,
+      label: mediaItem.label || mediaItem.name || (isVideo ? 'Video' : (isAudio ? 'Song' : 'Photo')),
+      caption: ''
+    };
+
+    messages.push(newMsg);
+    clearActiveReply();
+    saveStudioState();
+    renderChatStream();
+
+    if (isAudio && (newMsg.audioUrl)) {
+      playCustomAudio(newMsg.audioUrl);
+    } else {
+      playPopSound(char.pitch || 1.05);
+    }
+    showToast(`Sent ${newMsgType} to chat`);
+  }
+
   function switchDrawerTab(tabName) {
     activeDrawerTab = tabName;
-    const btnStickers = document.getElementById('tabBtnStickers');
-    const btnUploads = document.getElementById('tabBtnUploads');
-    const btnSfx = document.getElementById('tabBtnSfx');
-    const btnSounds = document.getElementById('tabBtnSounds');
-    if (btnStickers) btnStickers.classList.toggle('active', tabName === 'stickers');
-    if (btnUploads) btnUploads.classList.toggle('active', tabName === 'uploads');
-    if (btnSfx) btnSfx.classList.toggle('active', tabName === 'sfx');
-    if (btnSounds) btnSounds.classList.toggle('active', tabName === 'sounds');
+    ['stickers', 'images', 'videos', 'audio', 'uploads', 'sfx', 'sounds'].forEach(t => {
+      const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+      if (btn) btn.classList.toggle('active', tabName === t);
+    });
     const grid = document.getElementById('drawerGridContent');
     if (grid) grid.scrollTop = 0;
     renderDrawerContent();
@@ -2457,7 +2550,7 @@ if (msg.type === 'quest') {
     const subBar = document.getElementById('drawerSubBar');
     grid.innerHTML = '';
 
-    // Handle Fixed Category Sub-Bar (Permanent strip above grid: Never scrolls off or overlaps)
+    // Handle Fixed Category Sub-Bar
     if (subBar) {
       subBar.innerHTML = '';
       if (activeDrawerTab === 'sfx') {
@@ -2503,37 +2596,65 @@ if (msg.type === 'quest') {
           };
           subBar.appendChild(b);
         });
-      } else if (activeDrawerTab === 'stickers' || activeDrawerTab === 'uploads') {
+      } else if (['images', 'videos', 'audio', 'stickers', 'uploads'].includes(activeDrawerTab)) {
         subBar.classList.add('active');
         subBar.innerHTML = '';
 
-        // Live Size Slider
-        const sliderWrap = document.createElement('div');
-        sliderWrap.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:11px; color:#cbd5e1; flex-shrink:0;';
-        sliderWrap.innerHTML = `
-          <span title="Adjust sticker display size in chat">📏 Size:</span>
-          <input type="range" id="drawerStickerSizeSlider" min="70" max="170" step="5" value="${chatStickerSize}" oninput="updateChatStickerSize(this.value)" style="width:70px; accent-color:#facc15; cursor:pointer;">
-          <span id="drawerStickerSizeLabel" style="font-size:10px; font-weight:800; color:#facc15; min-width:32px;">${chatStickerSize}px</span>
-        `;
-        subBar.appendChild(sliderWrap);
+        // Live Size Slider (for visual media tabs)
+        if (activeDrawerTab !== 'audio') {
+          const sliderWrap = document.createElement('div');
+          sliderWrap.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:11px; color:#cbd5e1; flex-shrink:0;';
+          sliderWrap.innerHTML = `
+            <span title="Adjust sticker & media size">📏:</span>
+            <input type="range" id="drawerStickerSizeSlider" min="70" max="170" step="5" value="${chatStickerSize}" oninput="updateChatStickerSize(this.value)" style="width:65px; accent-color:#facc15; cursor:pointer;">
+            <span id="drawerStickerSizeLabel" style="font-size:10px; font-weight:800; color:#facc15; min-width:30px;">${chatStickerSize}px</span>
+          `;
+          subBar.appendChild(sliderWrap);
+        }
 
         // Edit Mode Toggle Button
         const editModeBtn = document.createElement('button');
         editModeBtn.type = 'button';
         editModeBtn.className = `subbar-pill ${isDrawerEditMode ? 'active' : ''}`;
         editModeBtn.style.cssText = isDrawerEditMode ? 'background:#facc15; color:#0f172a; font-weight:900;' : '';
-        editModeBtn.innerHTML = isDrawerEditMode ? '✅ Done' : '✏️ Edit Mode';
-        editModeBtn.title = isDrawerEditMode ? 'Done editing (return to tap-to-send)' : 'Toggle edit mode to rename sticker labels';
+        editModeBtn.innerHTML = isDrawerEditMode ? '✅ Done' : '✏️ Edit';
+        editModeBtn.title = isDrawerEditMode ? 'Done editing' : 'Toggle edit mode to rename or delete items';
         editModeBtn.onclick = (e) => {
           e.stopPropagation();
           toggleDrawerEditMode();
         };
         subBar.appendChild(editModeBtn);
 
-        const count = (activeDrawerTab === 'stickers') ? builtInStickers.length : customStickers.length;
+        // Upload shortcut button
+        const upBtn = document.createElement('button');
+        upBtn.type = 'button';
+        upBtn.className = 'subbar-pill';
+        upBtn.style.cssText = 'background:#00a884; color:#fff; font-weight:700;';
+        upBtn.textContent = (activeDrawerTab === 'images') ? '+ Image' : ((activeDrawerTab === 'videos') ? '+ Video' : ((activeDrawerTab === 'audio') ? '+ Song' : '+ Upload'));
+        upBtn.onclick = (e) => {
+          e.stopPropagation();
+          triggerCustomUploadForDrawer();
+        };
+        subBar.appendChild(upBtn);
+
+        // Count indicator
+        let countLabel = '';
+        if (activeDrawerTab === 'stickers') {
+          countLabel = `${builtInStickers.length} Stickers`;
+        } else if (activeDrawerTab === 'images') {
+          const c = customStickers.filter(s => !s.isVideo && s.mediaType !== 'video' && s.mediaType !== 'audio').length;
+          countLabel = `${c} Images`;
+        } else if (activeDrawerTab === 'videos') {
+          const c = customStickers.filter(s => s.isVideo || s.mediaType === 'video').length;
+          countLabel = `${c} Videos`;
+        } else if (activeDrawerTab === 'audio') {
+          countLabel = `${customAudioClips.length} Songs`;
+        } else {
+          countLabel = `${customStickers.length} Vault Items`;
+        }
         const countSpan = document.createElement('span');
         countSpan.style.cssText = 'font-size:11px; font-weight:800; color:#94a3b8; align-self:center; margin-left:auto;';
-        countSpan.textContent = activeDrawerTab === 'stickers' ? `${count} Stickers` : `${count} Uploads`;
+        countSpan.textContent = countLabel;
         subBar.appendChild(countSpan);
       } else {
         subBar.classList.remove('active');
@@ -2563,13 +2684,105 @@ if (msg.type === 'quest') {
         `;
         grid.appendChild(card);
       });
+    } else if (activeDrawerTab === 'images') {
+      const imagesList = customStickers.filter(s => !s.isVideo && s.mediaType !== 'video' && s.mediaType !== 'audio');
+      if (imagesList.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 10px; color:#94a3b8; text-align:center; gap:8px;">
+            <span style="font-size:36px;">🖼️</span>
+            <strong style="color:#f8fafc; font-size:13px;">No Images in Vault</strong>
+            <p style="font-size:11px; max-width:240px; margin:0;">Upload manhwa panels, reaction photos, screenshots, or meme images.</p>
+            <button class="icon-btn" style="background:#00a884; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="document.getElementById('hiddenImageOnlyInput').click()">+ Upload Images</button>
+          </div>
+        `;
+        return;
+      }
+      imagesList.forEach((st) => {
+        const card = document.createElement('div');
+        card.className = `sticker-option-item ${isDrawerEditMode ? 'vault-edit-mode' : ''}`;
+        card.onclick = () => {
+          if (isDrawerEditMode) {
+            renameCustomSticker(st.id);
+          } else {
+            sendMediaItemToChat(st, 'image');
+          }
+        };
+        card.innerHTML = `
+          ${isDrawerEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
+          ${isDrawerEditMode ? `<div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete Image">✕</div>` : ''}
+          <img src="${st.imageUrl}" alt="Image" style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05);">
+          <span class="sticker-option-label">${escapeHtml(st.label || 'Image')}</span>
+        `;
+        grid.appendChild(card);
+      });
+    } else if (activeDrawerTab === 'videos') {
+      const videosList = customStickers.filter(s => s.isVideo || s.mediaType === 'video');
+      if (videosList.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 10px; color:#94a3b8; text-align:center; gap:8px;">
+            <span style="font-size:36px;">🎬</span>
+            <strong style="color:#f8fafc; font-size:13px;">No Videos in Vault</strong>
+            <p style="font-size:11px; max-width:240px; margin:0;">Upload MP4, WebM clips, anime cutscenes, or manhwa motion graphics.</p>
+            <button class="icon-btn" style="background:#00a884; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="document.getElementById('hiddenVideoOnlyInput').click()">+ Upload Video</button>
+          </div>
+        `;
+        return;
+      }
+      videosList.forEach((st) => {
+        const card = document.createElement('div');
+        card.className = `sticker-option-item ${isDrawerEditMode ? 'vault-edit-mode' : ''}`;
+        card.onclick = () => {
+          if (isDrawerEditMode) {
+            renameCustomSticker(st.id);
+          } else {
+            sendMediaItemToChat(st, 'video');
+          }
+        };
+        card.innerHTML = `
+          ${isDrawerEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
+          ${isDrawerEditMode ? `<div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete Video">✕</div>` : ''}
+          <video src="${st.imageUrl}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05); pointer-events:none;"></video>
+          <span class="sticker-option-label">${escapeHtml(st.label || 'Video')}</span>
+        `;
+        grid.appendChild(card);
+      });
+    } else if (activeDrawerTab === 'audio') {
+      if (customAudioClips.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 10px; color:#94a3b8; text-align:center; gap:8px;">
+            <span style="font-size:36px;">🎵</span>
+            <strong style="color:#f8fafc; font-size:13px;">No Songs or Audio Clips</strong>
+            <p style="font-size:11px; max-width:240px; margin:0;">Upload background songs, anime OST themes, or voice audio clips.</p>
+            <button class="icon-btn" style="background:#00a884; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="document.getElementById('hiddenSoundInput').click()">+ Upload Song / Audio</button>
+          </div>
+        `;
+        return;
+      }
+      customAudioClips.forEach((snd) => {
+        const card = document.createElement('div');
+        card.className = 'sticker-option-item';
+        card.style.background = '#dcfce7';
+        card.onclick = () => {
+          if (isDrawerEditMode) {
+            deleteCustomSound(snd.id);
+          } else {
+            sendMediaItemToChat(snd, 'audio');
+          }
+        };
+        card.innerHTML = `
+          <div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSound('${snd.id}')" title="Delete Song">✕</div>
+          <button type="button" class="icon-btn" style="background:#00a884; color:#fff; border-radius:50%; width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; margin-bottom:4px;" onclick="event.stopPropagation(); playCustomAudio('${snd.data}')" title="Preview Song">▶</button>
+          <span class="sticker-option-label">${escapeHtml(snd.label || 'Song')}</span>
+        `;
+        grid.appendChild(card);
+      });
     } else if (activeDrawerTab === 'uploads') {
-      if (customStickers.length === 0) {
+      if (customStickers.length === 0 && customAudioClips.length === 0) {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 10px; color:#94a3b8; text-align:center; gap:8px;">
             <span style="font-size:36px;">📁</span>
             <strong style="color:#f8fafc; font-size:13px;">Media Vault is Empty</strong>
-            <p style="font-size:11px; max-width:240px; margin:0;">Upload your custom manhwa stickers, memes, PNGs, GIFs, or short video clips.</p>
+            <p style="font-size:11px; max-width:240px; margin:0;">Upload your custom manhwa stickers, memes, PNGs, GIFs, songs, or short video clips.</p>
             <button class="icon-btn" style="background:#00a884; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="triggerCustomUploadForDrawer()">+ Upload Media (Multiple)</button>
           </div>
         `;
@@ -2648,43 +2861,91 @@ if (msg.type === 'quest') {
   }
 
   function triggerCustomUploadForDrawer() {
-    if (activeDrawerTab === 'sounds') {
-      document.getElementById('hiddenSoundInput').click();
+    if (activeDrawerTab === 'sounds' || activeDrawerTab === 'audio') {
+      const sndInp = document.getElementById('hiddenSoundInput');
+      if (sndInp) sndInp.click();
+    } else if (activeDrawerTab === 'videos') {
+      const vidInp = document.getElementById('hiddenVideoOnlyInput');
+      if (vidInp) vidInp.click();
+      else document.getElementById('hiddenMediaInput').click();
+    } else if (activeDrawerTab === 'images') {
+      const imgInp = document.getElementById('hiddenImageOnlyInput');
+      if (imgInp) imgInp.click();
+      else document.getElementById('hiddenMediaInput').click();
     } else {
       document.getElementById('hiddenMediaInput').click();
     }
   }
 
-  function handleMultipleMediaUpload(e) {
+  function handleMultipleMediaUpload(e, explicitFilter = null) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
     let processed = 0;
     files.forEach((file, idx) => {
       const reader = new FileReader();
-      const isVideo = file.type.startsWith('video');
+      const isVideo = explicitFilter === 'video' || file.type.startsWith('video');
+      const isAudio = explicitFilter === 'audio' || file.type.startsWith('audio');
       const cleanBase = file.name.replace(/\.[^/.]+$/, '').trim();
-      const baseLabel = cleanBase.replace(/[\-_]/g, ' ').slice(0, 20).toUpperCase() || 'MEDIA';
+      const baseLabel = cleanBase.replace(/[\-_]/g, ' ').slice(0, 20).toUpperCase() || (isVideo ? 'VIDEO' : (isAudio ? 'SONG' : 'MEDIA'));
 
       reader.onload = (ev) => {
-        customStickers.unshift({
-          id: 'cust_media_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
-          imageUrl: ev.target.result,
-          label: baseLabel,
-          isVideo: isVideo,
-          expr: 'normal',
-          sfx: isVideo ? 'pop' : 'boing',
-          isCustom: true
-        });
+        if (isAudio) {
+          customAudioClips.unshift({
+            id: 'aud_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
+            label: baseLabel,
+            data: ev.target.result,
+            name: file.name
+          });
+        } else {
+          customStickers.unshift({
+            id: 'cust_media_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
+            imageUrl: ev.target.result,
+            label: baseLabel,
+            isVideo: isVideo,
+            mediaType: isVideo ? 'video' : 'image',
+            expr: 'normal',
+            sfx: isVideo ? 'pop' : 'boing',
+            isCustom: true
+          });
+        }
         processed++;
         if (processed === files.length) {
           saveStudioState();
-          switchDrawerTab('uploads');
+          if (isAudio) {
+            switchDrawerTab('audio');
+          } else if (isVideo) {
+            switchDrawerTab('videos');
+          } else if (explicitFilter === 'image') {
+            switchDrawerTab('images');
+          } else {
+            switchDrawerTab('uploads');
+          }
           showToast(`📁 Added ${files.length} item${files.length > 1 ? 's' : ''} to Media Vault!`);
         }
       };
       reader.readAsDataURL(file);
     });
+    e.target.value = '';
+  }
+
+  function handleSoundUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').slice(0, 18).toUpperCase();
+      customAudioClips.unshift({
+        id: 'aud_' + Date.now(),
+        label: cleanName,
+        data: ev.target.result,
+        name: file.name
+      });
+      saveStudioState();
+      switchDrawerTab('audio');
+      showToast(`🎵 Custom sound/song "${cleanName}" added!`);
+    };
+    reader.readAsDataURL(file);
     e.target.value = '';
   }
 
@@ -2900,10 +3161,68 @@ if (msg.type === 'quest') {
   /* =====================================================================
      10. GROUP SETTINGS & CHARACTER CAST MANAGER MODALS
      ===================================================================== */
+  function setWhatsAppChatType(type, pCharId = null) {
+    if (!['group', 'private', 'global'].includes(type)) type = 'group';
+    groupProfile.chatType = type;
+    if (pCharId) {
+      groupProfile.privateCharId = pCharId;
+    }
+    updateGroupModalUI();
+    renderGroupHeader();
+    rerenderAllMessages();
+    saveStudioState();
+    const modeLabel = type === 'private' ? '🔒 Private 1-on-1 DM' : (type === 'global' ? '🌍 Global Channel' : '👥 Squad Group Chat');
+    showToast(`WhatsApp Mode: ${modeLabel}`);
+  }
+
+  function updateGroupModalUI() {
+    const chatType = groupProfile.chatType || 'group';
+    const groupSec = document.getElementById('waGroupModeSection');
+    const pvtSec = document.getElementById('waPrivateModeSection');
+    const globalSec = document.getElementById('waGlobalModeSection');
+    if (groupSec) groupSec.style.display = (chatType === 'group') ? 'block' : 'none';
+    if (pvtSec) pvtSec.style.display = (chatType === 'private') ? 'block' : 'none';
+    if (globalSec) globalSec.style.display = (chatType === 'global') ? 'block' : 'none';
+
+    ['Group', 'Private', 'Global'].forEach(m => {
+      const modeLower = m.toLowerCase();
+      const qBtn = document.getElementById('quickWaMode' + m);
+      if (qBtn) qBtn.classList.toggle('active', chatType === modeLower);
+      const mBtn = document.getElementById('modalWaMode' + m);
+      if (mBtn) mBtn.classList.toggle('active', chatType === modeLower);
+    });
+  }
+
+  function onPrivateCharSelectChange(charId) {
+    groupProfile.privateCharId = charId;
+    renderGroupHeader();
+  }
+
   function openGroupModal() {
-    document.getElementById('modalGroupDpPreview').src = groupProfile.dp;
-    document.getElementById('groupNameInput').value = groupProfile.name;
-    document.getElementById('groupStatusInput').value = groupProfile.status;
+    const dpPrev = document.getElementById('modalGroupDpPreview');
+    if (dpPrev) dpPrev.src = groupProfile.dp;
+    const nameInp = document.getElementById('groupNameInput');
+    if (nameInp) nameInp.value = groupProfile.name;
+    const statusInp = document.getElementById('groupStatusInput');
+    if (statusInp) statusInp.value = groupProfile.status || '';
+
+    // Populate private character select
+    const pSelect = document.getElementById('groupPrivateCharSelect');
+    if (pSelect) {
+      pSelect.innerHTML = characters.map(c =>
+        `<option value="${c.id}" ${c.id === groupProfile.privateCharId ? 'selected' : ''}>${escapeHtml(c.name)} (${c.side === 'right' ? 'User Right' : 'Left'})</option>`
+      ).join('');
+    }
+    const pStatusInp = document.getElementById('groupPrivateStatusInput');
+    if (pStatusInp) pStatusInp.value = groupProfile.privateStatus || 'online';
+
+    const gNameInp = document.getElementById('groupGlobalNameInput');
+    if (gNameInp) gNameInp.value = groupProfile.globalName || '🌍 Global Hunters Network';
+    const gMembersInp = document.getElementById('groupGlobalMembersInput');
+    if (gMembersInp) gMembersInp.value = groupProfile.globalMembers || '1,420,500 members • Public Broadcast';
+
+    updateGroupModalUI();
+
     document.querySelectorAll('.wall-swatch').forEach(sw => {
       sw.classList.toggle('active', sw.dataset.wall === groupProfile.wallpaper);
     });
@@ -2955,13 +3274,26 @@ if (msg.type === 'quest') {
   });
 
   function saveGroupSettings() {
-    const newName = document.getElementById('groupNameInput').value.trim();
+    const newName = document.getElementById('groupNameInput')?.value.trim();
     if (newName) groupProfile.name = newName;
-    groupProfile.status = document.getElementById('groupStatusInput').value.trim();
+    const groupStatus = document.getElementById('groupStatusInput')?.value.trim();
+    if (groupStatus !== undefined) groupProfile.status = groupStatus;
+
+    const pSelect = document.getElementById('groupPrivateCharSelect');
+    if (pSelect && pSelect.value) groupProfile.privateCharId = pSelect.value;
+    const pStatus = document.getElementById('groupPrivateStatusInput')?.value.trim();
+    if (pStatus) groupProfile.privateStatus = pStatus;
+
+    const gName = document.getElementById('groupGlobalNameInput')?.value.trim();
+    if (gName) groupProfile.globalName = gName;
+    const gMembers = document.getElementById('groupGlobalMembersInput')?.value.trim();
+    if (gMembers) groupProfile.globalMembers = gMembers;
+
     saveStudioState();
     renderGroupHeader();
+    rerenderAllMessages();
     closeGroupModal();
-    showToast('✅ Group settings saved!');
+    showToast('✅ WhatsApp settings & mode saved!');
   }
 
   function openCastModal() {
@@ -3495,6 +3827,216 @@ if (msg.type === 'quest') {
      11. IN-APP MESSAGE EDITOR, QUOTE REPLY & REORDERING
      ===================================================================== */
   let editingMessageId = null;
+  let editingMessageType = 'text';
+  let editingMediaData = { url: '', stickerData: null };
+
+  function setEditingMessageType(newType, resetData = true) {
+    editingMessageType = newType;
+    ['text', 'image', 'sticker', 'video', 'audio'].forEach(t => {
+      const chip = document.getElementById('msgTypeChip' + t.charAt(0).toUpperCase() + t.slice(1));
+      if (chip) chip.classList.toggle('active', t === newType);
+    });
+
+    const mediaSection = document.getElementById('msgEditMediaSection');
+    const mediaTitle = document.getElementById('msgEditMediaTitle');
+    const fileInp = document.getElementById('msgEditFileInput');
+
+    if (newType === 'text') {
+      if (mediaSection) mediaSection.style.display = 'none';
+      if (resetData) editingMediaData = { url: '', stickerData: null };
+    } else {
+      if (mediaSection) mediaSection.style.display = 'flex';
+      const titles = {
+        image: '🖼️ Image Attachment',
+        sticker: '🎭 Sticker Attachment',
+        video: '🎬 Video Attachment',
+        audio: '🎵 Audio / Song Attachment'
+      };
+      if (mediaTitle) mediaTitle.textContent = titles[newType] || 'Media Attachment';
+      if (fileInp) {
+        if (newType === 'video') fileInp.accept = 'video/*';
+        else if (newType === 'audio') fileInp.accept = 'audio/*';
+        else fileInp.accept = 'image/*';
+      }
+    }
+
+    renderMsgEditMediaPreview();
+    const urlInput = document.getElementById('msgEditMediaUrlInput');
+    if (urlInput) urlInput.value = editingMediaData.url || '';
+  }
+
+  function renderMsgEditMediaPreview() {
+    const wrap = document.getElementById('msgEditMediaPreviewWrap');
+    if (!wrap) return;
+    if (!editingMediaData.url) {
+      const icons = { image: '🖼️', sticker: '🎭', video: '🎬', audio: '🎵' };
+      wrap.innerHTML = `<span style="font-size:24px; color:#64748b;">${icons[editingMessageType] || '📎'}</span>`;
+      return;
+    }
+    if (editingMessageType === 'video') {
+      wrap.innerHTML = `<video src="${editingMediaData.url}" style="width:100%; height:100%; object-fit:cover;" muted playsinline></video>`;
+    } else if (editingMessageType === 'audio') {
+      wrap.innerHTML = `<div style="font-size:24px; color:#38bdf8;">🎵</div>`;
+    } else {
+      wrap.innerHTML = `<img src="${editingMediaData.url}" style="width:100%; height:100%; object-fit:cover;" alt="Preview">`;
+    }
+  }
+
+  function triggerMsgEditFilePick() {
+    const fileInp = document.getElementById('msgEditFileInput');
+    if (!fileInp) return;
+    if (editingMessageType === 'video') fileInp.accept = 'video/*';
+    else if (editingMessageType === 'audio') fileInp.accept = 'audio/*';
+    else fileInp.accept = 'image/*';
+    fileInp.click();
+  }
+
+  function handleMsgEditFileUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 960;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+            else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
+          editingMediaData.url = compressedUrl;
+          if (editingMessageType === 'text') setEditingMessageType('image', false);
+          renderMsgEditMediaPreview();
+          const urlInp = document.getElementById('msgEditMediaUrlInput');
+          if (urlInp) urlInp.value = file.name || 'Image uploaded';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        editingMediaData.url = ev.target.result;
+        renderMsgEditMediaPreview();
+        const urlInp = document.getElementById('msgEditMediaUrlInput');
+        if (urlInp) urlInp.value = file.name || 'Media attached';
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  }
+
+  function clearEditingMediaAttachment() {
+    editingMediaData = { url: '', stickerData: null };
+    const urlInp = document.getElementById('msgEditMediaUrlInput');
+    if (urlInp) urlInp.value = '';
+    renderMsgEditMediaPreview();
+    showToast('Media attachment cleared');
+  }
+
+  function onMsgEditUrlInput(val) {
+    editingMediaData.url = val.trim();
+    renderMsgEditMediaPreview();
+  }
+
+  function pickMediaFromVaultForEdit() {
+    const modal = document.getElementById('vaultPickModal');
+    const grid = document.getElementById('vaultPickModalGrid');
+    const title = document.getElementById('vaultPickModalTitle');
+    if (!modal || !grid) return;
+
+    grid.innerHTML = '';
+    if (editingMessageType === 'audio') {
+      if (title) title.textContent = '🎵 Select Song / Audio from Vault';
+      if (!customAudioClips || customAudioClips.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#94a3b8;">No audio in vault. Upload songs from the Songs tab or button above!</div>';
+      } else {
+        customAudioClips.forEach(snd => {
+          const card = document.createElement('div');
+          card.className = 'drawer-media-card';
+          card.onclick = () => window.selectVaultMediaForEdit(snd.data, snd.label, null);
+          card.innerHTML = `
+            <div style="font-size:28px; padding:10px 0; text-align:center;">🎵</div>
+            <span class="drawer-media-title">${escapeHtml(snd.label)}</span>
+          `;
+          grid.appendChild(card);
+        });
+      }
+    } else if (editingMessageType === 'video') {
+      if (title) title.textContent = '🎬 Select Video from Vault';
+      const vids = customStickers.filter(s => s.isVideo || s.mediaType === 'video');
+      if (vids.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#94a3b8;">No videos in vault yet. Upload video clips from the Videos tab!</div>';
+      } else {
+        vids.forEach(st => {
+          const card = document.createElement('div');
+          card.className = 'drawer-media-card';
+          card.onclick = () => window.selectVaultMediaForEdit(st.imageUrl, st.label, null);
+          card.innerHTML = `
+            <video src="${st.imageUrl}" class="drawer-media-thumb" muted></video>
+            <span class="drawer-media-title">${escapeHtml(st.label)}</span>
+          `;
+          grid.appendChild(card);
+        });
+      }
+    } else {
+      if (title) title.textContent = '🖼️ Select Image / Sticker from Vault';
+      const imgs = customStickers.filter(s => !s.isVideo && s.mediaType !== 'video' && s.mediaType !== 'audio');
+      if (imgs.length === 0 && builtInStickers.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#94a3b8;">No images in vault yet.</div>';
+      } else {
+        imgs.forEach(st => {
+          const card = document.createElement('div');
+          card.className = 'drawer-media-card';
+          card.onclick = () => window.selectVaultMediaForEdit(st.imageUrl, st.label, st);
+          card.innerHTML = `
+            <img src="${st.imageUrl}" class="drawer-media-thumb" alt="${escapeHtml(st.label)}">
+            <span class="drawer-media-title">${escapeHtml(st.label)}</span>
+          `;
+          grid.appendChild(card);
+        });
+        builtInStickers.forEach(st => {
+          const card = document.createElement('div');
+          card.className = 'drawer-media-card';
+          card.onclick = () => window.selectVaultMediaForEdit(st.imageUrl || '', st.label, st);
+          const thumb = st.imageUrl
+            ? `<img src="${st.imageUrl}" class="drawer-media-thumb" alt="${escapeHtml(st.label)}">`
+            : `<div style="font-size:28px; padding:6px 0; text-align:center;">${st.emoji}</div>`;
+          card.innerHTML = `
+            ${thumb}
+            <span class="drawer-media-title">${escapeHtml(st.label)}</span>
+          `;
+          grid.appendChild(card);
+        });
+      }
+    }
+    modal.classList.add('open');
+  }
+
+  function closeVaultPickModal() {
+    const modal = document.getElementById('vaultPickModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  window.selectVaultMediaForEdit = function(url, label, stickerObj) {
+    editingMediaData.url = url;
+    if (stickerObj) {
+      editingMediaData.stickerData = stickerObj;
+    }
+    const urlInp = document.getElementById('msgEditMediaUrlInput');
+    if (urlInp) urlInp.value = label || url;
+    renderMsgEditMediaPreview();
+    closeVaultPickModal();
+    showToast('✅ Attached from Vault');
+  };
 
   function openMessageEditModal(msgId) {
     if (isCinemaPlaying) return;
@@ -3503,6 +4045,7 @@ if (msg.type === 'quest') {
     editingMessageId = msgId;
 
     const speakerGroup = document.getElementById('msgEditSpeakerGroup');
+    const typeGroup = document.getElementById('msgEditTypeGroup');
     const charSelect = document.getElementById('msgEditCharSelect');
     const exprSelect = document.getElementById('msgEditExprSelect');
     const textInput = document.getElementById('msgEditTextarea');
@@ -3541,16 +4084,33 @@ if (msg.type === 'quest') {
     updateMsgEditExprOptions(msg.charId, msg.expr || 'normal');
 
     if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest') {
-      speakerGroup.style.display = 'none';
+      if (speakerGroup) speakerGroup.style.display = 'none';
+      if (typeGroup) typeGroup.style.display = 'none';
+      const mSec = document.getElementById('msgEditMediaSection');
+      if (mSec) mSec.style.display = 'none';
       textInput.value = msg.text || '';
-    } else if (msg.type === 'sticker') {
-      speakerGroup.style.display = 'flex';
-      exprSelect.value = msg.expr || 'normal';
-      textInput.value = (msg.stickerData && msg.stickerData.label) || '';
     } else {
-      speakerGroup.style.display = 'flex';
-      exprSelect.value = msg.expr || 'normal';
-      textInput.value = msg.text || '';
+      if (speakerGroup) speakerGroup.style.display = 'flex';
+      if (typeGroup) typeGroup.style.display = 'block';
+
+      let initType = 'text';
+      if (msg.type === 'image') initType = 'image';
+      else if (msg.type === 'video') initType = 'video';
+      else if (msg.type === 'audio' || msg.type === 'voice') initType = 'audio';
+      else if (msg.type === 'sticker') initType = 'sticker';
+
+      editingMediaData = {
+        url: msg.imageUrl || msg.videoUrl || msg.audioUrl || msg.url || (msg.stickerData && msg.stickerData.url) || (msg.stickerData && msg.stickerData.imageUrl) || '',
+        stickerData: msg.stickerData || null
+      };
+
+      setEditingMessageType(initType, false);
+
+      if (initType === 'sticker') {
+        textInput.value = (msg.stickerData && msg.stickerData.label) || msg.caption || msg.text || '';
+      } else {
+        textInput.value = msg.caption || msg.text || '';
+      }
     }
 
     const timeGroup = document.getElementById('msgEditTimeGroup');
@@ -3577,18 +4137,51 @@ if (msg.type === 'quest') {
     if (!msg) return;
 
     const newText = document.getElementById('msgEditTextarea').value.trim();
+    const timeInput = document.getElementById('msgEditTimeInput');
+    if (timeInput && timeInput.value.trim()) {
+      msg.time = timeInput.value.trim();
+    }
+
     if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest') {
       if (newText) msg.text = newText;
-    } else if (msg.type === 'sticker') {
-      msg.charId = document.getElementById('msgEditCharSelect').value;
-      msg.expr = document.getElementById('msgEditExprSelect').value;
-      if (msg.stickerData) {
-        msg.stickerData = { ...msg.stickerData, label: newText.toUpperCase() };
-      }
     } else {
-      msg.charId = document.getElementById('msgEditCharSelect').value;
-      msg.expr = document.getElementById('msgEditExprSelect').value;
-      if (newText) msg.text = newText;
+      const selectedCharId = document.getElementById('msgEditCharSelect').value;
+      const selectedExpr = document.getElementById('msgEditExprSelect').value;
+      msg.charId = selectedCharId;
+      msg.expr = selectedExpr;
+
+      // Update message type according to editingMessageType
+      msg.type = editingMessageType;
+      if (editingMessageType === 'text') {
+        msg.text = newText;
+        delete msg.imageUrl;
+        delete msg.videoUrl;
+        delete msg.audioUrl;
+        delete msg.stickerData;
+      } else if (editingMessageType === 'image') {
+        msg.imageUrl = editingMediaData.url || msg.imageUrl || '';
+        msg.caption = newText;
+        msg.text = newText;
+      } else if (editingMessageType === 'video') {
+        msg.videoUrl = editingMediaData.url || msg.videoUrl || '';
+        msg.caption = newText;
+        msg.text = newText;
+      } else if (editingMessageType === 'audio') {
+        msg.audioUrl = editingMediaData.url || msg.audioUrl || '';
+        msg.label = newText || 'Song / Audio';
+        msg.caption = newText;
+        msg.text = newText;
+      } else if (editingMessageType === 'sticker') {
+        if (!msg.stickerData) {
+          msg.stickerData = editingMediaData.stickerData || {
+            imageUrl: editingMediaData.url,
+            label: newText.toUpperCase() || 'STICKER'
+          };
+        } else {
+          if (editingMediaData.url) msg.stickerData.imageUrl = editingMediaData.url;
+          if (newText) msg.stickerData.label = newText.toUpperCase();
+        }
+      }
     }
 
     saveStudioState();
@@ -3819,6 +4412,22 @@ if (msg.type === 'quest') {
         }
       } else {
         setCinemaCamera('cam-normal');
+      }
+
+      // Chat Mode Scene Switch (WhatsApp Group <-> Private DM <-> Global Channel)
+      if (nextMsg.type === 'chat_mode_switch') {
+        const targetMode = nextMsg.targetChatMode || 'group';
+        let targetCharId = null;
+        if (targetMode === 'private' && nextMsg.chatParam) {
+          const found = characters.find(c => c.name.toLowerCase() === nextMsg.chatParam.toLowerCase() || c.id === nextMsg.chatParam);
+          if (found) targetCharId = found.id;
+        }
+        setWhatsAppChatType(targetMode, targetCharId);
+        if (statusText) statusText.textContent = `💬 ${targetMode.toUpperCase()} CHAT`;
+        const stepDelay = Math.max(200, (nextMsg.delayMs || 1000) / cinemaSpeedMultiplier);
+        stepIndex++;
+        cinemaStepTimeout = setTimeout(playNextStep, stepDelay);
+        return;
       }
 
       // App Switch Scene Transition (WhatsApp <-> ChatGPT <-> Gemini)
@@ -5618,6 +6227,22 @@ If JSON format is preferred, you can output this JSON structure directly:
         return;
       }
 
+      // 4. Standalone Chat Mode Switch: [CHAT: group|private|pvt|global] or [CHAT: private: Nobita]
+      const chatMatch = line.match(/^\[CHAT(?:_MODE)?:\s*(group|private|pvt|global)(?:\s*[:,\-]\s*(.+))?\]$/i);
+      if (chatMatch) {
+        const mode = chatMatch[1].toLowerCase() === 'pvt' ? 'private' : chatMatch[1].toLowerCase();
+        const param = chatMatch[2] ? chatMatch[2].trim() : '';
+        parsedMsgs.push({
+          id: 'm_chat_' + Date.now() + '_' + idx,
+          type: 'chat_mode_switch',
+          targetChatMode: mode,
+          chatParam: param,
+          preDelayMs: eventPreDelay,
+          delayMs: 1000
+        });
+        return;
+      }
+
       // Standalone Media Tags: [IMAGE: url], [PHOTO: url], [VIDEO: url], [AUDIO: url]
       const standaloneMediaMatch = line.match(/^\[(IMAGE|PHOTO|VIDEO|AUDIO|MEDIA):\s*(.+)\]$/i);
       if (standaloneMediaMatch) {
@@ -6302,5 +6927,27 @@ If JSON format is preferred, you can output this JSON structure directly:
       closeCastPickerPopover();
       const drawer = document.getElementById('stickerDrawer');
       if (drawer) drawer.classList.remove('open');
+      const vModal = document.getElementById('vaultPickModal');
+      if (vModal) vModal.classList.remove('open');
     }
   });
+
+  // Global window bindings for new WhatsApp modes, media editing & media drawer
+  window.setWhatsAppChatType = setWhatsAppChatType;
+  window.onPrivateCharSelectChange = onPrivateCharSelectChange;
+  window.setEditingMessageType = setEditingMessageType;
+  window.triggerMsgEditFilePick = triggerMsgEditFilePick;
+  window.handleMsgEditFileUpload = handleMsgEditFileUpload;
+  window.clearEditingMediaAttachment = clearEditingMediaAttachment;
+  window.onMsgEditUrlInput = onMsgEditUrlInput;
+  window.pickMediaFromVaultForEdit = pickMediaFromVaultForEdit;
+  window.closeVaultPickModal = closeVaultPickModal;
+  window.selectVaultMediaForEdit = selectVaultMediaForEdit;
+  window.toggleAttachMenu = toggleAttachMenu;
+  window.sendMediaItemToChat = sendMediaItemToChat;
+  window.handleMultipleMediaUpload = handleMultipleMediaUpload;
+  window.handleSoundUpload = handleSoundUpload;
+  window.saveGroupSettings = saveGroupSettings;
+  window.openGroupModal = openGroupModal;
+  window.closeGroupModal = closeGroupModal;
+
