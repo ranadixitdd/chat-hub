@@ -2471,30 +2471,108 @@ if (msg.type === 'quest') {
   function toggleStickerDrawer() {
     const drawer = document.getElementById('stickerDrawer');
     const btn = document.getElementById('stickerToggleBtn');
+    const aBtn = document.getElementById('attachToggleBtn');
     const isOpen = drawer.classList.toggle('open');
-    btn.classList.toggle('active', isOpen);
+    if (btn) btn.classList.toggle('active', isOpen);
+    if (aBtn && !isOpen) aBtn.classList.remove('active');
     if (isOpen) renderDrawerContent();
   }
 
-  function toggleAttachMenu() {
-    const drawer = document.getElementById('stickerDrawer');
-    if (!drawer) return;
-    const isOpen = drawer.classList.contains('open');
-    if (!isOpen) {
-      drawer.classList.add('open');
-      const sBtn = document.getElementById('stickerToggleBtn');
-      if (sBtn) sBtn.classList.add('active');
-      switchDrawerTab('images');
+  function triggerAttachFileInput() {
+    const inp = document.getElementById('hiddenDirectAttachInput');
+    if (inp) {
+      inp.click();
     } else {
-      if (activeDrawerTab === 'images' || activeDrawerTab === 'videos' || activeDrawerTab === 'audio') {
-        drawer.classList.remove('open');
-        const sBtn = document.getElementById('stickerToggleBtn');
-        if (sBtn) sBtn.classList.remove('active');
-      } else {
-        switchDrawerTab('images');
-      }
+      const mediaInp = document.getElementById('hiddenMediaInput');
+      if (mediaInp) mediaInp.click();
     }
   }
+
+  function handleDirectAttachmentUpload(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const composer = document.getElementById('chatMessageInput');
+    const pendingCaption = composer ? composer.value.trim() : '';
+    if (composer) {
+      composer.value = '';
+      autoResizeComposerInput(composer);
+    }
+
+    let processed = 0;
+    files.forEach((file, idx) => {
+      const reader = new FileReader();
+      const isVideo = file.type.startsWith('video');
+      const isAudio = file.type.startsWith('audio');
+      const cleanBase = file.name.replace(/\.[^/.]+$/, '').trim();
+      const baseLabel = cleanBase.replace(/[\-_]/g, ' ').slice(0, 20).toUpperCase() || (isVideo ? 'VIDEO' : (isAudio ? 'SONG' : 'PHOTO'));
+
+      reader.onload = (ev) => {
+        let newMediaItem;
+        let mType = 'image';
+
+        if (isAudio) {
+          mType = 'audio';
+          newMediaItem = {
+            id: 'aud_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
+            label: baseLabel,
+            data: ev.target.result,
+            name: file.name
+          };
+          customAudioClips.unshift(newMediaItem);
+        } else {
+          mType = isVideo ? 'video' : 'image';
+          newMediaItem = {
+            id: 'cust_media_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
+            imageUrl: ev.target.result,
+            label: baseLabel,
+            isVideo: isVideo,
+            mediaType: mType,
+            expr: 'normal',
+            sfx: isVideo ? 'pop' : 'boing',
+            isCustom: true
+          };
+          customStickers.unshift(newMediaItem);
+        }
+
+        // Send directly to chat stream
+        flushPendingLiveMessage();
+        const char = characters.find(c => c.id === currentCharId) || characters[0];
+        const newMsg = {
+          id: 'm_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
+          type: mType,
+          charId: char.id,
+          expr: currentExpr || 'normal',
+          replyToId: activeReplyMsgId || null,
+          time: getNextStoryTime(),
+          imageUrl: (mType === 'image') ? newMediaItem.imageUrl : null,
+          videoUrl: (mType === 'video') ? newMediaItem.imageUrl : null,
+          audioUrl: (mType === 'audio') ? newMediaItem.data : null,
+          label: baseLabel,
+          caption: (idx === 0) ? pendingCaption : ''
+        };
+        messages.push(newMsg);
+
+        processed++;
+        if (processed === files.length) {
+          clearActiveReply();
+          saveStudioState();
+          renderChatStream();
+          renderDrawerContent();
+          if (mType === 'audio') {
+            playCustomAudio(newMediaItem.data);
+          } else {
+            playPopSound(char.pitch || 1.05);
+          }
+          showToast(`📎 Attached & sent ${files.length} item${files.length > 1 ? 's' : ''} to chat!`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  }
+
+  const toggleAttachMenu = triggerAttachFileInput;
 
   function sendMediaItemToChat(mediaItem, explicitType = null) {
     flushPendingLiveMessage();
@@ -6894,10 +6972,12 @@ If JSON format is preferred, you can output this JSON structure directly:
     // 3. If sticker drawer is open and click was outside (allow clicking directorDeck to switch chars)
     const drawer = document.getElementById('stickerDrawer');
     if (drawer && drawer.classList.contains('open')) {
-      if (!e.target.closest('#stickerDrawer') && !e.target.closest('#stickerToggleBtn') && !e.target.closest('.drawer-tab') && !e.target.closest('#directorDeck')) {
+      if (!e.target.closest('#stickerDrawer') && !e.target.closest('#stickerToggleBtn') && !e.target.closest('#attachToggleBtn') && !e.target.closest('.drawer-tab') && !e.target.closest('#directorDeck')) {
         drawer.classList.remove('open');
         const btn = document.getElementById('stickerToggleBtn');
         if (btn) btn.classList.remove('active');
+        const aBtn = document.getElementById('attachToggleBtn');
+        if (aBtn) aBtn.classList.remove('active');
       }
     }
 
@@ -6944,6 +7024,8 @@ If JSON format is preferred, you can output this JSON structure directly:
   window.closeVaultPickModal = closeVaultPickModal;
   window.selectVaultMediaForEdit = selectVaultMediaForEdit;
   window.toggleAttachMenu = toggleAttachMenu;
+  window.triggerAttachFileInput = triggerAttachFileInput;
+  window.handleDirectAttachmentUpload = handleDirectAttachmentUpload;
   window.sendMediaItemToChat = sendMediaItemToChat;
   window.handleMultipleMediaUpload = handleMultipleMediaUpload;
   window.handleSoundUpload = handleSoundUpload;

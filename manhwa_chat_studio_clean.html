@@ -27,6 +27,7 @@
 <input type="file" id="hiddenVideoOnlyInput" multiple accept="video/*" style="display:none" onchange="handleMultipleMediaUpload(event, 'video')">
 <input type="file" id="hiddenWallpaperInput" accept="image/*" style="display:none">
 <input type="file" id="hiddenSoundInput" accept="audio/*" style="display:none" onchange="handleSoundUpload(event)">
+<input type="file" id="hiddenDirectAttachInput" multiple accept="image/*,video/*,audio/*" style="display:none" onchange="handleDirectAttachmentUpload(event)">
 
 <div class="phone-wrapper ratio-9-16 app-whatsapp" id="phoneWrapper">
 
@@ -401,7 +402,7 @@
   <!-- === WHATSAPP BOTTOM COMPOSER BAR === -->
   <div class="wa-input-bar" id="waInputBar">
     <button type="button" class="input-action-btn global-settings-btn" id="globalSettingsBtn" onclick="openGlobalSettingsModal()" title="Global Studio Settings & App Switcher">🌐</button>
-    <button type="button" class="input-action-btn" id="attachToggleBtn" onclick="toggleAttachMenu()" title="Attach Images, Videos, Songs & Files">📎</button>
+    <button type="button" class="input-action-btn" id="attachToggleBtn" onclick="triggerAttachFileInput()" title="Attach from Device (Photo, Video, Audio)">📎</button>
     <button class="input-action-btn" id="stickerToggleBtn" onclick="toggleStickerDrawer()" title="Open Stickers, Reactions & Sound FX">😊</button>
     <textarea rows="1" class="wa-text-input" id="chatMessageInput" placeholder="Type a message..." autocomplete="off"></textarea>
     <button class="wa-send-btn" onclick="sendUserMessage()" title="Send Message">
