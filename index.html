@@ -226,6 +226,7 @@
     <div class="dropdown-item" id="menuThemeToggleItem" onclick="toggleChatStyle(); closeDropdownMenu();">🎨 Style: <b>Realistic WhatsApp</b></div>
     <div class="dropdown-item" onclick="openStoriesModal(); closeDropdownMenu();">📁 Saved Stories & Episodes</div>
     <div class="dropdown-item" onclick="openScriptModal(); closeDropdownMenu();">📜 AI Script Importer</div>
+    <div class="dropdown-item" onclick="openAssetManagerModal(); closeDropdownMenu();">📦 Studio Asset Manager</div>
     <div class="dropdown-item" onclick="openSpecialEventModal(); closeDropdownMenu();">✨ Insert Banner / Special Alert</div>
     <div class="dropdown-item" id="menuGroupMsgItem" onclick="toggleMessageGrouping(); closeDropdownMenu();">🔗 Group Same-Speaker: ON</div>
     <div class="dropdown-item" onclick="exportBackupJson(); closeDropdownMenu();">💾 Export Story JSON</div>
@@ -571,7 +572,10 @@
           <div style="font-size:16px; font-weight:900; color:#f8fafc;">👥 Cast Roster (<span id="hubCastCount">0</span> Characters)</div>
           <div style="font-size:12.5px; color:#94a3b8; margin-top:2px;">Customize avatar DP, dialogue alignment, voice pitch, and remove cast members</div>
         </div>
-        <button type="button" class="icon-btn" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#00a884; color:#fff;" onclick="addNewCharacter()">+ Add New Character</button>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="icon-btn" style="padding:8px 14px; font-size:12.5px; font-weight:800; background:#6366f1; color:#fff;" onclick="openAssetManagerModal('globalSettingsModal')">📦 Full Asset Manager</button>
+          <button type="button" class="icon-btn" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#00a884; color:#fff;" onclick="addNewCharacter()">+ Add New Character</button>
+        </div>
       </div>
 
       <div id="hubCastListContainer" class="cast-grid-layout"></div>
@@ -761,7 +765,10 @@
           <div style="font-size:16px; font-weight:900; color:#f8fafc;">👥 Cast Roster</div>
           <div style="font-size:12.5px; color:#94a3b8; margin-top:2px;">Customize character DP, dialogue alignment, voice pitch, and manage removal</div>
         </div>
-        <button type="button" class="icon-btn" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#00a884; color:#fff;" onclick="addNewCharacter()">+ Add New Character</button>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="icon-btn" style="padding:8px 14px; font-size:12.5px; font-weight:800; background:#6366f1; color:#fff;" onclick="openAssetManagerModal('castModal')">📦 Full Asset Manager</button>
+          <button type="button" class="icon-btn" style="padding:8px 18px; font-size:12.5px; font-weight:800; background:#00a884; color:#fff;" onclick="addNewCharacter()">+ Add New Character</button>
+        </div>
       </div>
 
       <div id="castListContainer" class="cast-grid-layout"></div>
@@ -948,11 +955,16 @@
             <span class="script-tag-pill" title="Playback speed change">[SPEED: 1.2x]</span>
             <span class="script-tag-pill" title="Interactive branching choice card" style="border-color:#ec4899; color:#f472b6;">[CHOICE: Option A | Option B]</span>
           </div>
-          <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap;">
+          <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="icon-btn" style="background:#6366f1; color:#fff; font-size:11px; padding:4px 9px;" onclick="openAssetManagerModal('scriptModal')" title="Open Studio Asset Manager">📦 Assets</button>
             <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="loadCurrentChatIntoScriptEditor()" title="Convert current chat into screenplay dialogue script">💬 Chat to Script</button>
             <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template with characters, custom expressions & vault stickers">📋 Copy AI Prompt</button>
             <button type="button" class="icon-btn" style="background:#8b5cf6; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertScriptToJsonView()" title="Convert script into JSON">🔄 To JSON</button>
-            <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a; font-size:11px; padding:4px 9px;" onclick="loadDemoScriptIntoModal()">⚡ Sample</button>
+            <div style="display:inline-flex; gap:3px;">
+              <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(1)" title="Sample 1: System Quest (Comedy & Action)">⚡ Quest</button>
+              <button type="button" class="icon-btn" style="background:#ec4899; color:#fff; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(2)" title="Sample 2: Rom-Com Dilemma (Romance & Banter)">⚡ Romance</button>
+              <button type="button" class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(3)" title="Sample 3: Midnight Mystery (Suspense & Thriller)">⚡ Mystery</button>
+            </div>
           </div>
         </div>
 
@@ -1260,6 +1272,58 @@
     </div>
     <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
       <div id="vaultPickModalGrid" class="drawer-media-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- MODAL: STUDIO ASSET MANAGER & INVENTORY CONTROLLER                    -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop" id="assetManagerModal" style="z-index:10015;">
+  <div class="modal-window studio-modal-wide" style="max-width:640px; width:95vw; max-height:90vh; display:flex; flex-direction:column;">
+    <div class="modal-header" style="padding:14px 18px; border-bottom:1px solid #1e293b;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <div>
+          <div class="modal-title" style="font-size:15px; font-weight:900; color:#f8fafc;">📦 Studio Asset Manager</div>
+          <div style="font-size:11px; color:#94a3b8;">Preview, rename, delete & dynamically export assets for AI</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button type="button" class="icon-btn" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; font-size:11px; font-weight:800; padding:6px 12px; box-shadow:0 2px 10px rgba(16,185,129,0.3);" onclick="copyStudioAssetInventory()" title="Dynamically copy complete asset inventory for ChatGPT">📋 Copy for AI</button>
+        <button class="modal-close-btn" onclick="closeAssetManagerModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- SEARCH & FILTER BAR -->
+    <div style="padding:10px 18px; background:#0b1120; border-bottom:1px solid #1e293b; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <div style="position:relative; flex:1; min-width:180px;">
+        <input type="text" class="form-input" id="assetSearchInput" placeholder="🔍 Search cast, face, sticker, SFX, song..." style="padding:6px 10px; font-size:12px; border-radius:8px;" oninput="filterAssetManager(this.value)">
+      </div>
+      <div id="assetQuickStatsBadge" style="font-size:11px; color:#38bdf8; font-weight:700; white-space:nowrap;">Loading stats...</div>
+    </div>
+
+    <!-- CATEGORY PILL TABS -->
+    <div class="asset-category-tabs" id="assetCategoryTabs" style="padding:8px 18px; display:flex; gap:6px; overflow-x:auto; background:#0f172a; border-bottom:1px solid #1e293b;">
+      <button type="button" class="asset-tab-btn active" id="assetTab_cast" onclick="switchAssetCategory('cast')">🎭 Cast & Faces</button>
+      <button type="button" class="asset-tab-btn" id="assetTab_stickers" onclick="switchAssetCategory('stickers')">🖼️ Stickers & Memes</button>
+      <button type="button" class="asset-tab-btn" id="assetTab_sfx" onclick="switchAssetCategory('sfx')">🔊 Sound Effects</button>
+      <button type="button" class="asset-tab-btn" id="assetTab_audio" onclick="switchAssetCategory('audio')">🎵 Songs & Audio</button>
+      <button type="button" class="asset-tab-btn" id="assetTab_videos" onclick="switchAssetCategory('videos')">🎬 Videos & Media</button>
+    </div>
+
+    <!-- DYNAMIC CATEGORY CONTENT CONTAINER -->
+    <div class="modal-body" id="assetCategoryContainer" style="padding:14px 18px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px;">
+      <!-- Content populated dynamically by renderAssetCategory() -->
+    </div>
+
+    <!-- FOOTER ACTIONS -->
+    <div style="padding:10px 18px; background:#090d16; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+      <div style="display:flex; gap:6px;">
+        <button type="button" class="btn-secondary-comic" style="padding:6px 12px; font-size:11.5px;" onclick="copyStudioAssetInventory()">📋 Copy Asset List (For AI)</button>
+        <button type="button" class="btn-secondary-comic" style="padding:6px 12px; font-size:11.5px; background:#3b82f6; color:#fff;" onclick="copyChatGptTemplate()">🤖 Copy Master AI Prompt</button>
+      </div>
+      <button type="button" class="btn-primary-comic" id="assetContextAddBtn" style="padding:6px 14px; font-size:11.5px;" onclick="handleAssetContextAdd()">+ Add New</button>
     </div>
   </div>
 </div>

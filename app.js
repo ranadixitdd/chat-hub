@@ -493,7 +493,7 @@
         previousModalId = 'castModal';
       } else if (currentModalId === 'cropperModal' || currentModalId === 'vaultPickModal') {
         previousModalId = (typeof currentCharWardrobeId !== 'undefined' && currentCharWardrobeId) ? 'charExpressionModal' : 'castModal';
-      } else if (currentModalId === 'storiesModal' || currentModalId === 'scriptModal' || currentModalId === 'specialEventModal' || currentModalId === 'cinemaSpeedModal') {
+      } else if (currentModalId === 'storiesModal' || currentModalId === 'scriptModal' || currentModalId === 'specialEventModal' || currentModalId === 'cinemaSpeedModal' || currentModalId === 'assetManagerModal') {
         previousModalId = 'globalSettingsModal';
       }
     }
@@ -508,6 +508,7 @@
         if (previousModalId === 'charExpressionModal' && typeof renderCharacterExpressionWardrobe === 'function' && currentCharWardrobeId) renderCharacterExpressionWardrobe(currentCharWardrobeId);
         if (previousModalId === 'storiesModal' && typeof renderStoriesList === 'function') renderStoriesList();
         if (previousModalId === 'globalSettingsModal' && typeof updateGlobalSettingsModalUI === 'function') updateGlobalSettingsModalUI();
+        if (previousModalId === 'assetManagerModal' && typeof renderAssetCategory === 'function') renderAssetCategory();
       }
     }
   }
@@ -1530,18 +1531,27 @@ function playSciFiChimeSound() {
   let activeAudioPlayer = null;
   let activeAudioMsgId = null;
   let activeAudioBtnId = null;
+  let activeAudioDataUrl = null;
 
   function stopCurrentAudio() {
     if (activeAudioPlayer) {
       try {
         activeAudioPlayer.pause();
         activeAudioPlayer.currentTime = 0;
+        activeAudioPlayer.src = '';
       } catch (e) {}
       activeAudioPlayer = null;
     }
+    activeAudioDataUrl = null;
     if (activeAudioBtnId) {
       const b = document.getElementById(activeAudioBtnId);
-      if (b) b.innerHTML = '▶';
+      if (b) {
+        if (b.tagName === 'BUTTON' || b.classList.contains('icon-btn') || b.classList.contains('audio-play-btn')) {
+          b.innerHTML = '▶';
+        }
+      }
+      const fill = document.getElementById(`fill_${activeAudioBtnId}`);
+      if (fill) fill.style.width = '0%';
     }
     if (activeAudioMsgId) {
       const icon = document.getElementById(`audioIcon_${activeAudioMsgId}`);
@@ -1557,7 +1567,11 @@ function playSciFiChimeSound() {
     if (!soundEnabled || !dataUrl) return;
 
     // 1. If clicking the exact same audio that is currently playing -> PAUSE it!
-    if (activeAudioPlayer && (activeAudioMsgId === msgId && msgId !== null || activeAudioBtnId === btnId && btnId !== null)) {
+    const isSameMsg = (msgId !== null && activeAudioMsgId === msgId);
+    const isSameBtn = (btnId !== null && activeAudioBtnId === btnId);
+    const isSameData = (msgId === null && btnId === null && activeAudioDataUrl === dataUrl);
+
+    if (activeAudioPlayer && (isSameMsg || isSameBtn || isSameData)) {
       stopCurrentAudio();
       return;
     }
@@ -1571,6 +1585,7 @@ function playSciFiChimeSound() {
     activeAudioPlayer = audio;
     activeAudioMsgId = msgId;
     activeAudioBtnId = btnId;
+    activeAudioDataUrl = dataUrl;
 
     if (btnId) {
       const b = document.getElementById(btnId);
@@ -1582,25 +1597,24 @@ function playSciFiChimeSound() {
     }
 
     audio.ontimeupdate = () => {
-      if (!msgId) return;
-      const timer = document.getElementById(`audioTimer_${msgId}`);
-      const fill = document.getElementById(`audioFill_${msgId}`);
       const cur = audio.currentTime || 0;
       const dur = audio.duration || 0;
-      if (timer) {
-        const curM = Math.floor(cur / 60);
-        const curS = Math.floor(cur % 60).toString().padStart(2, '0');
-        if (dur && isFinite(dur)) {
-          const durM = Math.floor(dur / 60);
-          const durS = Math.floor(dur % 60).toString().padStart(2, '0');
-          timer.textContent = `${curM}:${curS} / ${durM}:${durS}`;
-        } else {
-          timer.textContent = `${curM}:${curS}`;
-        }
+      const curM = Math.floor(cur / 60);
+      const curS = Math.floor(cur % 60).toString().padStart(2, '0');
+      const durText = (dur && isFinite(dur)) ? ` / ${Math.floor(dur / 60)}:${Math.floor(dur % 60).toString().padStart(2, '0')}` : '';
+      const pct = (dur && isFinite(dur)) ? Math.min(100, Math.max(0, (cur / dur) * 100)) : 0;
+
+      if (msgId) {
+        const timer = document.getElementById(`audioTimer_${msgId}`);
+        const fill = document.getElementById(`audioFill_${msgId}`);
+        if (timer) timer.textContent = `${curM}:${curS}${durText}`;
+        if (fill) fill.style.width = `${pct}%`;
       }
-      if (fill && dur && isFinite(dur)) {
-        const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
-        fill.style.width = `${pct}%`;
+      if (btnId) {
+        const timer = document.getElementById(`timer_${btnId}`);
+        const fill = document.getElementById(`fill_${btnId}`);
+        if (timer) timer.textContent = `${curM}:${curS}${durText}`;
+        if (fill) fill.style.width = `${pct}%`;
       }
     };
 
@@ -1627,6 +1641,17 @@ function playSciFiChimeSound() {
     activeAudioPlayer.currentTime = pct * activeAudioPlayer.duration;
   }
 
+  function seekAssetAudioPosition(e, audioId) {
+    if (!activeAudioPlayer || activeAudioBtnId !== `assetAudioBtn_${audioId}`) return;
+    const track = document.getElementById(`assetAudioTrack_${audioId}`);
+    if (!track || !activeAudioPlayer.duration) return;
+    const rect = track.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    activeAudioPlayer.currentTime = pct * activeAudioPlayer.duration;
+  }
+
+  window.seekAssetAudioPosition = seekAssetAudioPosition;
   window.seekAudioPosition = seekAudioPosition;
   window.stopCurrentAudio = stopCurrentAudio;
 
@@ -6615,122 +6640,497 @@ if (msg.type === 'quest') {
     showToast('🗑️ JSON editor cleared!');
   }
 
-  function copyChatGptTemplate() {
-    // 1. Build live cast section
-    let castRosterList = '';
+  /* =====================================================================
+     STUDIO ASSET MANAGER & INVENTORY CONTROLLER
+     ===================================================================== */
+  let activeAssetCategory = 'cast';
+  let assetSearchFilter = '';
+  const pendingAssetDeleteTimers = {};
+
+  function openAssetManagerModal(parentModalId = null) {
+    if (parentModalId) pushModalHistory(parentModalId);
+    else pushModalHistory('globalSettingsModal');
+
+    const m = document.getElementById('assetManagerModal');
+    if (m) m.classList.add('open');
+
+    switchAssetCategory(activeAssetCategory || 'cast');
+    updateAssetStatsBadge();
+  }
+
+  function closeAssetManagerModal() {
+    stopCurrentAudio();
+    const m = document.getElementById('assetManagerModal');
+    if (m) m.classList.remove('open');
+  }
+
+  function switchAssetCategory(category) {
+    activeAssetCategory = category;
+    document.querySelectorAll('.asset-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.id === `assetTab_${category}`);
+    });
+    const addBtn = document.getElementById('assetContextAddBtn');
+    if (addBtn) {
+      if (category === 'cast') addBtn.textContent = '+ Add Character';
+      else if (category === 'stickers') addBtn.textContent = '+ Upload Sticker';
+      else if (category === 'sfx') addBtn.textContent = '🔊 Test SFX';
+      else if (category === 'audio') addBtn.textContent = '+ Upload Song';
+      else if (category === 'videos') addBtn.textContent = '+ Upload Media';
+    }
+    renderAssetCategory();
+  }
+
+  function filterAssetManager(term) {
+    assetSearchFilter = (term || '').trim().toLowerCase();
+    renderAssetCategory();
+  }
+
+  function updateAssetStatsBadge() {
+    const badge = document.getElementById('assetQuickStatsBadge');
+    if (!badge) return;
+    const totalFaces = (characters || []).reduce((acc, c) => acc + Object.keys(c.expressions || {}).length, 0);
+    const customStickerCount = (customStickers || []).filter(s => !s.isVideo && !s.isAudio).length;
+    const totalStickers = customStickerCount + (typeof builtInStickers !== 'undefined' ? builtInStickers.length : 0);
+    badge.textContent = `${(characters || []).length} Cast • ${totalFaces} Faces • ${totalStickers} Stickers • ${(builtInSounds || []).length} SFX • ${(customAudioClips || []).length} Songs`;
+  }
+
+  function renderAssetCategory() {
+    const container = document.getElementById('assetCategoryContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const q = assetSearchFilter;
+
+    if (activeAssetCategory === 'cast') {
+      const filtered = (characters || []).filter(c => {
+        if (!q) return true;
+        const nameMatch = (c.name || '').toLowerCase().includes(q);
+        const exprMatch = Object.keys(c.expressions || {}).some(k => k.toLowerCase().includes(q));
+        return nameMatch || exprMatch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:32px 10px; color:#94a3b8;">No characters found matching "${escapeHtml(q)}".</div>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'asset-item-card';
+
+        const exprKeys = Object.keys(c.expressions || {});
+        const allExprs = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
+        const sideDesc = (c.side === 'right') ? 'POV User (Right)' : 'Squad (Left)';
+        const avatarSrc = c.avatar || makeComicAvatarDataUri(c.name || 'Char', c.color || '#3b82f6');
+
+        card.innerHTML = `
+          <div class="asset-thumb-wrap" style="border: 2px solid ${c.color || '#3b82f6'}; border-radius: 50%;">
+            <img src="${avatarSrc}" alt="${escapeHtml(c.name)}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('${escapeHtml(c.name)}', '${c.color || '#3b82f6'}');">
+          </div>
+          <div class="asset-info-col">
+            <div class="asset-title-row">
+              <span class="asset-item-title">${escapeHtml(c.name)}</span>
+              <span class="asset-badge" style="background:#1e293b; color:${c.color || '#38bdf8'}; border:1px solid #334155;">${sideDesc}</span>
+              <span class="asset-badge" style="background:#090d16; color:#a855f7;">${exprKeys.length} Custom Faces</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:3px;">
+              ${allExprs.slice(0, 8).map(t => `<span class="asset-syntax-chip" style="cursor:pointer;" onclick="openCharExpressionModal('${c.id}', 'assetManagerModal')" title="Click to manage faces">[${escapeHtml(c.name)}:${t}]</span>`).join('')}
+              ${allExprs.length > 8 ? `<span style="font-size:10px; color:#94a3b8; align-self:center;">+${allExprs.length - 8} more</span>` : ''}
+            </div>
+          </div>
+          <div class="asset-actions-row">
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCharacter('${c.id}')" title="Rename Character">✏️ Rename</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="openCharExpressionModal('${c.id}', 'assetManagerModal')" title="Manage Facial Expressions">🎭 Faces</button>
+            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('cast', '${c.id}', this)" title="Delete Character">🗑️</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } else if (activeAssetCategory === 'stickers') {
+      const customList = (customStickers || []).filter(s => !s.isVideo && !s.isAudio);
+      const builtList = (typeof builtInStickers !== 'undefined') ? builtInStickers : [];
+
+      const filteredCustom = customList.filter(s => !q || (s.label || '').toLowerCase().includes(q));
+      const filteredBuilt = builtList.filter(s => !q || (s.label || '').toLowerCase().includes(q) || (s.emoji || '').includes(q));
+
+      if (filteredCustom.length === 0 && filteredBuilt.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:32px 10px; color:#94a3b8;">No stickers found matching "${escapeHtml(q)}".</div>`;
+        return;
+      }
+
+      if (filteredCustom.length > 0) {
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;';
+        header.textContent = `Custom Vault Stickers (${filteredCustom.length})`;
+        container.appendChild(header);
+
+        filteredCustom.forEach(st => {
+          const card = document.createElement('div');
+          card.className = 'asset-item-card';
+          card.innerHTML = `
+            <div class="asset-thumb-wrap">
+              <img src="${st.data || st.url || ''}" alt="${escapeHtml(st.label || 'Sticker')}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('STK', '#38bdf8', '🖼️');">
+            </div>
+            <div class="asset-info-col">
+              <div class="asset-title-row">
+                <span class="asset-item-title">${escapeHtml(st.label || 'Sticker')}</span>
+                <span class="asset-badge" style="background:#065f46; color:#6ee7b7;">Custom</span>
+              </div>
+              <span class="asset-syntax-chip">[Character:STICKER]: ${escapeHtml(st.label || 'LABEL')}</span>
+            </div>
+            <div class="asset-actions-row">
+              <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomSticker('${st.id}')" title="Rename Sticker Label">✏️ Rename</button>
+              <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendStickerItem(customStickers.find(s=>s.id==='${st.id}'))" title="Send into Chat">💬 Send</button>
+              <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('stickers', '${st.id}', this)" title="Delete Sticker">🗑️</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      if (filteredBuilt.length > 0) {
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:11px; font-weight:800; color:#facc15; text-transform:uppercase; letter-spacing:0.5px; margin-top:8px;';
+        header.textContent = `Built-in Comic Stickers & Memes (${filteredBuilt.length})`;
+        container.appendChild(header);
+
+        filteredBuilt.forEach(st => {
+          const card = document.createElement('div');
+          card.className = 'asset-item-card';
+          card.innerHTML = `
+            <div class="asset-thumb-wrap" style="background:${st.bg || '#1e293b'}; font-size:26px;">
+              ${st.emoji || '💬'}
+            </div>
+            <div class="asset-info-col">
+              <div class="asset-title-row">
+                <span class="asset-item-title">${escapeHtml(st.label || st.id)}</span>
+                <span class="asset-badge" style="background:#1e293b; color:#cbd5e1;">Built-in</span>
+              </div>
+              <span class="asset-syntax-chip">[Character:STICKER]: ${escapeHtml(st.label || st.id)}</span>
+            </div>
+            <div class="asset-actions-row">
+              <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendStickerItem(builtInStickers.find(s=>s.id==='${st.id}'))" title="Send into Chat">💬 Send</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+    } else if (activeAssetCategory === 'sfx') {
+      const sounds = (typeof builtInSounds !== 'undefined') ? builtInSounds : [];
+      const filtered = sounds.filter(s => !q || (s.label || '').toLowerCase().includes(q) || (s.id || '').toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:32px 10px; color:#94a3b8;">No sound effects found matching "${escapeHtml(q)}".</div>`;
+        return;
+      }
+
+      filtered.forEach(snd => {
+        const card = document.createElement('div');
+        card.className = 'asset-item-card';
+        card.innerHTML = `
+          <button type="button" class="icon-btn" style="background:#0284c7; color:#fff; border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="playSfxById('${snd.id}')" title="Audition Sound">▶</button>
+          <div class="asset-info-col">
+            <div class="asset-title-row">
+              <span class="asset-item-title">${escapeHtml(snd.label || snd.id)}</span>
+              <span class="asset-badge" style="background:#1e293b; color:#38bdf8;">${snd.category || 'SFX'}</span>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;">
+              <span class="asset-syntax-chip">[Char:sfx:${snd.id}]</span>
+              <span class="asset-syntax-chip" style="color:#a855f7;">[Char:shock:${snd.id}]</span>
+            </div>
+          </div>
+          <div class="asset-actions-row">
+            <button type="button" class="icon-btn" style="padding:5px 10px; font-size:11.5px; background:#1e293b; color:#f8fafc;" onclick="playSfxById('${snd.id}')">🔊 Test</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } else if (activeAssetCategory === 'audio') {
+      const clips = customAudioClips || [];
+      const filtered = clips.filter(s => !q || (s.label || '').toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:32px 10px; color:#94a3b8; display:flex; flex-direction:column; align-items:center; gap:8px;">
+            <span style="font-size:36px;">🎵</span>
+            <strong style="color:#f8fafc; font-size:13px;">No Background Songs or Voice Clips</strong>
+            <p style="font-size:11px; max-width:260px; margin:0;">Upload anime OSTs, fight themes, or audio tracks to use in your stories.</p>
+            <button class="icon-btn" style="background:#00a884; color:#fff; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="document.getElementById('hiddenSoundInput').click()">+ Upload Song / Audio File</button>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(snd => {
+        const card = document.createElement('div');
+        card.className = 'asset-item-card';
+        card.innerHTML = `
+          <button type="button" class="icon-btn" id="assetAudioBtn_${snd.id}" style="background:#00a884; color:#fff; border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="playCustomAudio('${snd.data}', null, 'assetAudioBtn_${snd.id}')" title="Play / Pause Audio">▶</button>
+          <div class="asset-info-col">
+            <div class="asset-title-row">
+              <span class="asset-item-title">${escapeHtml(snd.label || 'Song')}</span>
+              <span class="asset-badge" style="background:#065f46; color:#6ee7b7;">Audio</span>
+            </div>
+            <div class="asset-audio-scrubber-bar">
+              <div class="audio-scrubber-track" id="assetAudioTrack_${snd.id}" style="flex:1; cursor:pointer;" onclick="seekAssetAudioPosition(event, '${snd.id}')" title="Click to seek">
+                <div class="audio-scrubber-fill" id="fill_assetAudioBtn_${snd.id}"></div>
+              </div>
+              <span id="timer_assetAudioBtn_${snd.id}" style="font-size:11px; color:#94a3b8; font-family:monospace; min-width:65px; text-align:right;">0:00</span>
+            </div>
+            <span class="asset-syntax-chip" style="margin-top:3px;">[Character:AUDIO]: ${escapeHtml(snd.label || 'Song')}</span>
+          </div>
+          <div class="asset-actions-row">
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomSound('${snd.id}')" title="Rename Audio Clip">✏️ Rename</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendMediaItemToChat(customAudioClips.find(s=>s.id==='${snd.id}'), 'audio')" title="Send into Active Chat">💬 Send</button>
+            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('audio', '${snd.id}', this)" title="Delete Audio">🗑️</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } else if (activeAssetCategory === 'videos') {
+      const videos = (customStickers || []).filter(s => s.isVideo || s.mediaType === 'video');
+      const filtered = videos.filter(s => !q || (s.label || '').toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:32px 10px; color:#94a3b8; display:flex; flex-direction:column; align-items:center; gap:8px;">
+            <span style="font-size:36px;">🎬</span>
+            <strong style="color:#f8fafc; font-size:13px;">No Video Clips Uploaded</strong>
+            <p style="font-size:11px; max-width:260px; margin:0;">Upload short MP4, WebM video clips to play in WhatsApp video bubbles.</p>
+            <button class="icon-btn" style="background:#0284c7; color:#fff; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="triggerCustomUploadForDrawer()">+ Upload Video Clip</button>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'asset-item-card';
+        card.innerHTML = `
+          <div class="asset-thumb-wrap" style="cursor:pointer;" onclick="openFullscreenVideo('${v.data || v.url || ''}')" title="Watch Video">
+            <video src="${v.data || v.url || ''}" preload="metadata" style="pointer-events:none;"></video>
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px;">▶</div>
+          </div>
+          <div class="asset-info-col">
+            <div class="asset-title-row">
+              <span class="asset-item-title">${escapeHtml(v.label || 'Video')}</span>
+              <span class="asset-badge" style="background:#1e1b4b; color:#a5b4fc;">Video</span>
+            </div>
+            <span class="asset-syntax-chip">[Character:VIDEO]: ${escapeHtml(v.label || 'Video')}</span>
+          </div>
+          <div class="asset-actions-row">
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="openFullscreenVideo('${v.data || v.url || ''}')" title="Play Fullscreen Lightbox">⛶ Watch</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomVideo('${v.id}')" title="Rename Video">✏️ Rename</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendMediaItemToChat(customStickers.find(s=>s.id==='${v.id}'), 'video')" title="Send into Chat">💬 Send</button>
+            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('stickers', '${v.id}', this)" title="Delete Video">🗑️</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+  }
+
+  function playSfxById(sfxId) {
+    const snd = (builtInSounds || []).find(s => s.id === sfxId);
+    if (snd && typeof snd.fn === 'function') {
+      snd.fn();
+    } else {
+      playBoingSound();
+    }
+  }
+
+  function renameCharacter(charId) {
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+    const newName = prompt('✏️ Enter new name for this character:', char.name || '');
+    if (newName === null) return;
+    const clean = newName.trim();
+    if (!clean) return;
+    char.name = clean;
+    saveStudioState();
+    renderAssetCategory();
+    if (typeof renderCastModalList === 'function') renderCastModalList();
+    if (typeof renderCharacterSelectorDeck === 'function') renderCharacterSelectorDeck();
+    showToast(`✏️ Renamed character to "${clean}"`);
+  }
+
+  function renameCustomSound(soundId) {
+    const clip = customAudioClips.find(s => s.id === soundId);
+    if (!clip) return;
+    const newName = prompt('✏️ Enter new label for this song/audio clip (used in scripts e.g. [Nobita:AUDIO]: NAME):', clip.label || '');
+    if (newName === null) return;
+    const clean = newName.trim();
+    if (!clean) return;
+    clip.label = clean;
+    saveStudioState();
+    renderAssetCategory();
+    if (typeof renderDrawerContent === 'function') renderDrawerContent();
+    showToast(`✏️ Renamed audio clip to "${clean}"`);
+  }
+
+  function renameCustomVideo(videoId) {
+    const item = customStickers.find(s => s.id === videoId);
+    if (!item) return;
+    const newName = prompt('✏️ Enter new label for this video/media:', item.label || '');
+    if (newName === null) return;
+    const clean = newName.trim();
+    if (!clean) return;
+    item.label = clean;
+    saveStudioState();
+    renderAssetCategory();
+    if (typeof renderDrawerContent === 'function') renderDrawerContent();
+    showToast(`✏️ Renamed media to "${clean}"`);
+  }
+
+  function handleInlineDeleteAsset(category, id, btnEl) {
+    if (!btnEl) return;
+    if (btnEl.dataset.confirming === 'true') {
+      if (pendingAssetDeleteTimers[id]) {
+        clearTimeout(pendingAssetDeleteTimers[id]);
+        delete pendingAssetDeleteTimers[id];
+      }
+      if (category === 'cast') {
+        if (characters.length <= 1) {
+          showToast('⚠️ Studio requires at least 1 character');
+          btnEl.dataset.confirming = 'false';
+          btnEl.innerHTML = '🗑️';
+          return;
+        }
+        characters = characters.filter(c => c.id !== id);
+        if (currentCharId === id && characters.length > 0) currentCharId = characters[0].id;
+        saveStudioState();
+        if (typeof renderCastModalList === 'function') renderCastModalList();
+        if (typeof renderCharacterSelectorDeck === 'function') renderCharacterSelectorDeck();
+        showToast('🗑️ Character deleted!');
+      } else if (category === 'stickers') {
+        customStickers = customStickers.filter(s => s.id !== id);
+        saveStudioState();
+        if (typeof renderDrawerContent === 'function') renderDrawerContent();
+        showToast('🗑️ Sticker deleted!');
+      } else if (category === 'audio') {
+        customAudioClips = customAudioClips.filter(s => s.id !== id);
+        saveStudioState();
+        if (typeof renderDrawerContent === 'function') renderDrawerContent();
+        showToast('🗑️ Song/Audio deleted!');
+      }
+      updateAssetStatsBadge();
+      renderAssetCategory();
+      return;
+    }
+
+    btnEl.dataset.confirming = 'true';
+    const oldHtml = btnEl.innerHTML;
+    btnEl.innerHTML = '⚠️ Confirm?';
+    btnEl.style.background = '#ef4444';
+    btnEl.style.color = '#fff';
+
+    pendingAssetDeleteTimers[id] = setTimeout(() => {
+      if (btnEl && btnEl.dataset) {
+        btnEl.dataset.confirming = 'false';
+        btnEl.innerHTML = oldHtml;
+        btnEl.style.background = '';
+        btnEl.style.color = '';
+      }
+      delete pendingAssetDeleteTimers[id];
+    }, 3500);
+  }
+
+  function handleAssetContextAdd() {
+    if (activeAssetCategory === 'cast') {
+      closeAssetManagerModal();
+      addNewCharacter();
+    } else if (activeAssetCategory === 'stickers') {
+      triggerCustomUploadForDrawer();
+    } else if (activeAssetCategory === 'sfx') {
+      playBoingSound();
+      showToast('🔊 Click any "▶ Test" button to audition sound effects!');
+    } else if (activeAssetCategory === 'audio') {
+      const input = document.getElementById('hiddenSoundInput');
+      if (input) input.click();
+    } else if (activeAssetCategory === 'videos') {
+      triggerCustomUploadForDrawer();
+    }
+  }
+
+  function generateStudioAssetMarkdown() {
+    let md = '';
+    md += `# 🎬 CHAT HUB — COMPLETE STUDIO ASSET INVENTORY\n`;
+    md += `(Live Studio Export: Characters, Expressions, SFX, Stickers & Songs)\n\n`;
+
+    // 1. Cast & Expressions
+    md += `=== 🎭 CONFIGURED CHARACTERS & EMOTION TAGS ===\n`;
     if (Array.isArray(characters) && characters.length > 0) {
       characters.forEach(c => {
+        const sideDesc = (c.side === 'right') ? 'POV User (Right Side)' : 'Partner / Squad (Left Side)';
         const exprKeys = Object.keys(c.expressions || {});
         const allTags = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
-        const sideDesc = (c.side === 'right') ? 'POV User (Right side)' : 'Partner / Squad (Left side)';
-        castRosterList += `• ${c.name} [${sideDesc}]:\n  Available emotion tags: ${allTags.map(t => `[${c.name}:${t}]`).join(', ')}\n`;
+        md += `• ${c.name} [${sideDesc} | Color: ${c.color || '#3b82f6'}]:\n`;
+        md += `  Available facial tags: ${allTags.map(t => `[${c.name}:${t}]`).join(', ')}\n`;
+        md += `  Multi-tag example: [${c.name}:shock:vineboom]: NANI?!\n\n`;
       });
     } else {
-      castRosterList += `• Nobita: [Nobita:normal], [Nobita:cry], [Nobita:shock], [Nobita:angry], [Nobita:love], [Nobita:laugh]\n`;
-      castRosterList += `• Doraemon: [Doraemon:normal], [Doraemon:laugh], [Doraemon:angry]\n`;
+      md += `• Nobita [POV User - Right Side]: [Nobita:normal], [Nobita:cry], [Nobita:shock], [Nobita:angry], [Nobita:love], [Nobita:laugh]\n`;
+      md += `• Doraemon [Squad - Left Side]: [Doraemon:normal], [Doraemon:laugh], [Doraemon:angry], [Doraemon:shock]\n\n`;
     }
 
-    // 2. Build live stickers & vault section
-    let stickersList = '';
-    if (Array.isArray(customStickers) && customStickers.length > 0) {
-      stickersList += `• Custom Vault Stickers (Use [Character:STICKER]: label):\n  `;
-      stickersList += customStickers.map(s => s.label).join(', ') + '\n';
+    // 2. Sound Effects
+    md += `=== 🔊 AVAILABLE SOUND EFFECTS (SFX) ===\n`;
+    md += `Use these inside dialogues on impact moments, shock twists, or punchlines:\n`;
+    if (Array.isArray(builtInSounds) && builtInSounds.length > 0) {
+      builtInSounds.forEach(s => {
+        md += `• ${s.id.padEnd(10)} -> ${s.label} (Syntax: [Char:sfx:${s.id}] or [Char:${s.id}])\n`;
+      });
+    } else {
+      md += `• vineboom, punch, boom, shock, sword, sting, scifi, boing, sad, sparkle, pop\n`;
     }
-    if (typeof builtInStickers !== 'undefined' && Array.isArray(builtInStickers) && builtInStickers.length > 0) {
-      stickersList += `• Built-in Comic Stickers:\n  `;
-      stickersList += builtInStickers.slice(0, 16).map(s => s.label || s.id).join(', ') + '\n';
+    md += `\n`;
+
+    // 3. Stickers & Memes
+    md += `=== 🖼️ CONFIGURED STICKERS & MEMES ===\n`;
+    md += `Syntax to trigger a sticker: [CharacterName:STICKER]: label\n`;
+    const customLabels = (customStickers || []).filter(s => !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
+    if (customLabels.length > 0) {
+      md += `• Custom Vault Stickers: ${customLabels.join(', ')}\n`;
+    }
+    if (Array.isArray(builtInStickers) && builtInStickers.length > 0) {
+      md += `• Built-in Comic Stickers: ${builtInStickers.map(s => s.label || s.id).join(', ')}\n`;
+    }
+    md += `\n`;
+
+    // 4. Songs & Background Audio
+    if (Array.isArray(customAudioClips) && customAudioClips.length > 0) {
+      md += `=== 🎵 BACKGROUND SONGS & AUDIO CLIPS ===\n`;
+      md += `Syntax to play audio in story: [CharacterName:AUDIO]: song_name\n`;
+      md += `Available songs: ${customAudioClips.map(s => s.label).join(', ')}\n\n`;
     }
 
-    const prompt = `You are a professional Anime & Manhwa Webtoon Screenwriter. Write a dynamic multi-scene comic chat dialogue script using this EXACT syntax so my Chat Studio app can direct and auto-play it with realistic typing animations, sound effects, facial expressions, and interface switching:
+    // 5. Interface Morphing
+    md += `=== 📱 MULTI-APP SCENE SHIFTING ===\n`;
+    md += `• [SCENE: whatsapp] -> WhatsApp UI (typing indicator, double checkmarks)\n`;
+    md += `• [SCENE: chatgpt]  -> ChatGPT UI (authentic AI thinking indicator)\n`;
+    md += `• [SCENE: gemini]   -> Google Gemini UI (sparkle thinking)\n\n`;
 
-=== YOUR CONFIGURED CAST ROSTER & EXPRESSIONS ===
-${castRosterList.trim()}
+    // 6. Interactive Branching Choices
+    md += `=== 🎮 INTERACTIVE BRANCHING CHOICES ("Choose Your Reply") ===\n`;
+    md += `Pause cinema recording and let viewers tap to branch the dialogue:\n`;
+    md += `[CHOICE: Dilemma Question | Option A -> Character: Reply A | Option B -> Character: Reply B]\n\n`;
 
-${stickersList ? `=== CONFIGURED MEDIA VAULT & STICKERS ===\n${stickersList.trim()}\n` : ''}=== SCRIPT SYNTAX CHEAT SHEET ===
-1. NATURAL LIVE TYPING & CUSTOM DELAYS (High Recommended):
-   /delay 3sec  -> Displays realistic typing for 3 seconds before next message
-   /delay 1.5s  -> 1.5 seconds typing delay
-   /delay 800ms -> 800 milliseconds quick response delay
-   * Behavior: Incoming characters show an animated 3-dot typing bubble & header "typing..." pulse. POV user messages simulate letter-by-letter typing directly inside the bottom composer!
+    // 7. Directing Rules
+    md += `=== 📜 SCREENPLAY SYNTAX CHEATSHEET ===\n`;
+    md += `1. Typing delay: /delay 1.5sec\n`;
+    md += `2. Dialogue: [Character:emotion]: text\n`;
+    md += `3. Multi-tag (Face + SFX): [Character:emotion:sfx]: text\n`;
+    md += `4. System banner: [SYSTEM: Episode Title]\n`;
+    md += `5. System quest: [QUEST: Solo Leveling Quest Title]\n`;
+    md += `6. Dramatic pause: [PAUSE: 2s]\n\n`;
 
-2. CHARACTER DIALOGUE & FACIAL EXPRESSIONS:
-   [CharacterName]: normal dialogue text
-   [CharacterName:emotion]: dialogue with specific facial expression (e.g. cry, shock, angry, love, laugh, or any custom tag listed above)
+    md += `=== 💡 SCREENWRITER DIRECTIVE ===\n`;
+    md += `Write a hilarious, dramatic anime/manhwa comic chat story using ONLY the characters, facial emotion tags, sound effects, and stickers listed above. Always include at least 1 interactive [CHOICE: ...] dilemma card near the climax!\n`;
 
-3. WAITING SECONDS & SUSPENSE SILENCE:
-   [PAUSE: 2s] -> Dramatic silent pause before next event
+    return md;
+  }
 
-4. MULTI-APP SCENE MORPHING (WhatsApp <-> ChatGPT <-> Gemini):
-   [SCENE: whatsapp] -> Switches interface to WhatsApp (header typing pulse, double read ticks ✓✓)
-   [SCENE: chatgpt] -> Switches interface to ChatGPT (authentic ChatGPT thinking indicator ●)
-   [SCENE: gemini] -> Switches interface to Google Gemini (authentic Gemini sparkle thinking ✦)
-
-5. ACTION SOUND EFFECT (SFX) BURSTS & SCREENSHAKE:
-   [CharacterName:SFX]: 💥 BAM!! (or 👊 POW!!, 🥊 ORA ORA!!, ⚔️ CLASH!!, ⚡ NANI?!, 💀 OMAE WA MOU..., 😭 WAAAHH!!, 🤣 BWAHAHA!)
-
-6. MULTIMEDIA & STICKERS:
-   [CharacterName:STICKER]: label (Use any sticker label from the vault list above)
-   [CharacterName:IMAGE]: https://example.com/photo.jpg (or [IMAGE: url])
-   [CharacterName:VIDEO]: https://example.com/video.mp4 (or [VIDEO: url])
-   [CharacterName:AUDIO]: https://example.com/voice.mp3 (or [AUDIO: url])
-
-7. SYSTEM NOTIFICATIONS & QUEST ALERTS:
-   [SYSTEM: Episode Title or Location Banner]
-   [QUEST: SURVIVAL QUEST: Solo Leveling holographic alert text]
-
-8. PLAYBACK PACING & SPEED:
-   [SPEED: 1.0x] (or 1.25x, 1.5x)
-   [CharacterName:FAST]: rapid fire comic texting
-   [CharacterName:SLOW]: deliberate dramatic delivery
-
-=== EXAMPLE FULL EPISODE SCRIPT ===
-[SYSTEM: EPISODE 1: GIAN'S REVENGE]
-/delay 1.5sec
-[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
-[Nobita:SFX]: 😭 WAAAHH!!
-/delay 2sec
-[Doraemon:angry]: Again?! What did you do to anger him this time?!
-/delay 1.2sec
-[Nobita]: I accidentally stepped on his prized baseball card...
-[Gian:SFX]: 👊 POW!!
-[Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
-[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without 4D gadgets!]
-/delay 1sec
-[Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
-[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
-/delay 2sec
-[SCENE: chatgpt]
-[Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
-/delay 2.5sec
-[ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
-/delay 1.5sec
-[SCENE: whatsapp]
-[Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
-/delay 1sec
-[Doraemon:love]: Only if it's NOT my Dorayaki!
-[Nobita:SFX]: 💨 NIGERUNDAYO!!
-
-=== ALTERNATIVE: JSON FORMAT SCHEMA ===
-If JSON format is preferred, you can output this JSON structure directly:
-{
-  "title": "Episode 1: Gian's Revenge",
-  "activeApp": "whatsapp",
-  "style": "realistic",
-  "characters": [
-    { "id": "c1", "name": "Nobita", "side": "left", "color": "#eab308" },
-    { "id": "c2", "name": "Doraemon", "side": "right", "color": "#0284c7" },
-    { "id": "c3", "name": "ChatGPT", "side": "left", "color": "#10a37f" }
-  ],
-  "messages": [
-    { "id": "m1", "type": "divider", "text": "EPISODE 1: GIAN'S REVENGE" },
-    { "id": "m2", "type": "text", "charId": "c1", "text": "Doraemon!! Help me!", "expr": "cry", "preDelayMs": 1500 },
-    { "id": "m3", "type": "pause", "delayMs": 1500 },
-    { "id": "m4", "type": "app_switch", "targetApp": "chatgpt" },
-    { "id": "m5", "type": "text", "charId": "c1", "text": "ChatGPT, give me an escape plan!", "expr": "normal" },
-    { "id": "m6", "type": "text", "charId": "c3", "text": "Tactical advice: 1. Apologize. 2. Run!", "expr": "normal", "preDelayMs": 2500 }
-  ]
-}`;
-
+  function copyStudioAssetInventory() {
+    const md = generateStudioAssetMarkdown();
     const fallbackCopy = (text) => {
       try {
         const ta = document.createElement('textarea');
@@ -6742,49 +7142,122 @@ If JSON format is preferred, you can output this JSON structure directly:
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        showToast('📋 AI Prompt copied with your characters, expressions & stickers!');
+        showToast('📋 Studio Assets Copied! Ready to paste into ChatGPT!');
       } catch (err) {
         showToast('⚠️ Could not auto-copy. Please copy manually.');
       }
     };
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(prompt).then(() => {
-        showToast('📋 AI Prompt copied with your characters, expressions & stickers!');
-      }).catch(() => fallbackCopy(prompt));
+      navigator.clipboard.writeText(md).then(() => {
+        showToast('📋 Studio Assets Copied! Ready to paste into ChatGPT!');
+      }).catch(() => fallbackCopy(md));
     } else {
-      fallbackCopy(prompt);
+      fallbackCopy(md);
     }
   }
 
-  function loadDemoScriptIntoModal() {
-    document.getElementById('scriptInputBox').value = `[SYSTEM: EPISODE 1: GIAN'S REVENGE]
-/delay 1.5sec
-[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house!
-[Nobita:SFX]: 😭 WAAAHH!!
-/delay 2sec
-[Doraemon:angry]: Again?! What did you do to anger him this time?!
+  function copyChatGptTemplate() {
+    copyStudioAssetInventory();
+  }
+
+  function loadDemoScriptIntoModal(sampleIdx = 1) {
+    const box = document.getElementById('scriptInputBox');
+    if (!box) return;
+
+    if (sampleIdx === 1) {
+      // ⚡ Sample 1: System Quest (Comedy & Manhwa Solo Leveling Parody)
+      box.value = `[SYSTEM: EPISODE 1: GIAN'S REVENGE & THE SYSTEM QUEST]
 /delay 1.2sec
-[Nobita]: I accidentally stepped on his prized baseball card...
-[Gian:SFX]: 👊 POW!!
-[Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
-[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
+[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with baseball bats!
+[Nobita:sfx]: 😭 WAAAHH!!
+/delay 1.8sec
+[Doraemon:angry]: Again?! What did you do to anger him this time?!
+/delay 1.4sec
+[Nobita]: I accidentally stepped on his ultra-rare signed baseball card...
+[Gian:sfx]: 👊 POW!!
 /delay 1sec
-[Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
-[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
+[Gian:angry]: NOBITAAA! COME OUT HERE RIGHT NOW OR I'LL FOLD YOU LIKE ORIGAMI!
+[QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
+/delay 1.2sec
+[Nobita:shock:vineboom]: A System Quest appeared?! Since when does my life have Solo Leveling blue windows?!
+[Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
 /delay 2sec
 [SCENE: chatgpt]
-[Nobita]: ChatGPT, give me a quick escape strategy against an angry baseball kid!
+[Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
 /delay 2.5sec
-[ChatGPT]: 1. Distract with a shiny baseball. 2. Apologize with snacks. 3. Run at top speed!
+[ChatGPT]: Tactical Advice: 1. Distract with shiny object. 2. Offer emergency snacks. 3. Engage maximum sprint velocity!
 /delay 1.5sec
 [SCENE: whatsapp]
-[Nobita:bliss]: That's actually brilliant! Doraemon, lend me a snack!
+[Nobita:bliss:sparkle]: That's actually genius! Doraemon, lend me a snack from your stash!
+/delay 1.2sec
+[Doraemon:angry]: Anything EXCEPT my secret Dorayaki!
 /delay 1sec
-[Doraemon:love]: Only if it's NOT my Dorayaki!
-[Nobita:SFX]: 💨 NIGERUNDAYO!!`;
-    showToast('⚡ Rich sample script with natural typing delays loaded!');
+[CHOICE: How should Nobita escape Gian? | 💨 Use Nigerundayo Sprint Speed -> Nobita: 💨 NIGERUNDAYO!! | 🍪 Sacrifice Doraemon's Dorayaki -> Doraemon: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]
+/delay 1.5sec
+[Gian:shock:vineboom]: NANI?! HE DISAPPEARED INTO THIN AIR?!`;
+      showToast('⚡ Loaded Sample 1: System Quest (Comedy & Manhwa Parody)!');
+    } else if (sampleIdx === 2) {
+      // ⚡ Sample 2: Rom-Com Dilemma (Romance & High School Banter)
+      box.value = `[SYSTEM: EPISODE 2: THE AFTER-SCHOOL STUDY CRISIS]
+/delay 1.2sec
+[Shizuka:bliss:sparkle]: Hey everyone! Are we still doing our math study session today?
+/delay 1.5sec
+[Nobita:love:sparkle]: YES! OF COURSE! I've been studying since 6 AM! (Total lie)
+/delay 1.8sec
+[Doraemon:laugh:boing]: Nobita, you were literally snoring until 1 PM...
+/delay 1.4sec
+[Suneo:smug:vineboom]: Hold on, Shizuka! Why study with Nobita when my private tutor prepared French macarons at my mansion?
+/delay 1.6sec
+[Nobita:angry:punch]: Suneo!! Stop using rich boy bribery to hijack my study date!
+/delay 1.8sec
+[Shizuka:bliss]: French macarons sound lovely, but Nobita really needs help or he'll fail his test tomorrow...
+/delay 1.2sec
+[PAUSE: 1.5s]
+[CHOICE: Who should Shizuka study with? | 👓 Nobita (He desperately needs help) -> Nobita: 🎉 YES!! BEST DAY OF MY LIFE!! | 🥐 Suneo (Luxury French pastries) -> Suneo: 😎 Sophistication and taste always win!]
+/delay 1.6sec
+[Doraemon:love:sparkle]: Can I come too if there are Dorayaki macarons?!`;
+      showToast('⚡ Loaded Sample 2: Rom-Com Dilemma (Romance & Banter)!');
+    } else if (sampleIdx === 3) {
+      // ⚡ Sample 3: Midnight Mystery (Suspense & Thriller Parody)
+      box.value = `[SYSTEM: EPISODE 3: 2:47 AM BASEMENT MYSTERY]
+/delay 1.5sec
+[Nobita:shock:shock]: Doraemon... Are you awake? Don't leave me on read...
+/delay 2sec
+[Doraemon:angry]: Nobita, it's 2:47 in the morning! Go back to sleep!
+/delay 1.6sec
+[Nobita:cry]: I'm serious! The basement door downstairs just creaked open by itself!
+[Nobita:sfx]: 💀 OMAE WA MOU...
+/delay 2.2sec
+[Doraemon:normal]: It's just the wind. Or a stray cat.
+/delay 1.4sec
+[Gian:shock:vineboom]: Guys... I just saw a weird shadow moving outside Nobita's window...
+/delay 1.8sec
+[Nobita:shock:vineboom]: GIAN?! Why are you texting in our group at 3 AM?!
+/delay 1.5sec
+[Gian:angry]: Because I couldn't sleep after you ruined my baseball card!
+/delay 1.2sec
+[PAUSE: 2s]
+[CHOICE: The basement footsteps are getting louder! | 🔦 Check the basement door with flashlight -> Nobita: 😱 DORAEMON LOOK OUT!! | 🚪 Barricade bedroom door and hide -> Doraemon: ⚡ GADGET MALFUNCTION!! THE POCKET IS JAMMED!!]
+/delay 1.5sec
+[Doraemon:shock:shock]: WAIT! THAT WASN'T A GHOST... THAT'S MY CAT FRIEND MII-CHAN!`;
+      showToast('⚡ Loaded Sample 3: Midnight Mystery (Suspense & Thriller)!');
+    }
   }
+
+  window.openAssetManagerModal = openAssetManagerModal;
+  window.closeAssetManagerModal = closeAssetManagerModal;
+  window.switchAssetCategory = switchAssetCategory;
+  window.filterAssetManager = filterAssetManager;
+  window.copyStudioAssetInventory = copyStudioAssetInventory;
+  window.handleAssetContextAdd = handleAssetContextAdd;
+  window.renameCharacter = renameCharacter;
+  window.renameCustomSound = renameCustomSound;
+  window.renameCustomVideo = renameCustomVideo;
+  window.handleInlineDeleteAsset = handleInlineDeleteAsset;
+  window.playSfxById = playSfxById;
+  window.loadDemoScriptIntoModal = loadDemoScriptIntoModal;
+  window.copyChatGptTemplate = copyChatGptTemplate;
 
   // Converts in-memory messages array to script dialogue text format
   function convertChatMessagesToScriptText(msgList) {
