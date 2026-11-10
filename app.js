@@ -2251,6 +2251,59 @@ function playSciFiChimeSound() {
     if (wrapper) wrapper.classList.remove('app-switching');
   }
 
+  let isCinemaWaitingForChoice = false;
+  let activeWaitingChoiceMsg = null;
+  let cinemaChoiceAutoTimer = null;
+  let resumeCinemaAfterChoiceCallback = null;
+
+  function handleSelectChoiceOption(msgId, optIdx) {
+    if (cinemaChoiceAutoTimer) {
+      clearTimeout(cinemaChoiceAutoTimer);
+      cinemaChoiceAutoTimer = null;
+    }
+
+    const msg = messages.find(m => m.id === msgId) || (activeWaitingChoiceMsg && activeWaitingChoiceMsg.id === msgId ? activeWaitingChoiceMsg : null);
+    if (!msg || !msg.options || !msg.options[optIdx]) return;
+
+    msg.selectedIdx = optIdx;
+    const selectedOpt = msg.options[optIdx];
+
+    if (soundEnabled) playSparkleSound();
+    triggerScreenShake();
+
+    const cardEl = document.getElementById(`choiceCard_${msgId}`);
+    if (cardEl) {
+      cardEl.querySelectorAll('.choice-option-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx === optIdx);
+        let check = btn.querySelector('.choice-selected-check');
+        if (idx === optIdx) {
+          if (!check) {
+            const chk = document.createElement('span');
+            chk.className = 'choice-selected-check';
+            chk.textContent = '✓';
+            btn.appendChild(chk);
+          }
+        } else if (check) {
+          check.remove();
+        }
+      });
+      const pill = cardEl.querySelector('.choice-prompt-pill');
+      if (pill) pill.textContent = '✓ DECIDED';
+    }
+
+    saveStudioState();
+    showToast(`🎮 Selected: "${selectedOpt.label}"!`);
+
+    if (isCinemaWaitingForChoice) {
+      isCinemaWaitingForChoice = false;
+      activeWaitingChoiceMsg = null;
+      if (typeof resumeCinemaAfterChoiceCallback === 'function') {
+        resumeCinemaAfterChoiceCallback(selectedOpt);
+      }
+    }
+  }
+  window.handleSelectChoiceOption = handleSelectChoiceOption;
+
   function createMessageRowElement(msg, index, listToRender) {
     if (msg.type === 'app_switch') {
       const banner = document.createElement('div');
@@ -2314,6 +2367,49 @@ if (msg.type === 'quest') {
       pauseDiv.title = 'Click to edit or remove pause';
       pauseDiv.onclick = () => openMessageEditModal(msg.id);
       return pauseDiv;
+    }
+
+    if (msg.type === 'choice') {
+      const choiceCard = document.createElement('div');
+      choiceCard.className = 'interactive-choice-card';
+      choiceCard.id = `choiceCard_${msg.id}`;
+
+      const options = msg.options || [
+        { label: 'Option A: Agree' },
+        { label: 'Option B: Refuse' }
+      ];
+
+      const optionsHtml = options.map((opt, optIdx) => {
+        const isSelected = msg.selectedIdx === optIdx;
+        const icon = optIdx === 0 ? '🅰️' : (optIdx === 1 ? '🅱️' : (optIdx === 2 ? '🅲' : '🔘'));
+        return `
+          <button type="button" class="choice-option-btn ${isSelected ? 'selected' : ''}" 
+            onclick="event.stopPropagation(); handleSelectChoiceOption('${msg.id}', ${optIdx})"
+            title="Click to choose this reply option">
+            <span class="choice-option-badge">${icon}</span>
+            <span class="choice-option-text">${escapeHtml(opt.label || `Option ${optIdx + 1}`)}</span>
+            ${isSelected ? '<span class="choice-selected-check">✓</span>' : ''}
+          </button>
+        `;
+      }).join('');
+
+      choiceCard.innerHTML = `
+        <div class="choice-card-header">
+          <div class="choice-card-tag">
+            <span class="choice-tag-icon">🎮</span>
+            <span class="choice-tag-title">${escapeHtml(msg.title || 'CHOOSE YOUR REPLY')}</span>
+          </div>
+          <span class="choice-prompt-pill">${msg.selectedIdx !== null && msg.selectedIdx !== undefined ? '✓ DECIDED' : '⚡ TAP TO CHOOSE'}</span>
+        </div>
+        ${msg.question && msg.question !== 'CHOOSE YOUR REPLY' ? `<div class="choice-card-question">${escapeHtml(msg.question)}</div>` : ''}
+        <div class="choice-options-grid">
+          ${optionsHtml}
+        </div>
+      `;
+
+      choiceCard.title = 'Interactive Choice Card (Click option to select, double-click to edit)';
+      choiceCard.ondblclick = () => openMessageEditModal(msg.id);
+      return choiceCard;
     }
 
     const char = characters.find(c => c.id === msg.charId) || characters[0];
@@ -4521,12 +4617,16 @@ if (msg.type === 'quest') {
 
     updateMsgEditExprOptions(msg.charId, msg.expr || 'normal');
 
-    if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest') {
+    if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest' || msg.type === 'choice') {
       if (speakerGroup) speakerGroup.style.display = 'none';
       if (typeGroup) typeGroup.style.display = 'none';
       const mSec = document.getElementById('msgEditMediaSection');
       if (mSec) mSec.style.display = 'none';
-      textInput.value = msg.text || '';
+      if (msg.type === 'choice') {
+        textInput.value = `${msg.question || 'CHOOSE YOUR REPLY'} | ${(msg.options || []).map(o => o.label).join(' | ')}`;
+      } else {
+        textInput.value = msg.text || '';
+      }
     } else {
       if (speakerGroup) speakerGroup.style.display = 'flex';
       if (typeGroup) typeGroup.style.display = 'block';
@@ -4580,7 +4680,20 @@ if (msg.type === 'quest') {
       msg.time = timeInput.value.trim();
     }
 
-    if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest') {
+    if (msg.type === 'choice') {
+      if (newText) {
+        const parts = newText.split('|').map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          msg.question = parts[0];
+          msg.options = parts.slice(1).map(lbl => ({
+            label: lbl,
+            branchReply: lbl.replace(/^(Option\s+[A-Za-z0-9]+:\s*|[A-Za-z0-9]+:\s*)/i, '').trim()
+          }));
+        } else if (parts.length === 1) {
+          msg.question = parts[0];
+        }
+      }
+    } else if (msg.type === 'divider' || msg.type === 'system' || msg.type === 'quest') {
       if (newText) msg.text = newText;
     } else {
       const selectedCharId = document.getElementById('msgEditCharSelect').value;
@@ -4785,6 +4898,21 @@ if (msg.type === 'quest') {
 
     let stepIndex = 0;
 
+    resumeCinemaAfterChoiceCallback = (selectedOpt) => {
+      if (!isCinemaPlaying) return;
+
+      if (selectedOpt && selectedOpt.branchReply) {
+        const branchMsgs = parseScriptLinesToMessages(selectedOpt.branchReply);
+        if (branchMsgs && branchMsgs.length > 0) {
+          fullQueue.splice(stepIndex, 0, ...branchMsgs);
+        }
+      }
+
+      if (!isCinemaPaused) {
+        cinemaStepTimeout = setTimeout(playNextStep, 450 / cinemaSpeedMultiplier);
+      }
+    };
+
     function playNextStep() {
       if (!isCinemaPlaying) return;
       if (isCinemaPaused) {
@@ -4953,6 +5081,34 @@ if (msg.type === 'quest') {
         }
         stepIndex++;
         cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' ? 1400 : 1000)) / cinemaSpeedMultiplier);
+        return;
+      }
+
+      if (nextMsg.type === 'choice') {
+        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+        stream.appendChild(el);
+        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
+        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        if (soundEnabled) playSparkleSound();
+        stepIndex++;
+
+        if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
+          cinemaStepTimeout = setTimeout(playNextStep, 350);
+          return;
+        }
+
+        isCinemaWaitingForChoice = true;
+        activeWaitingChoiceMsg = nextMsg;
+        showToast('👉 Tap your choice on screen to continue!');
+
+        if (cinemaChoiceAutoTimer) clearTimeout(cinemaChoiceAutoTimer);
+        cinemaChoiceAutoTimer = setTimeout(() => {
+          if (isCinemaWaitingForChoice) {
+            const fallbackIdx = nextMsg.selectedIdx !== null && nextMsg.selectedIdx !== undefined ? nextMsg.selectedIdx : 0;
+            handleSelectChoiceOption(nextMsg.id, fallbackIdx);
+          }
+        }, 8000 / cinemaSpeedMultiplier);
+
         return;
       }
 
@@ -5311,6 +5467,9 @@ if (msg.type === 'quest') {
       showToast('⚠️ No messages in this episode to play!');
       return;
     }
+    isCinemaWaitingForChoice = false;
+    activeWaitingChoiceMsg = null;
+    if (cinemaChoiceAutoTimer) clearTimeout(cinemaChoiceAutoTimer);
     if (cinemaStepTimeout) clearTimeout(cinemaStepTimeout);
     if (cinemaAutoHideTimeout) clearTimeout(cinemaAutoHideTimeout);
     clearTypingTimers();
@@ -5662,6 +5821,10 @@ if (msg.type === 'quest') {
   function stopCinemaMode() {
     isCinemaPlaying = false;
     isCinemaPaused = false;
+    isCinemaWaitingForChoice = false;
+    activeWaitingChoiceMsg = null;
+    resumeCinemaAfterChoiceCallback = null;
+    if (cinemaChoiceAutoTimer) clearTimeout(cinemaChoiceAutoTimer);
     if (cinemaStepTimeout) clearTimeout(cinemaStepTimeout);
     if (cinemaAutoHideTimeout) clearTimeout(cinemaAutoHideTimeout);
     clearTypingTimers();
@@ -6644,6 +6807,15 @@ If JSON format is preferred, you can output this JSON structure directly:
         lines.push(`[SYSTEM: ${m.text || ''}]`);
       } else if (m.type === 'quest') {
         lines.push(`[QUEST: ${m.text || ''}]`);
+      } else if (m.type === 'choice') {
+        const qStr = (m.question && m.question !== 'CHOOSE YOUR REPLY') ? `${m.question} | ` : '';
+        const optStrs = (m.options || []).map(o => {
+          if (o.branchReply && o.branchReply !== o.label) {
+            return `${o.label} -> ${o.branchReply}`;
+          }
+          return o.label;
+        }).join(' | ');
+        lines.push(`[CHOICE: ${qStr}${optStrs}]`);
       } else if (m.type === 'app_switch') {
         lines.push(`[SCENE: ${m.targetApp || 'whatsapp'}]`);
       } else if (m.type === 'pause') {
@@ -6756,6 +6928,55 @@ If JSON format is preferred, you can output this JSON structure directly:
           text: questMatch[1].trim(),
           preDelayMs: eventPreDelay,
           delayMs: 1600
+        });
+        return;
+      }
+
+      // [CHOICE: optionA | optionB] or [CHOICE: Question: ... | Option A | Option B]
+      const choiceMatch = line.match(/^\[CHOICE:\s*(.+)\]$/i);
+      if (choiceMatch) {
+        const rawContent = choiceMatch[1].trim();
+        const parts = rawContent.split('|').map(p => p.trim()).filter(Boolean);
+        let question = 'CHOOSE YOUR REPLY';
+        let rawOptions = [];
+
+        if (parts.length >= 3) {
+          question = parts[0].replace(/^(Question|Prompt):\s*/i, '');
+          rawOptions = parts.slice(1);
+        } else if (parts.length === 2) {
+          if (/^(Question|Prompt):/i.test(parts[0])) {
+            question = parts[0].replace(/^(Question|Prompt):\s*/i, '');
+            rawOptions = [parts[1]];
+          } else {
+            rawOptions = parts;
+          }
+        } else {
+          rawOptions = parts;
+        }
+
+        const options = rawOptions.map(optStr => {
+          const arrowSplit = optStr.split('->');
+          const label = arrowSplit[0].trim();
+          let branchReply = null;
+          if (arrowSplit[1]) {
+            branchReply = arrowSplit[1].trim();
+          }
+          return {
+            label,
+            branchReply: branchReply || label.replace(/^(Option\s+[A-Za-z0-9]+:\s*|[A-Za-z0-9]+:\s*)/i, '').trim()
+          };
+        });
+
+        parsedMsgs.push({
+          id: 'm_choice_' + Date.now() + '_' + idx,
+          type: 'choice',
+          title: '🎮 CHOOSE YOUR REPLY',
+          question,
+          options,
+          selectedIdx: null,
+          preDelayMs: eventPreDelay,
+          delayMs: 1200,
+          time: getNextStoryTime()
         });
         return;
       }
@@ -7293,6 +7514,51 @@ If JSON format is preferred, you can output this JSON structure directly:
       }
     });
   }
+
+  function promptBranchingChoice() {
+    openCustomPromptModal({
+      title: '🎮 Interactive Branching Choice',
+      desc: 'Enter Question & Options separated by | (e.g. What should Nobita do? | Option A: Agree with Doraemon | Option B: Steal Gadget):',
+      defaultValue: 'What should they do? | Option A: Agree with Doraemon | Option B: Steal the Gadget',
+      showInput: true,
+      onConfirm: (val) => {
+        if (!val || !val.trim()) return;
+        const parts = val.split('|').map(s => s.trim()).filter(Boolean);
+        let question = 'CHOOSE YOUR REPLY';
+        let rawOptions = [];
+        if (parts.length >= 3) {
+          question = parts[0];
+          rawOptions = parts.slice(1);
+        } else if (parts.length === 2) {
+          question = 'CHOOSE YOUR REPLY';
+          rawOptions = parts;
+        } else {
+          question = 'CHOOSE YOUR REPLY';
+          rawOptions = [parts[0] || 'Option A', 'Option B'];
+        }
+
+        const choiceMsg = {
+          id: 'm_choice_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          type: 'choice',
+          title: '🎮 CHOOSE YOUR REPLY',
+          question: question,
+          options: rawOptions.map(opt => ({
+            label: opt,
+            branchReply: opt.replace(/^(Option\s+[A-Za-z0-9]+:\s*|[A-Za-z0-9]+:\s*)/i, '').trim()
+          })),
+          selectedIdx: null,
+          time: getNextStoryTime()
+        };
+
+        messages.push(choiceMsg);
+        saveStudioState();
+        renderChatStream();
+        if (soundEnabled) playSparkleSound();
+        showToast('🎮 Added Interactive Choice Card!');
+      }
+    });
+  }
+  window.promptBranchingChoice = promptBranchingChoice;
 
   function toggleMessageGrouping() {
     groupConsecutiveMessages = !groupConsecutiveMessages;

@@ -465,6 +465,13 @@
           <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">Automated switch to WhatsApp, ChatGPT, or Gemini during Cinema recording</div>
         </div>
       </button>
+      <button type="button" class="btn-secondary-comic" style="text-align:left; padding:12px 14px; display:flex; align-items:center; gap:12px; border-color:#ec4899;" onclick="closeSpecialEventModal(); promptBranchingChoice();">
+        <span style="font-size:24px;">🎮</span>
+        <div>
+          <div style="font-weight:800; font-size:13px; color:#ec4899;">Interactive Choice ("Choose Your Reply")</div>
+          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">Branching decision card (Option A vs Option B) for viewers to tap</div>
+        </div>
+      </button>
     </div>
   </div>
 </div>
@@ -939,6 +946,7 @@
             <span class="script-tag-pill" title="Solo Leveling holographic quest alert">[QUEST: text]</span>
             <span class="script-tag-pill" title="Episode or scene title banner">[SYSTEM: text]</span>
             <span class="script-tag-pill" title="Playback speed change">[SPEED: 1.2x]</span>
+            <span class="script-tag-pill" title="Interactive branching choice card" style="border-color:#ec4899; color:#f472b6;">[CHOICE: Option A | Option B]</span>
           </div>
           <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap;">
             <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="loadCurrentChatIntoScriptEditor()" title="Convert current chat into screenplay dialogue script">💬 Chat to Script</button>
