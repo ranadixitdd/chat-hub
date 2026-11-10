@@ -430,7 +430,10 @@
 <div class="modal-backdrop" id="specialEventModal" style="z-index:9999;">
   <div class="modal-window" style="max-width:420px;">
     <div class="modal-header">
-      <span class="modal-title">✨ Insert Special Event</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <span class="modal-title">✨ Insert Special Event</span>
+      </div>
       <button class="modal-close-btn" onclick="closeSpecialEventModal()">✕</button>
     </div>
     <div class="modal-body" style="gap:10px; display:flex; flex-direction:column; padding:16px;">
@@ -572,13 +575,13 @@
       <div class="global-section">
         <label class="form-label" style="font-size:14px; font-weight:800; color:#f8fafc;">🛠️ Story Tools</label>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="closeGlobalSettingsModal(); openStoriesModal();">
+          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="openStoriesModal('globalSettingsModal');">
             <span style="font-size:18px;">📁</span><span>Saved Stories Library</span>
           </button>
-          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="closeGlobalSettingsModal(); openScriptModal();">
+          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="openScriptModal('globalSettingsModal');">
             <span style="font-size:18px;">📜</span><span>AI Script Importer</span>
           </button>
-          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="closeGlobalSettingsModal(); openSpecialEventModal();">
+          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="openSpecialEventModal('globalSettingsModal');">
             <span style="font-size:18px;">✨</span><span>Insert Banner / Quest</span>
           </button>
           <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="toggleSound()">
@@ -601,7 +604,7 @@
           <button type="button" class="icon-btn" style="flex:1; justify-content:center; background:#3b82f6; padding:10px; font-size:12px;" onclick="exportBackupJson()">
             💾 Export Story JSON
           </button>
-          <button type="button" class="icon-btn danger" style="flex:1; justify-content:center; background:#ef4444; padding:10px; font-size:12px;" onclick="confirmClearChat(); closeGlobalSettingsModal();">
+          <button type="button" class="icon-btn danger" id="clearChatBtn" style="flex:1; justify-content:center; background:#ef4444; padding:10px; font-size:12px;" onclick="handleInlineClearChat(this)">
             🗑️ Clear Messages
           </button>
         </div>
@@ -797,6 +800,7 @@
   <div class="modal-window studio-modal-wide" style="max-width:720px;">
     <div class="modal-header">
       <div style="display:flex; align-items:center; gap:10px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to Cast Roster">← Back</button>
         <span class="modal-title" id="exprModalTitle">🎭 Facial Expressions Wardrobe</span>
         <span class="cast-role-tag" id="exprModalRoleTag" style="font-size:10px;">Character</span>
       </div>
@@ -831,7 +835,10 @@
 <div class="modal-backdrop" id="exprEditModal" style="z-index:10030;">
   <div class="modal-window" style="max-width:390px; border-color:#818cf8;">
     <div class="modal-header" style="background:#1e1b4b; border-bottom:2px solid #6366f1;">
-      <span class="modal-title" style="color:#c7d2fe; font-size:15px;">✏️ Edit Facial Expression</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to Expressions">← Back</button>
+        <span class="modal-title" style="color:#c7d2fe; font-size:15px;">✏️ Edit Facial Expression</span>
+      </div>
       <button class="modal-close-btn" onclick="closeExprEditModal()">✕</button>
     </div>
     <div class="modal-body" style="padding:18px 20px; display:flex; flex-direction:column; gap:14px;">
@@ -863,7 +870,10 @@
 <div class="modal-backdrop" id="cropperModal" style="z-index:10020;">
   <div class="modal-window" style="max-width:400px;">
     <div class="modal-header">
-      <span class="modal-title">✂️ Crop & Zoom DP</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <span class="modal-title">✂️ Crop & Zoom DP</span>
+      </div>
       <button class="modal-close-btn" onclick="closeCropperModal()">✕</button>
     </div>
     <div class="modal-body cropper-stage">
@@ -887,6 +897,7 @@
   <div class="modal-window studio-modal-wide" style="max-width:660px;">
     <div class="modal-header">
       <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
         <span style="font-size:20px;">🎬</span>
         <div>
           <div class="modal-title" style="font-size:15px; font-weight:900;">Anime/Manhwa Script & Auto-Director Studio</div>
@@ -930,6 +941,7 @@
             <span class="script-tag-pill" title="Playback speed change">[SPEED: 1.2x]</span>
           </div>
           <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap;">
+            <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="loadCurrentChatIntoScriptEditor()" title="Convert current chat into screenplay dialogue script">💬 Chat to Script</button>
             <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template with characters, custom expressions & vault stickers">📋 Copy AI Prompt</button>
             <button type="button" class="icon-btn" style="background:#8b5cf6; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertScriptToJsonView()" title="Convert script into JSON">🔄 To JSON</button>
             <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a; font-size:11px; padding:4px 9px;" onclick="loadDemoScriptIntoModal()">⚡ Sample</button>
@@ -1120,7 +1132,10 @@
 <div class="modal-backdrop" id="cinemaSpeedModal" style="z-index:10020;">
   <div class="modal-window" style="max-width:390px;">
     <div class="modal-header">
-      <span class="modal-title">⏱️ Custom Speed Settings</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <span class="modal-title">⏱️ Custom Speed Settings</span>
+      </div>
       <button class="modal-close-btn" onclick="closeCinemaSpeedModal()">✕</button>
     </div>
     <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
@@ -1179,7 +1194,10 @@
 <div class="modal-backdrop" id="storiesModal" style="z-index:10010;">
   <div class="modal-window" style="max-width:480px;">
     <div class="modal-header">
-      <span class="modal-title">📁 Saved Stories & Episodes</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <span class="modal-title">📁 Saved Stories & Episodes</span>
+      </div>
       <button class="modal-close-btn" onclick="closeStoriesModal()">✕</button>
     </div>
     <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
@@ -1226,7 +1244,10 @@
 <div class="modal-backdrop" id="vaultPickModal">
   <div class="modal-window" style="max-width:440px;">
     <div class="modal-header">
-      <span class="modal-title" id="vaultPickModalTitle">📁 Select Media from Vault</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <span class="modal-title" id="vaultPickModalTitle">📁 Select Media from Vault</span>
+      </div>
       <button class="modal-close-btn" onclick="closeVaultPickModal()">✕</button>
     </div>
     <div class="modal-body" style="max-height:60vh; overflow-y:auto;">

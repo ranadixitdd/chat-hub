@@ -3207,7 +3207,7 @@
     background: rgba(7, 11, 20, 0.88) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
-    z-index: 9999 !important;
+    z-index: 9999;
     display: none;
     align-items: center;
     justify-content: center;
@@ -3282,6 +3282,35 @@
     border-radius: 50%;
     font-weight: 900;
     cursor: pointer;
+  }
+
+  .modal-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #f1f5f9;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .modal-back-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.32);
+    color: #38bdf8;
+    transform: translateX(-2px);
+  }
+
+  .modal-back-btn:active {
+    transform: scale(0.95);
   }
 
   .modal-body {

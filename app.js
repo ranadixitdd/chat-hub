@@ -454,7 +454,70 @@
     }
   }
 
-  function openSpecialEventModal() {
+  /* =====================================================================
+     UNIVERSAL MODAL NAVIGATION STACK & BACK SYSTEM
+     ===================================================================== */
+  let modalHistoryStack = [];
+
+  function pushModalHistory(modalId) {
+    if (!modalId) return;
+    if (modalHistoryStack.length === 0 || modalHistoryStack[modalHistoryStack.length - 1] !== modalId) {
+      modalHistoryStack.push(modalId);
+    }
+  }
+
+  function dismissLingeringModals() {
+    if (typeof closeDeleteConfirmModal === 'function') closeDeleteConfirmModal();
+    if (typeof closeCustomPromptModal === 'function') closeCustomPromptModal();
+  }
+
+  function navigateModalBack() {
+    dismissLingeringModals();
+
+    const openModals = Array.from(document.querySelectorAll('.modal-backdrop.open'));
+    if (openModals.length === 0) return;
+
+    const currentModal = openModals[openModals.length - 1];
+    const currentModalId = currentModal ? currentModal.id : null;
+
+    let previousModalId = modalHistoryStack.pop();
+
+    if (previousModalId === currentModalId) {
+      previousModalId = modalHistoryStack.pop();
+    }
+
+    if (!previousModalId) {
+      if (currentModalId === 'exprEditModal') {
+        previousModalId = 'charExpressionModal';
+      } else if (currentModalId === 'charExpressionModal') {
+        previousModalId = 'castModal';
+      } else if (currentModalId === 'cropperModal' || currentModalId === 'vaultPickModal') {
+        previousModalId = (typeof currentCharWardrobeId !== 'undefined' && currentCharWardrobeId) ? 'charExpressionModal' : 'castModal';
+      } else if (currentModalId === 'storiesModal' || currentModalId === 'scriptModal' || currentModalId === 'specialEventModal' || currentModalId === 'cinemaSpeedModal') {
+        previousModalId = 'globalSettingsModal';
+      }
+    }
+
+    if (currentModal) currentModal.classList.remove('open');
+
+    if (previousModalId) {
+      const prevEl = document.getElementById(previousModalId);
+      if (prevEl) {
+        prevEl.classList.add('open');
+        if (previousModalId === 'castModal' && typeof renderCastModalList === 'function') renderCastModalList();
+        if (previousModalId === 'charExpressionModal' && typeof renderCharacterExpressionWardrobe === 'function' && currentCharWardrobeId) renderCharacterExpressionWardrobe(currentCharWardrobeId);
+        if (previousModalId === 'storiesModal' && typeof renderStoriesList === 'function') renderStoriesList();
+        if (previousModalId === 'globalSettingsModal' && typeof updateGlobalSettingsModalUI === 'function') updateGlobalSettingsModalUI();
+      }
+    }
+  }
+
+  window.navigateModalBack = navigateModalBack;
+  window.pushModalHistory = pushModalHistory;
+  window.dismissLingeringModals = dismissLingeringModals;
+
+  function openSpecialEventModal(parentModalId = null) {
+    if (parentModalId) pushModalHistory(parentModalId);
     const m = document.getElementById('specialEventModal');
     if (m) m.classList.add('open');
   }
@@ -462,6 +525,7 @@
   function closeSpecialEventModal() {
     const m = document.getElementById('specialEventModal');
     if (m) m.classList.remove('open');
+    dismissLingeringModals();
   }
 
 
@@ -660,6 +724,7 @@
   function closeGlobalSettingsModal() {
     const modal = document.getElementById('globalSettingsModal');
     if (modal) modal.classList.remove('open');
+    dismissLingeringModals();
   }
 
   function updateGlobalSettingsModalUI() {
@@ -3485,6 +3550,7 @@ if (msg.type === 'quest') {
   function closeCropperModal() {
     document.getElementById('cropperModal').classList.remove('open');
     cropImageObj = null;
+    dismissLingeringModals();
   }
 
   /* =====================================================================
@@ -3625,13 +3691,15 @@ if (msg.type === 'quest') {
     showToast('✅ WhatsApp settings & mode saved!');
   }
 
-  function openCastModal() {
+  function openCastModal(parentModalId = null) {
+    if (parentModalId) pushModalHistory(parentModalId);
     renderCastModalList();
     document.getElementById('castModal').classList.add('open');
   }
 
   function closeCastModal() {
     document.getElementById('castModal').classList.remove('open');
+    dismissLingeringModals();
   }
 
 
@@ -3785,7 +3853,7 @@ if (msg.type === 'quest') {
           ${c.role ? `<span class="cast-role-tag">${escapeHtml(c.role)}</span>` : ''}
         </div>
 
-        <button type="button" class="cast-delete-btn" onclick="confirmDeleteCharacter('${c.id}')" title="Remove ${escapeHtml(c.name)} from cast roster">
+        <button type="button" class="cast-delete-btn" id="delBtn_${c.id}" onclick="handleInlineDeleteCharacter('${c.id}', this)" title="Remove ${escapeHtml(c.name)} from cast roster">
           🗑️ Remove
         </button>
       </div>
@@ -3860,8 +3928,43 @@ if (msg.type === 'quest') {
     showToast(`➕ Added ${defaultName}!`);
   }
 
-  /* === CHARACTER DELETION & CONFIRMATION SYSTEM === */
+  /* === CHARACTER DELETION & INLINE CONFIRMATION SYSTEM === */
   let characterPendingDeleteId = null;
+  let characterInlineDeleteTimeout = null;
+  let characterInlineDeleteId = null;
+
+  function handleInlineDeleteCharacter(charId, btnEl) {
+    if (characters.length <= 1) {
+      showToast('⚠️ Cannot delete! You need at least 1 character in the cast roster.');
+      return;
+    }
+    if (characterInlineDeleteId === charId) {
+      if (characterInlineDeleteTimeout) clearTimeout(characterInlineDeleteTimeout);
+      characterInlineDeleteId = null;
+      executeCharacterDeletion(charId);
+      return;
+    }
+
+    characterInlineDeleteId = charId;
+    const originalHtml = btnEl.innerHTML;
+    btnEl.innerHTML = '⚠️ Tap to Confirm?';
+    btnEl.style.background = '#dc2626';
+    btnEl.style.color = '#fff';
+    btnEl.style.fontWeight = 'bold';
+    btnEl.style.padding = '4px 8px';
+
+    if (characterInlineDeleteTimeout) clearTimeout(characterInlineDeleteTimeout);
+    characterInlineDeleteTimeout = setTimeout(() => {
+      characterInlineDeleteId = null;
+      if (btnEl && btnEl.isConnected) {
+        btnEl.innerHTML = originalHtml;
+        btnEl.style.background = '';
+        btnEl.style.color = '';
+        btnEl.style.fontWeight = '';
+        btnEl.style.padding = '';
+      }
+    }, 3500);
+  }
 
   function confirmDeleteCharacter(charId) {
     if (characters.length <= 1) {
@@ -3889,9 +3992,9 @@ if (msg.type === 'quest') {
     characterPendingDeleteId = null;
   }
 
-  function executeCharacterDeletion() {
-    if (!characterPendingDeleteId) return;
-    const charId = characterPendingDeleteId;
+  function executeCharacterDeletion(idOverride = null) {
+    const charId = idOverride || characterPendingDeleteId;
+    if (!charId) return;
     const target = characters.find(c => c.id === charId);
     const targetName = target ? target.name : 'Character';
 
@@ -3921,7 +4024,7 @@ if (msg.type === 'quest') {
   }
 
   function deleteCharacter(charId) {
-    confirmDeleteCharacter(charId);
+    executeCharacterDeletion(charId);
   }
 
   /* =====================================================================
@@ -3930,6 +4033,7 @@ if (msg.type === 'quest') {
   let currentCharWardrobeId = null;
 
   function openCharExpressionModal(charId) {
+    pushModalHistory('castModal');
     currentCharWardrobeId = charId;
     const char = characters.find(c => c.id === charId);
     if (!char) return;
@@ -3951,6 +4055,7 @@ if (msg.type === 'quest') {
     const modal = document.getElementById('charExpressionModal');
     if (modal) modal.classList.remove('open');
     currentCharWardrobeId = null;
+    dismissLingeringModals();
   }
 
   function renderCharacterExpressionWardrobe(charId) {
@@ -4033,6 +4138,7 @@ if (msg.type === 'quest') {
   let editingExprKey = null;
 
   function openExprEditModal(charId, exprKey) {
+    pushModalHistory('charExpressionModal');
     const char = characters.find(c => c.id === charId);
     if (!char) return;
     ensureCharacterExpressions(char);
@@ -4058,6 +4164,7 @@ if (msg.type === 'quest') {
     if (modal) modal.classList.remove('open');
     editingExprCharId = null;
     editingExprKey = null;
+    dismissLingeringModals();
   }
 
   function saveEditedExpression() {
@@ -4354,6 +4461,7 @@ if (msg.type === 'quest') {
   function closeVaultPickModal() {
     const modal = document.getElementById('vaultPickModal');
     if (modal) modal.classList.remove('open');
+    dismissLingeringModals();
   }
 
   window.selectVaultMediaForEdit = function(url, label, stickerObj) {
@@ -4931,6 +5039,7 @@ if (msg.type === 'quest') {
 
           const bubbleEl = el.querySelector('.sticker-card') || el.querySelector('.speech-bubble');
           triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
 
           stepIndex++;
           cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 700) / cinemaSpeedMultiplier);
@@ -4966,6 +5075,7 @@ if (msg.type === 'quest') {
         if (soundEnabled) playPopSound(char.pitch || 1.05);
         const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
         triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
         stepIndex++;
         cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 250) / cinemaSpeedMultiplier);
         return;
@@ -5060,6 +5170,7 @@ if (msg.type === 'quest') {
 
             const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
             triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
 
             stepIndex++;
             const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
@@ -5178,6 +5289,7 @@ if (msg.type === 'quest') {
 
                 const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
                 triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
 
                 stepIndex++;
                 const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
@@ -5353,13 +5465,15 @@ if (msg.type === 'quest') {
     showToast(`⏱️ Spam Pace: ${cinemaSpamDelayMs}ms`);
   }
 
-  function openCinemaSpeedModal() {
+  function openCinemaSpeedModal(parentModalId = null) {
+    if (parentModalId) pushModalHistory(parentModalId);
     updateCinemaSpeedUI();
     document.getElementById('cinemaSpeedModal').classList.add('open');
   }
 
   function closeCinemaSpeedModal() {
     document.getElementById('cinemaSpeedModal').classList.remove('open');
+    dismissLingeringModals();
   }
 
   function resetCinemaSpeedDefaults() {
@@ -5645,31 +5759,66 @@ if (msg.type === 'quest') {
   }
 
   /* =====================================================================
-     13. AI SCRIPT IMPORTER, STUDIO TOOLS & IN-APP MODALS
-     ===================================================================== */
-  function openScriptModal() {
-    document.getElementById('scriptModal').classList.add('open');
-  }
-
-  function closeScriptModal() {
-    document.getElementById('scriptModal').classList.remove('open');
-  }
-
-  /* =====================================================================
      STORIES MANAGER (SAVE / LOAD / NEW / EXPORT / IMPORT)
      ===================================================================== */
-  function openStoriesModal() {
+  let storyInlineDeleteTimeout = null;
+  let storyInlineDeleteId = null;
+
+  function handleInlineDeleteStory(storyId, btnEl) {
+    if (storyInlineDeleteId === storyId) {
+      if (storyInlineDeleteTimeout) clearTimeout(storyInlineDeleteTimeout);
+      storyInlineDeleteId = null;
+      savedStories = savedStories.filter(s => s.id !== storyId);
+      if (currentStoryId === storyId) {
+        currentStoryId = '';
+        safeSetStorage('wh_current_story_id', '');
+      }
+      safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.deleteStory === 'function') {
+        window.ChatHubStorage.deleteStory(storyId);
+      }
+      renderStoriesList();
+      showToast('🗑️ Story deleted');
+      return;
+    }
+
+    storyInlineDeleteId = storyId;
+    const originalHtml = btnEl.innerHTML;
+    btnEl.innerHTML = '⚠️ Delete?';
+    btnEl.style.background = '#dc2626';
+    btnEl.style.color = '#fff';
+    btnEl.style.fontWeight = 'bold';
+    btnEl.style.padding = '4px 9px';
+
+    if (storyInlineDeleteTimeout) clearTimeout(storyInlineDeleteTimeout);
+    storyInlineDeleteTimeout = setTimeout(() => {
+      storyInlineDeleteId = null;
+      if (btnEl && btnEl.isConnected) {
+        btnEl.innerHTML = originalHtml;
+        btnEl.style.background = '';
+        btnEl.style.color = '';
+        btnEl.style.fontWeight = '';
+        btnEl.style.padding = '';
+      }
+    }, 3500);
+  }
+
+  function openStoriesModal(parentModalId = null) {
+    if (parentModalId) pushModalHistory(parentModalId);
     const titleInput = document.getElementById('currentStoryTitleInput');
     if (titleInput) titleInput.value = currentStoryTitle;
     renderStoriesList();
     if (window.ChatHubStorage && typeof window.ChatHubStorage.updateStorageStatusUi === 'function') {
       window.ChatHubStorage.updateStorageStatusUi();
     }
-    document.getElementById('storiesModal').classList.add('open');
+    const modal = document.getElementById('storiesModal');
+    if (modal) modal.classList.add('open');
   }
 
   function closeStoriesModal() {
-    document.getElementById('storiesModal').classList.remove('open');
+    const modal = document.getElementById('storiesModal');
+    if (modal) modal.classList.remove('open');
+    dismissLingeringModals();
   }
 
   function saveCurrentStory(isSaveAsNew = false) {
@@ -5753,7 +5902,7 @@ if (msg.type === 'quest') {
           <button class="icon-btn" style="background:#475569; color:#fff; font-size:11px; padding:4px 7px;" onclick="renameStoryById('${story.id}')" title="Rename story title">✏️</button>
           <button class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 7px;" onclick="duplicateStoryById('${story.id}')" title="Duplicate story copy">📑</button>
           <button class="icon-btn" style="background:#334155; color:#cbd5e1; font-size:11px; padding:4px 7px;" onclick="exportStoryById('${story.id}')" title="Export as JSON">💾</button>
-          <button class="icon-btn danger" style="background:#ef4444; color:#fff; font-size:11px; padding:4px 7px;" onclick="deleteStoryById('${story.id}')" title="Delete story">🗑️</button>
+          <button class="icon-btn danger" style="background:#ef4444; color:#fff; font-size:11px; padding:4px 7px;" onclick="handleInlineDeleteStory('${story.id}', this)" title="Delete story">🗑️</button>
         </div>
       `;
       container.appendChild(card);
@@ -5836,26 +5985,17 @@ if (msg.type === 'quest') {
   }
 
   function deleteStoryById(storyId) {
-    const target = savedStories.find(s => s.id === storyId);
-    if (!target) return;
-    openCustomPromptModal({
-      title: '🗑️ Delete Saved Story',
-      desc: `Are you sure you want to permanently delete "${target.title}"?`,
-      showInput: false,
-      onConfirm: () => {
-        savedStories = savedStories.filter(s => s.id !== storyId);
-        if (currentStoryId === storyId) {
-          currentStoryId = '';
-          safeSetStorage('wh_current_story_id', '');
-        }
-        safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
-        if (window.ChatHubStorage && typeof window.ChatHubStorage.deleteStory === 'function') {
-          window.ChatHubStorage.deleteStory(storyId);
-        }
-        renderStoriesList();
-        showToast('🗑️ Story deleted');
-      }
-    });
+    savedStories = savedStories.filter(s => s.id !== storyId);
+    if (currentStoryId === storyId) {
+      currentStoryId = '';
+      safeSetStorage('wh_current_story_id', '');
+    }
+    safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+    if (window.ChatHubStorage && typeof window.ChatHubStorage.deleteStory === 'function') {
+      window.ChatHubStorage.deleteStory(storyId);
+    }
+    renderStoriesList();
+    showToast('🗑️ Story deleted');
   }
 
   function renameStoryById(storyId) {
@@ -6071,13 +6211,17 @@ if (msg.type === 'quest') {
     }
   ];
 
-  function openScriptModal() {
+  function openScriptModal(parentModalId = null) {
+    if (parentModalId) pushModalHistory(parentModalId);
     renderScriptLibrary();
-    document.getElementById('scriptModal').classList.add('open');
+    const modal = document.getElementById('scriptModal');
+    if (modal) modal.classList.add('open');
   }
 
   function closeScriptModal() {
-    document.getElementById('scriptModal').classList.remove('open');
+    const modal = document.getElementById('scriptModal');
+    if (modal) modal.classList.remove('open');
+    dismissLingeringModals();
   }
 
   function switchScriptStudioTab(tab) {
@@ -6481,8 +6625,18 @@ If JSON format is preferred, you can output this JSON structure directly:
 
   // Converts in-memory messages array to script dialogue text format
   function convertChatMessagesToScriptText(msgList) {
+    const list = msgList || messages || [];
+    if (list.length === 0) {
+      return '// Chat is currently empty. Add lines or run a story first!';
+    }
     const lines = [];
-    (msgList || []).forEach(m => {
+    lines.push(`// ==========================================`);
+    lines.push(`// SCRIPT TEMPLATE: ${currentStoryTitle || 'Current Story'}`);
+    lines.push(`// Generated from current chat messages (${list.length} lines)`);
+    lines.push(`// ==========================================`);
+    lines.push('');
+
+    list.forEach(m => {
       if (m.preDelayMs && m.preDelayMs > 0) {
         lines.push(`/delay ${(m.preDelayMs / 1000).toFixed(1).replace(/\.0$/, '')}sec`);
       }
@@ -6505,19 +6659,42 @@ If JSON format is preferred, you can output this JSON structure directly:
         lines.push(`[${char.name}:AUDIO]: ${m.audioUrl || m.text || ''}`);
       } else if (m.type === 'sfx') {
         const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
-        lines.push(`[${char.name}:SFX]: ${m.text || '💥 BAM!!'}`);
+        const exprTag = (m.expr && m.expr !== 'normal') ? `:${m.expr}` : '';
+        const soundTag = m.sfx ? `:${m.sfx}` : ':SFX';
+        lines.push(`[${char.name}${exprTag}${soundTag}]: ${m.text || '💥 BAM!!'}`);
       } else if (m.type === 'sticker') {
         const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
+        const exprTag = (m.expr && m.expr !== 'normal') ? `:${m.expr}` : '';
         const label = (m.stickerData && m.stickerData.label) || 'sticker';
-        lines.push(`[${char.name}:STICKER]: ${label}`);
+        lines.push(`[${char.name}${exprTag}:STICKER]: ${label}`);
       } else {
         const char = characters.find(c => c.id === m.charId) || { name: 'Character' };
         const exprTag = (m.expr && m.expr !== 'normal') ? `:${m.expr}` : '';
-        lines.push(`[${char.name}${exprTag}]: ${m.text || ''}`);
+        const sfxTag = m.sfx ? `:${m.sfx}` : '';
+        lines.push(`[${char.name}${exprTag}${sfxTag}]: ${m.text || ''}`);
       }
     });
     return lines.join('\n');
   }
+
+  function loadCurrentChatIntoScriptEditor() {
+    const scriptBox = document.getElementById('scriptInputBox');
+    if (!scriptBox) return;
+
+    const scriptText = convertChatMessagesToScriptText(messages);
+    scriptBox.value = scriptText;
+
+    if (typeof switchScriptStudioTab === 'function') {
+      switchScriptStudioTab('text');
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(scriptText).catch(() => {});
+    }
+
+    showToast('📋 Current chat loaded into Script Editor & copied to clipboard!');
+  }
+  window.loadCurrentChatIntoScriptEditor = loadCurrentChatIntoScriptEditor;
 
   // Parse Dialogue Script into Structured Data Objects (with Smart Auto-Timing)
   function parseScriptLinesToMessages(rawScript) {
@@ -6649,16 +6826,15 @@ If JSON format is preferred, you can output this JSON structure directly:
 
       // 6. Character dialogue lines
       let charName = '';
-      let tag1 = 'normal';
-      let tag2 = '';
+      let subTags = [];
       let msgBody = '';
 
-      const bracketMatch = line.match(/^\[([^:\]]+)(?::([^:\]]+))?(?::([^\]]+))?\]:\s*(.+)$/);
+      const bracketMatch = line.match(/^\[([^\]]+)\]:\s*(.+)$/);
       if (bracketMatch) {
-        charName = bracketMatch[1].trim();
-        tag1 = (bracketMatch[2] || 'normal').trim();
-        tag2 = (bracketMatch[3] || '').trim();
-        msgBody = bracketMatch[4].trim();
+        const tagParts = bracketMatch[1].split(':').map(p => p.trim()).filter(Boolean);
+        charName = tagParts[0] || '';
+        subTags = tagParts.slice(1);
+        msgBody = bracketMatch[2].trim();
       } else {
         const colonIdx = line.indexOf(':');
         if (colonIdx === -1) return;
@@ -6686,11 +6862,55 @@ If JSON format is preferred, you can output this JSON structure directly:
         characters.push(char);
       }
 
-      const upperTag1 = tag1.toUpperCase();
-      const upperTag2 = tag2.toUpperCase();
+      let explicitExpr = null;
+      let explicitSfx = null;
+      let isSfxType = false;
+      let isStickerType = false;
+      let isImageType = false;
+      let isVideoType = false;
+      let isAudioType = false;
+      let stickerKey = '';
+      let isFast = false;
+      let isSlow = false;
+      let explicitSide = null;
+
+      const knownExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
+      const knownSounds = ['punch', 'sword', 'boom', 'vineboom', 'sting', 'scifi', 'sad', 'boing', 'hit', 'slash', 'cut', 'pop', 'sparkle'];
+
+      subTags.forEach(t => {
+        const tu = t.toUpperCase();
+        const tl = t.toLowerCase();
+
+        if (tu === 'SFX' || tu === 'BURST') {
+          isSfxType = true;
+        } else if (tu === 'STICKER' || tu === 'GIF') {
+          isStickerType = true;
+        } else if (tu === 'IMAGE' || tu === 'PHOTO') {
+          isImageType = true;
+        } else if (tu === 'VIDEO' || tu === 'VID') {
+          isVideoType = true;
+        } else if (tu === 'AUDIO' || tu === 'VOICE') {
+          isAudioType = true;
+        } else if (knownExprs.includes(tl) || (char.expressions && char.expressions[tl])) {
+          explicitExpr = tl;
+        } else if (knownSounds.includes(tl) || tl.startsWith('sound_')) {
+          explicitSfx = (tl === 'boom' ? 'vineboom' : (tl === 'hit' ? 'punch' : (tl === 'cut' ? 'sword' : tl)));
+          isSfxType = true;
+        } else if (tu === 'FAST' || tu === 'BURST_SPEED') {
+          isFast = true;
+        } else if (tu === 'SLOW') {
+          isSlow = true;
+        } else if (tu === 'LEFT' || tu === 'RIGHT') {
+          explicitSide = tl;
+        } else if (isStickerType && !stickerKey) {
+          stickerKey = t;
+        } else if (!explicitExpr && char.expressions && char.expressions[tl]) {
+          explicitExpr = tl;
+        }
+      });
 
       // Check Media within character bracket: [Dora:IMAGE]: url, [Dora:VIDEO]: url
-      if (upperTag1 === 'IMAGE' || upperTag1 === 'PHOTO' || upperTag2 === 'IMAGE') {
+      if (isImageType) {
         parsedMsgs.push({
           id: 'm_img_' + Date.now() + '_' + idx,
           type: 'image',
@@ -6702,7 +6922,7 @@ If JSON format is preferred, you can output this JSON structure directly:
         });
         return;
       }
-      if (upperTag1 === 'VIDEO' || upperTag2 === 'VIDEO') {
+      if (isVideoType) {
         parsedMsgs.push({
           id: 'm_vid_' + Date.now() + '_' + idx,
           type: 'video',
@@ -6714,7 +6934,7 @@ If JSON format is preferred, you can output this JSON structure directly:
         });
         return;
       }
-      if (upperTag1 === 'AUDIO' || upperTag1 === 'VOICE' || upperTag2 === 'AUDIO') {
+      if (isAudioType) {
         parsedMsgs.push({
           id: 'm_aud_' + Date.now() + '_' + idx,
           type: 'audio',
@@ -6728,26 +6948,36 @@ If JSON format is preferred, you can output this JSON structure directly:
       }
 
       // Check SFX Burst
-      if (upperTag1 === 'SFX' || upperTag2 === 'SFX') {
+      if (isSfxType) {
         const bodyLower = msgBody.toLowerCase();
-        let soundType = 'punch';
-        if (bodyLower.includes('bam') || bodyLower.includes('pow') || bodyLower.includes('punch') || bodyLower.includes('hit')) soundType = 'punch';
-        else if (bodyLower.includes('slash') || bodyLower.includes('sword') || bodyLower.includes('blade') || bodyLower.includes('cut')) soundType = 'sword';
-        else if (bodyLower.includes('boom') || bodyLower.includes('vineboom') || bodyLower.includes('bruh') || bodyLower.includes('explode')) soundType = 'vineboom';
-        else if (bodyLower.includes('nani') || bodyLower.includes('shock') || bodyLower.includes('omae') || bodyLower.includes('sting')) soundType = 'sting';
-        else if (bodyLower.includes('awaken') || bodyLower.includes('quest') || bodyLower.includes('mana') || bodyLower.includes('system') || bodyLower.includes('level')) soundType = 'scifi';
-        else if (bodyLower.includes('wah') || bodyLower.includes('cry') || bodyLower.includes('tear') || bodyLower.includes('sob')) soundType = 'sad';
-        else if (bodyLower.includes('bwaha') || bodyLower.includes('haha') || bodyLower.includes('laugh') || bodyLower.includes('rofl')) soundType = 'boing';
+        let soundType = explicitSfx || 'punch';
+        if (!explicitSfx) {
+          if (bodyLower.includes('bam') || bodyLower.includes('pow') || bodyLower.includes('punch') || bodyLower.includes('hit')) soundType = 'punch';
+          else if (bodyLower.includes('slash') || bodyLower.includes('sword') || bodyLower.includes('blade') || bodyLower.includes('cut')) soundType = 'sword';
+          else if (bodyLower.includes('boom') || bodyLower.includes('vineboom') || bodyLower.includes('bruh') || bodyLower.includes('explode')) soundType = 'vineboom';
+          else if (bodyLower.includes('nani') || bodyLower.includes('shock') || bodyLower.includes('omae') || bodyLower.includes('sting')) soundType = 'sting';
+          else if (bodyLower.includes('awaken') || bodyLower.includes('quest') || bodyLower.includes('mana') || bodyLower.includes('system') || bodyLower.includes('level')) soundType = 'scifi';
+          else if (bodyLower.includes('wah') || bodyLower.includes('cry') || bodyLower.includes('tear') || bodyLower.includes('sob')) soundType = 'sad';
+          else if (bodyLower.includes('bwaha') || bodyLower.includes('haha') || bodyLower.includes('laugh') || bodyLower.includes('rofl')) soundType = 'boing';
 
-        const matchBurst = builtInSfxBursts.find(b => b.text.toLowerCase().includes(bodyLower) || bodyLower.includes(b.id));
-        if (matchBurst && matchBurst.sfx) soundType = matchBurst.sfx;
+          const matchBurst = builtInSfxBursts.find(b => b.text.toLowerCase().includes(bodyLower) || bodyLower.includes(b.id));
+          if (matchBurst && matchBurst.sfx) soundType = matchBurst.sfx;
+        }
+
+        let expr = explicitExpr;
+        if (!expr) {
+          if (soundType === 'sad') expr = 'cry';
+          else if (soundType === 'boing') expr = 'laugh';
+          else if (soundType === 'sting') expr = 'shock';
+          else expr = 'angry';
+        }
 
         parsedMsgs.push({
           id: 'm_sfx_' + Date.now() + '_' + idx,
           type: 'sfx',
           charId: char.id,
           text: msgBody,
-          expr: (matchBurst && matchBurst.expr) || (soundType === 'sad' ? 'cry' : (soundType === 'boing' ? 'laugh' : 'angry')),
+          expr: expr,
           sfx: soundType,
           preDelayMs: eventPreDelay,
           delayMs: 380,
@@ -6758,16 +6988,20 @@ If JSON format is preferred, you can output this JSON structure directly:
       }
 
       // Check Sticker / Media
-      if (upperTag1 === 'STICKER' || upperTag1 === 'MEDIA' || upperTag1 === 'GIF' || upperTag2 === 'STICKER') {
-        const found = customStickers.find(s => s.label.toLowerCase().includes(msgBody.toLowerCase())) ||
-                      builtInStickers.find(s => (s.label || '').toLowerCase().includes(msgBody.toLowerCase())) ||
+      if (isStickerType) {
+        const query = stickerKey || msgBody;
+        const found = customStickers.find(s => s.label.toLowerCase().includes(query.toLowerCase())) ||
+                      builtInStickers.find(s => (s.label || '').toLowerCase().includes(query.toLowerCase())) ||
                       customStickers[0] || builtInStickers[0];
+
+        let expr = explicitExpr || 'normal';
+
         parsedMsgs.push({
           id: 'm_stk_' + Date.now() + '_' + idx,
           type: 'sticker',
           charId: char.id,
           stickerData: found,
-          expr: 'normal',
+          expr: expr,
           preDelayMs: eventPreDelay,
           delayMs: 550,
           time: getNextStoryTime()
@@ -6776,9 +7010,9 @@ If JSON format is preferred, you can output this JSON structure directly:
       }
 
       // Emotion & Auto-Timing
-      let expr = tag1.toLowerCase();
+      let expr = explicitExpr;
       const hasCustomExpr = Boolean(char && char.expressions && char.expressions[expr]);
-      if (!validExprs.includes(expr) && !hasCustomExpr) {
+      if (!expr || (!validExprs.includes(expr) && !hasCustomExpr)) {
         let autoExpr = 'normal';
         if (msgBody.includes('😭') || msgBody.includes('😢')) autoExpr = 'cry';
         else if (msgBody.includes('😂') || msgBody.includes('🤣')) autoExpr = 'laugh';
@@ -6792,11 +7026,10 @@ If JSON format is preferred, you can output this JSON structure directly:
       const textLen = msgBody.length;
       let calculatedDelay = Math.max(300, Math.min(1200, textLen * 24));
       if (expr === 'angry') calculatedDelay = Math.max(220, textLen * 16);
-      const isFast = (upperTag1 === 'FAST' || upperTag2 === 'FAST' || upperTag1 === 'BURST' || upperTag2 === 'BURST');
       if (isFast) calculatedDelay = 220;
-      if (upperTag1 === 'SLOW' || upperTag2 === 'SLOW') calculatedDelay = 1200;
+      if (isSlow) calculatedDelay = 1200;
 
-      parsedMsgs.push({
+      const newMsg = {
         id: 'm_imp_' + Date.now() + '_' + idx,
         type: 'text',
         charId: char.id,
@@ -6806,7 +7039,13 @@ If JSON format is preferred, you can output this JSON structure directly:
         preDelayMs: eventPreDelay,
         delayMs: calculatedDelay,
         time: getNextStoryTime()
-      });
+      };
+      if (explicitSfx) {
+        newMsg.sfx = explicitSfx;
+        newMsg.screenShake = true;
+      }
+
+      parsedMsgs.push(newMsg);
     });
 
     if (pendingDelayMs > 0) {
@@ -7166,18 +7405,45 @@ If JSON format is preferred, you can output this JSON structure directly:
     showToast('💾 Story JSON exported!');
   }
 
-  function confirmClearChat() {
-    openCustomPromptModal({
-      title: '🗑️ Clear All Messages?',
-      desc: 'Are you sure you want to clear all messages in the current chat story?',
-      showInput: false,
-      onConfirm: () => {
-        messages = [];
-        saveStudioState();
-        renderChatStream();
-        showToast('🗑️ Chat cleared');
+  let clearChatInlineTimeout = null;
+  let clearChatPending = false;
+
+  function handleInlineClearChat(btnEl) {
+    if (clearChatPending) {
+      if (clearChatInlineTimeout) clearTimeout(clearChatInlineTimeout);
+      clearChatPending = false;
+      messages = [];
+      saveStudioState();
+      renderChatStream();
+      if (btnEl && btnEl.isConnected) {
+        btnEl.innerHTML = '🗑️ Clear Messages';
+        btnEl.style.background = '#ef4444';
       }
-    });
+      closeGlobalSettingsModal();
+      showToast('🗑️ Chat messages cleared!');
+      return;
+    }
+
+    clearChatPending = true;
+    btnEl.innerHTML = '⚠️ Tap to Confirm Clear';
+    btnEl.style.background = '#b91c1c';
+
+    if (clearChatInlineTimeout) clearTimeout(clearChatInlineTimeout);
+    clearChatInlineTimeout = setTimeout(() => {
+      clearChatPending = false;
+      if (btnEl && btnEl.isConnected) {
+        btnEl.innerHTML = '🗑️ Clear Messages';
+        btnEl.style.background = '#ef4444';
+      }
+    }, 3500);
+  }
+  window.handleInlineClearChat = handleInlineClearChat;
+
+  function confirmClearChat() {
+    messages = [];
+    saveStudioState();
+    renderChatStream();
+    showToast('🗑️ Chat cleared');
   }
 
   let toastTimeout = null;
@@ -7251,6 +7517,7 @@ If JSON format is preferred, you can output this JSON structure directly:
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
       modal.classList.remove('open');
     });
+    dismissLingeringModals();
   }
 
   // Tap anywhere outside to close modals, dropdown menu, or sticker drawer
@@ -7258,6 +7525,7 @@ If JSON format is preferred, you can output this JSON structure directly:
     // 1. If clicked on modal backdrop (outside the modal window)
     if (e.target.classList.contains('modal-backdrop')) {
       e.target.classList.remove('open');
+      dismissLingeringModals();
     }
 
     // 2. If studio dropdown menu is open and click was outside
