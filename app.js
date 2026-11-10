@@ -1585,27 +1585,31 @@ function playSciFiChimeSound() {
   function ensureDefaultCastMembers() {
     if (!Array.isArray(deletedCastIds)) deletedCastIds = [];
 
-    // Migrate legacy placeholders if they exist in localStorage (c1: Sung Jinwoo -> Nobita, etc.)
-    const c1 = characters.find(c => c.id === 'c1');
-    if (c1 && (c1.name === 'Sung Jinwoo' || c1.name === 'Jinwoo')) {
-      c1.name = 'Nobita';
-      c1.color = '#eab308';
-      c1.pitch = 1.25;
-      c1.avatar = makeComicAvatarDataUri('NO', '#facc15', '👓');
-    }
-    const c2 = characters.find(c => c.id === 'c2');
-    if (c2 && (c2.name === 'Gojo Satoru' || c2.name === 'Gojo')) {
-      c2.name = 'Doraemon';
-      c2.color = '#0284c7';
-      c2.pitch = 0.92;
-      c2.avatar = makeComicAvatarDataUri('DO', '#38bdf8', '🔔');
-    }
-    const c3 = characters.find(c => c.id === 'c3');
-    if (c3 && (c3.name === 'Sakura' || c3.name === 'Waifu')) {
-      c3.name = 'Shizuka';
-      c3.color = '#ec4899';
-      c3.pitch = 1.38;
-      c3.avatar = makeComicAvatarDataUri('SH', '#f472b6', '🌸');
+    // Run legacy placeholder migration once only, and never overwrite if custom avatars or expressions exist
+    const legacyMigrated = safeGetStorage('wh_legacy_v1_migrated');
+    if (!legacyMigrated) {
+      safeSetStorage('wh_legacy_v1_migrated', 'true');
+      const c1 = characters.find(c => c.id === 'c1');
+      if (c1 && (c1.name === 'Sung Jinwoo' || c1.name === 'Jinwoo') && (!c1.avatar || c1.avatar.startsWith('data:image/svg+xml'))) {
+        c1.name = 'Nobita';
+        c1.color = '#eab308';
+        c1.pitch = 1.25;
+        c1.avatar = makeComicAvatarDataUri('NO', '#facc15', '👓');
+      }
+      const c2 = characters.find(c => c.id === 'c2');
+      if (c2 && (c2.name === 'Gojo Satoru' || c2.name === 'Gojo') && (!c2.avatar || c2.avatar.startsWith('data:image/svg+xml'))) {
+        c2.name = 'Doraemon';
+        c2.color = '#0284c7';
+        c2.pitch = 0.92;
+        c2.avatar = makeComicAvatarDataUri('DO', '#38bdf8', '🔔');
+      }
+      const c3 = characters.find(c => c.id === 'c3');
+      if (c3 && (c3.name === 'Sakura' || c3.name === 'Waifu') && (!c3.avatar || c3.avatar.startsWith('data:image/svg+xml'))) {
+        c3.name = 'Shizuka';
+        c3.color = '#ec4899';
+        c3.pitch = 1.38;
+        c3.avatar = makeComicAvatarDataUri('SH', '#f472b6', '🌸');
+      }
     }
 
     // Ensure Nobita exists if not explicitly deleted
@@ -5569,9 +5573,40 @@ if (msg.type === 'quest') {
     const titleInput = document.getElementById('currentStoryTitleInput');
     if (titleInput) titleInput.value = currentStoryTitle;
 
-    if (Array.isArray(story.characters) && story.characters.length > 0) characters = story.characters;
+    if (Array.isArray(story.characters) && story.characters.length > 0) {
+      // Smart merge: retain newly added characters and custom cropped expressions
+      const storyCharMap = new Map(story.characters.map(sc => [sc.id, sc]));
+      const mergedList = characters.map(current => {
+        const fromStory = storyCharMap.get(current.id);
+        if (fromStory) {
+          storyCharMap.delete(current.id);
+          return {
+            ...fromStory,
+            // Keep customized avatars and expressions if current has newer ones
+            avatar: current.avatar || fromStory.avatar,
+            expressions: {
+              ...(fromStory.expressions || {}),
+              ...(current.expressions || {})
+            }
+          };
+        }
+        return current;
+      });
+      for (const remaining of storyCharMap.values()) {
+        mergedList.push(remaining);
+      }
+      characters = mergedList;
+    }
     if (story.groupProfile) groupProfile = { ...groupProfile, ...story.groupProfile };
-    if (Array.isArray(story.customStickers)) customStickers = story.customStickers;
+    if (Array.isArray(story.customStickers)) {
+      // Merge custom stickers so loading an old episode never wipes newly uploaded stickers
+      const existingStickerLabels = new Set((customStickers || []).map(s => s.label || s.id));
+      story.customStickers.forEach(stk => {
+        if (!existingStickerLabels.has(stk.label || stk.id)) {
+          customStickers.push(stk);
+        }
+      });
+    }
 
     if (story.storyScenes) {
       storyScenes = story.storyScenes;
