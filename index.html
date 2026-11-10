@@ -45,10 +45,7 @@
       <span id="gptCurrentModelLabel">ChatGPT 4o</span>
       <span style="font-size:10px; opacity:0.7;">▾</span>
     </div>
-    <div style="display:flex; align-items:center; gap:6px;">
-      <button type="button" class="gpt-header-btn" onclick="startCinemaPlayback()" title="Auto-Play Story (Cinema Mode)">🎬</button>
-      <button type="button" class="gpt-header-btn" onclick="promptNewGptChat()" title="New Chat Scene">✏️</button>
-    </div>
+    <div style="width:34px;"></div>
   </div>
 
   <!-- === CHATGPT SIDEBAR DRAWER === -->
@@ -61,6 +58,12 @@
     <div class="gpt-sidebar-history" id="gptSidebarContent" style="padding:10px 8px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:4px;">
       
       <!-- TOOLS & WORKSPACE -->
+      <div class="gpt-tool-item" onclick="promptNewGptChat(); toggleGptSidebar(false);">
+        <span>✏️</span> <span>New Chat Scene</span>
+      </div>
+      <div class="gpt-tool-item" onclick="startCinemaPlayback(); toggleGptSidebar(false);">
+        <span>🎬</span> <span>Cinema Playback & Rec</span>
+      </div>
       <div class="gpt-tool-item" onclick="showToast('🖼️ DALL-E Image Creator Opened')">
         <span>🖼️</span> <span>Images / DALL-E</span>
       </div>
@@ -112,10 +115,7 @@
       <span id="geminiCurrentModelLabel">Gemini 1.5 Pro</span>
       <span style="font-size:10px; opacity:0.7;">▾</span>
     </div>
-    <div style="display:flex; align-items:center; gap:6px;">
-      <button type="button" class="gemini-header-btn" onclick="startCinemaPlayback()" title="Auto-Play Story (Cinema Mode)">🎬</button>
-      <button type="button" class="gemini-header-btn" onclick="promptNewGeminiChat()" title="New Gemini Chat">✏️</button>
-    </div>
+    <div style="width:34px;"></div>
   </div>
 
   <!-- === GEMINI SIDEBAR DRAWER === -->
@@ -126,6 +126,14 @@
       <button type="button" class="gemini-header-btn" onclick="toggleGeminiSidebar(false)">✕</button>
     </div>
     <div class="gemini-sidebar-scroll" id="geminiSidebarContent">
+
+      <!-- QUICK ACTIONS -->
+      <div class="gemini-gem-item" onclick="promptNewGeminiChat(); toggleGeminiSidebar(false);">
+        <span>✏️</span> <span>New Gemini Chat</span>
+      </div>
+      <div class="gemini-gem-item" onclick="startCinemaPlayback(); toggleGeminiSidebar(false);">
+        <span>🎬</span> <span>Cinema Playback & Rec</span>
+      </div>
       
       <!-- GEMS SECTION -->
       <div class="gemini-section-title">
@@ -474,9 +482,6 @@
       <button type="button" class="hub-tab-btn" id="tabBtnHubCast" onclick="switchHubTab('cast')">
         <span>👥</span> <span>Character Cast Studio</span>
       </button>
-      <button type="button" class="hub-tab-btn" id="tabBtnHubStage" onclick="switchHubTab('stage')">
-        <span>🎨</span> <span>Stage & Style</span>
-      </button>
       <button type="button" class="hub-tab-btn" id="tabBtnHubTools" onclick="switchHubTab('tools')">
         <span>🛠️</span> <span>Story Tools & Data</span>
       </button>
@@ -558,37 +563,6 @@
       </div>
 
       <div id="hubCastListContainer" class="cast-grid-layout"></div>
-    </div>
-
-    <!-- TAB PANEL 3: STAGE & VISUAL STYLES -->
-    <div class="hub-tab-panel" id="hubPanelStage">
-      <div class="global-section">
-        <label class="form-label" style="font-size:14px; font-weight:800; color:#f8fafc;">🎨 Presentation Style</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-          <button type="button" class="icon-btn" id="globalStyleBtn" onclick="toggleChatStyle()" style="padding:14px; justify-content:center; font-size:13.5px;">
-            <span id="globalStyleIcon" style="font-size:20px;">💬</span> <span id="globalStyleLabel">WhatsApp Style</span>
-          </button>
-          <button type="button" class="icon-btn" onclick="toggleMessageGrouping()" style="padding:14px; justify-content:center; font-size:13.5px;">
-            <span id="globalGroupingLabel">🔗 Grouping: ON</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="global-section">
-        <label class="form-label" style="font-size:14px; font-weight:800; color:#f8fafc;">📐 Video Frame / Aspect Ratio</label>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
-          <button type="button" class="icon-btn" onclick="setAspectRatio('ratio-9-16'); closeGlobalSettingsModal();" style="padding:14px; justify-content:center; font-size:13px;">📱 9:16 Shorts</button>
-          <button type="button" class="icon-btn" onclick="setAspectRatio('ratio-16-9'); closeGlobalSettingsModal();" style="padding:14px; justify-content:center; font-size:13px;">🖥️ 16:9 Landscape</button>
-          <button type="button" class="icon-btn" onclick="setAspectRatio('ratio-full'); closeGlobalSettingsModal();" style="padding:14px; justify-content:center; font-size:13px;">🔲 Full Screen</button>
-        </div>
-      </div>
-
-      <div class="global-section">
-        <label class="form-label" style="font-size:14px; font-weight:800; color:#f8fafc;">🖼️ Group Info & Wallpaper</label>
-        <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13.5px;" onclick="closeGlobalSettingsModal(); openGroupModal();">
-          🖼️ Edit Group Name, DP & Wallpaper...
-        </button>
-      </div>
     </div>
 
     <!-- TAB PANEL 4: TOOLS & BACKUP -->

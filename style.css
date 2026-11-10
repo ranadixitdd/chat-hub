@@ -401,10 +401,19 @@
     }
 
     .deck-strip-row {
-      display: flex !important;
       flex-direction: column !important;
       gap: 5px !important;
       width: 100% !important;
+    }
+
+    .deck-strip-row[style*="display: none"],
+    #deckStripRow[style*="display: none"] {
+      display: none !important;
+    }
+
+    .deck-compact-row[style*="display: none"],
+    #deckCompactRow[style*="display: none"] {
+      display: none !important;
     }
 
     .deck-strip-row .char-strip {

@@ -3453,7 +3453,7 @@ if (msg.type === 'quest') {
 
   function switchHubTab(tabName) {
     activeHubTab = tabName;
-    const tabs = ['scenes', 'cast', 'stage', 'tools'];
+    const tabs = ['scenes', 'cast', 'tools'];
     tabs.forEach(t => {
       const btn = document.getElementById('tabBtnHub' + t.charAt(0).toUpperCase() + t.slice(1));
       const panel = document.getElementById('hubPanel' + t.charAt(0).toUpperCase() + t.slice(1));
