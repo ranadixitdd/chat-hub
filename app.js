@@ -6694,6 +6694,296 @@ if (msg.type === 'quest') {
     badge.textContent = `${(characters || []).length} Cast • ${totalFaces} Faces • ${totalStickers} Stickers • ${(builtInSounds || []).length} SFX • ${(customAudioClips || []).length} Songs`;
   }
 
+  /* =====================================================================
+     STICKER SOUND PAIRING & DURATION SYSTEM
+     ===================================================================== */
+  let customBuiltInSounds = {};
+  try {
+    const rawSnds = safeGetStorage('wh_builtin_sticker_sounds');
+    if (rawSnds) customBuiltInSounds = JSON.parse(rawSnds);
+  } catch (_) {}
+
+  // Apply saved sounds to built-in stickers on startup
+  if (typeof builtInStickers !== 'undefined') {
+    builtInStickers.forEach(s => {
+      if (customBuiltInSounds[s.id]) {
+        if (customBuiltInSounds[s.id].sfx) s.sfx = customBuiltInSounds[s.id].sfx;
+        if (customBuiltInSounds[s.id].customAudioData) {
+          s.customAudioData = customBuiltInSounds[s.id].customAudioData;
+          s.customAudioLabel = customBuiltInSounds[s.id].customAudioLabel;
+        }
+      }
+    });
+  }
+
+  function getOrCalculateAudioDuration(clip) {
+    if (clip.durationText) return clip.durationText;
+    if (!clip.data) return '0:00';
+    try {
+      const a = new Audio();
+      a.preload = 'metadata';
+      a.onloadedmetadata = () => {
+        if (a.duration && isFinite(a.duration)) {
+          const m = Math.floor(a.duration / 60);
+          const s = Math.floor(a.duration % 60).toString().padStart(2, '0');
+          clip.durationText = `${m}:${s}`;
+          const el = document.getElementById(`dur_assetAudio_${clip.id}`);
+          if (el) el.textContent = `⏱ ${clip.durationText}`;
+          const timer = document.getElementById(`dur_timer_${clip.id}`);
+          if (timer && timer.textContent === '0:00') timer.textContent = `0:00 / ${clip.durationText}`;
+          saveStudioState();
+        }
+      };
+      a.src = clip.data;
+    } catch (_) {}
+    return '...';
+  }
+
+  function getOrCalculateVideoDuration(v) {
+    if (v.durationText) return v.durationText;
+    const src = v.data || v.url;
+    if (!src) return '0:00';
+    try {
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      vid.onloadedmetadata = () => {
+        if (vid.duration && isFinite(vid.duration)) {
+          const m = Math.floor(vid.duration / 60);
+          const s = Math.floor(vid.duration % 60).toString().padStart(2, '0');
+          v.durationText = `${m}:${s}`;
+          const el = document.getElementById(`dur_assetVideo_${v.id}`);
+          if (el) el.textContent = `⏱ ${v.durationText}`;
+          saveStudioState();
+        }
+      };
+      vid.src = src;
+    } catch (_) {}
+    return '...';
+  }
+
+  function playAssetAudioById(soundId) {
+    const clip = (customAudioClips || []).find(s => s.id === soundId);
+    if (!clip || !clip.data) return;
+    playCustomAudio(clip.data, null, `assetAudioBtn_${soundId}`);
+  }
+
+  function playAssetVideoById(videoId) {
+    const item = (customStickers || []).find(s => s.id === videoId);
+    if (!item || (!item.data && !item.url)) return;
+    openFullscreenVideo(item.data || item.url);
+  }
+
+  let targetExprCharId = null;
+
+  function triggerAddExprForChar(charId) {
+    targetExprCharId = charId;
+    const inp = document.getElementById('hiddenAssetExprUploadInput');
+    if (inp) {
+      inp.value = '';
+      inp.click();
+    }
+  }
+
+  function handleAssetExprFileUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !targetExprCharId) return;
+    const char = characters.find(c => c.id === targetExprCharId);
+    if (!char) return;
+    ensureCharacterExpressions(char);
+
+    const suggestedTag = file.name.replace(/\.[^/.]+$/, '').slice(0, 10).toLowerCase().replace(/[^a-z0-9_]/g, '') || 'face';
+    const tagName = prompt('🎭 Enter expression tag name (e.g. shock, blush, rage, smirk):', suggestedTag);
+    if (tagName === null) return;
+    const cleanTag = tagName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'custom';
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      char.expressions[cleanTag] = ev.target.result;
+      saveStudioState();
+      renderAssetCategory();
+      updateAssetStatsBadge();
+      showToast(`🎭 Added expression "[${char.name}:${cleanTag}]"!`);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function renameCharacterExpression(charId, oldKey) {
+    const char = characters.find(c => c.id === charId);
+    if (!char || !char.expressions || !char.expressions[oldKey]) return;
+    const newKey = prompt(`✏️ Rename expression tag "${oldKey}" to:`, oldKey);
+    if (newKey === null) return;
+    const clean = newKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (!clean || clean === oldKey) return;
+
+    char.expressions[clean] = char.expressions[oldKey];
+    delete char.expressions[oldKey];
+    saveStudioState();
+    renderAssetCategory();
+    showToast(`✏️ Renamed expression to "[${char.name}:${clean}]"`);
+  }
+
+  function deleteCharacterExpression(charId, exprKey) {
+    const char = characters.find(c => c.id === charId);
+    if (!char || !char.expressions || !char.expressions[exprKey]) return;
+    if (Object.keys(char.expressions).length <= 1) {
+      showToast('⚠️ Character needs at least 1 face expression');
+      return;
+    }
+    delete char.expressions[exprKey];
+    saveStudioState();
+    renderAssetCategory();
+    updateAssetStatsBadge();
+    showToast(`🗑️ Expression "${exprKey}" removed`);
+  }
+
+  let activePairingStickerId = null;
+  let activePairingIsBuiltIn = false;
+
+  function openStickerSoundPairModal(stickerId, isBuiltIn = false) {
+    activePairingStickerId = stickerId;
+    activePairingIsBuiltIn = isBuiltIn;
+
+    const modal = document.getElementById('stickerSoundPairModal');
+    const previewEl = document.getElementById('stickerSoundPairStickerPreview');
+    const listEl = document.getElementById('stickerSoundPairList');
+    if (!modal || !previewEl || !listEl) return;
+
+    let st = null;
+    if (isBuiltIn) {
+      st = (typeof builtInStickers !== 'undefined') ? builtInStickers.find(s => s.id === stickerId) : null;
+    } else {
+      st = (customStickers || []).find(s => s.id === stickerId);
+    }
+    if (!st) return;
+
+    const thumbHtml = isBuiltIn
+      ? `<div style="font-size:32px; background:${st.bg || '#1e293b'}; width:50px; height:50px; border-radius:10px; display:flex; align-items:center; justify-content:center;">${st.emoji || '💬'}</div>`
+      : `<img src="${st.data || st.url || ''}" style="width:50px; height:50px; object-fit:contain; border-radius:10px; background:#1e293b;" alt="Sticker">`;
+
+    const currentSoundDesc = st.customAudioLabel ? ('🎵 ' + st.customAudioLabel) : (st.sfx ? ('🔊 ' + st.sfx) : '🔇 Silent / None');
+
+    previewEl.innerHTML = `
+      ${thumbHtml}
+      <div style="flex:1;">
+        <strong style="color:#f8fafc; font-size:13px;">${escapeHtml(st.label || st.id)}</strong>
+        <div style="font-size:11.5px; color:#facc15; margin-top:2px;">Linked Sound: <b>${escapeHtml(currentSoundDesc)}</b></div>
+      </div>
+    `;
+
+    listEl.innerHTML = '';
+
+    // Option 1: Mute
+    const muteBtn = document.createElement('button');
+    muteBtn.type = 'button';
+    muteBtn.className = 'icon-btn';
+    muteBtn.style.cssText = 'padding:9px 12px; font-size:12px; justify-content:space-between; background:#1e293b; color:#94a3b8;';
+    muteBtn.innerHTML = `<span>🔇 None (Mute)</span><span style="font-size:11px;">Clear Sound</span>`;
+    muteBtn.onclick = () => pairSoundWithSticker(stickerId, isBuiltIn, 'none', null);
+    listEl.appendChild(muteBtn);
+
+    // Option 2: SFX Sounds
+    (builtInSounds || []).forEach(snd => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'icon-btn';
+      btn.style.cssText = 'padding:9px 12px; font-size:12px; justify-content:space-between; background:#0f172a; border:1px solid #1e293b; color:#f8fafc;';
+      btn.innerHTML = `<span>${escapeHtml(snd.label)}</span><span class="asset-syntax-chip">:${snd.id}:</span>`;
+      btn.onclick = () => {
+        if (typeof snd.fn === 'function') snd.fn();
+        pairSoundWithSticker(stickerId, isBuiltIn, 'sfx', snd.id);
+      };
+      listEl.appendChild(btn);
+    });
+
+    // Option 3: Custom uploaded meme voices
+    if (customAudioClips && customAudioClips.length > 0) {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; margin-top:6px;';
+      header.textContent = `Custom Uploaded Meme Sounds (${customAudioClips.length})`;
+      listEl.appendChild(header);
+
+      customAudioClips.forEach(clip => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'icon-btn';
+        btn.style.cssText = 'padding:9px 12px; font-size:12px; justify-content:space-between; background:#064e3b; border:1px solid #059669; color:#6ee7b7;';
+        btn.innerHTML = `<span>🎵 ${escapeHtml(clip.label)}</span><span>${clip.durationText || 'Audio'}</span>`;
+        btn.onclick = () => {
+          playCustomAudio(clip.data);
+          pairSoundWithSticker(stickerId, isBuiltIn, 'custom', clip);
+        };
+        listEl.appendChild(btn);
+      });
+    }
+
+    modal.classList.add('open');
+  }
+
+  function closeStickerSoundPairModal() {
+    const modal = document.getElementById('stickerSoundPairModal');
+    if (modal) modal.classList.remove('open');
+    activePairingStickerId = null;
+  }
+
+  function pairSoundWithSticker(stickerId, isBuiltIn, soundType, soundPayload) {
+    let st = null;
+    if (isBuiltIn) {
+      st = (typeof builtInStickers !== 'undefined') ? builtInStickers.find(s => s.id === stickerId) : null;
+    } else {
+      st = (customStickers || []).find(s => s.id === stickerId);
+    }
+    if (!st) return;
+
+    if (soundType === 'none') {
+      st.sfx = null;
+      st.customAudioData = null;
+      st.customAudioLabel = null;
+      if (isBuiltIn) {
+        delete customBuiltInSounds[stickerId];
+        safeSetStorage('wh_builtin_sticker_sounds', JSON.stringify(customBuiltInSounds));
+      }
+      showToast(`🔇 Sound cleared for "${st.label || st.id}"`);
+    } else if (soundType === 'sfx') {
+      st.sfx = soundPayload;
+      st.customAudioData = null;
+      st.customAudioLabel = null;
+      if (isBuiltIn) {
+        customBuiltInSounds[stickerId] = { sfx: soundPayload };
+        safeSetStorage('wh_builtin_sticker_sounds', JSON.stringify(customBuiltInSounds));
+      }
+      showToast(`🔊 Paired ":${soundPayload}:" with "${st.label || st.id}"!`);
+    } else if (soundType === 'custom') {
+      st.sfx = null;
+      st.customAudioData = soundPayload.data;
+      st.customAudioLabel = soundPayload.label;
+      if (isBuiltIn) {
+        customBuiltInSounds[stickerId] = { customAudioData: soundPayload.data, customAudioLabel: soundPayload.label };
+        safeSetStorage('wh_builtin_sticker_sounds', JSON.stringify(customBuiltInSounds));
+      }
+      showToast(`🎵 Paired "${soundPayload.label}" with "${st.label || st.id}"!`);
+    }
+
+    saveStudioState();
+    closeStickerSoundPairModal();
+    renderAssetCategory();
+  }
+
+  function customizeBuiltInSticker(stickerId) {
+    const st = (typeof builtInStickers !== 'undefined') ? builtInStickers.find(s => s.id === stickerId) : null;
+    if (!st) return;
+    const current = st.label || st.id;
+    const newName = prompt('✏️ Customize sticker name/label (used in scripts e.g. [Char:STICKER]: LABEL):', current);
+    if (newName === null) return;
+    const clean = newName.trim().toUpperCase() || st.id.toUpperCase();
+
+    customBuiltInLabels[stickerId] = clean;
+    safeSetStorage('wh_builtin_sticker_labels', JSON.stringify(customBuiltInLabels));
+    st.label = clean;
+    saveStudioState();
+    renderAssetCategory();
+    showToast(`✏️ Renamed built-in sticker to "${clean}"`);
+  }
+
   function renderAssetCategory() {
     const container = document.getElementById('assetCategoryContainer');
     if (!container) return;
@@ -6716,31 +7006,73 @@ if (msg.type === 'quest') {
       filtered.forEach(c => {
         const card = document.createElement('div');
         card.className = 'asset-item-card';
+        card.style.flexDirection = 'column';
+        card.style.alignItems = 'stretch';
+        card.style.gap = '8px';
 
-        const exprKeys = Object.keys(c.expressions || {});
-        const allExprs = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
-        const sideDesc = (c.side === 'right') ? 'POV User (Right)' : 'Squad (Left)';
+        const exprEntries = Object.entries(c.expressions || {});
+        const sideDesc = (c.side === 'right') ? 'POV User (Right)' : 'Squad Partner (Left)';
         const avatarSrc = c.avatar || makeComicAvatarDataUri(c.name || 'Char', c.color || '#3b82f6');
 
+        let exprsHtml = '';
+        if (exprEntries.length === 0) {
+          exprsHtml = `
+            <div class="asset-expr-card">
+              <div class="asset-expr-thumb">
+                <img src="${avatarSrc}" alt="Normal">
+              </div>
+              <span class="asset-expr-label">normal</span>
+            </div>
+          `;
+        } else {
+          exprEntries.forEach(([tag, val]) => {
+            const isDefault = tag === 'normal';
+            exprsHtml += `
+              <div class="asset-expr-card" title="Expression: [${escapeHtml(c.name)}:${escapeHtml(tag)}]">
+                <div class="asset-expr-thumb">
+                  <img src="${val || avatarSrc}" alt="${escapeHtml(tag)}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('${escapeHtml(c.name)}', '${c.color || '#3b82f6'}');">
+                </div>
+                <span class="asset-expr-label">${escapeHtml(tag)}</span>
+                <div style="display:flex; gap:2px; margin-top:2px;">
+                  <button type="button" class="icon-btn" style="padding:1px 4px; font-size:9px;" onclick="renameCharacterExpression('${c.id}', '${escapeHtml(tag)}')" title="Rename expression tag">✏️</button>
+                  ${!isDefault ? `<button type="button" class="icon-btn danger" style="padding:1px 4px; font-size:9px;" onclick="deleteCharacterExpression('${c.id}', '${escapeHtml(tag)}')" title="Delete expression">✕</button>` : ''}
+                </div>
+              </div>
+            `;
+          });
+        }
+
         card.innerHTML = `
-          <div class="asset-thumb-wrap" style="border: 2px solid ${c.color || '#3b82f6'}; border-radius: 50%;">
-            <img src="${avatarSrc}" alt="${escapeHtml(c.name)}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('${escapeHtml(c.name)}', '${c.color || '#3b82f6'}');">
-          </div>
-          <div class="asset-info-col">
-            <div class="asset-title-row">
-              <span class="asset-item-title">${escapeHtml(c.name)}</span>
-              <span class="asset-badge" style="background:#1e293b; color:${c.color || '#38bdf8'}; border:1px solid #334155;">${sideDesc}</span>
-              <span class="asset-badge" style="background:#090d16; color:#a855f7;">${exprKeys.length} Custom Faces</span>
+          <div style="display:flex; align-items:center; gap:12px; width:100%;">
+            <div class="asset-thumb-wrap" style="border: 3px solid ${c.color || '#3b82f6'}; border-radius: 50%; width:52px; height:52px; min-width:52px;">
+              <img src="${avatarSrc}" alt="${escapeHtml(c.name)}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('${escapeHtml(c.name)}', '${c.color || '#3b82f6'}');">
             </div>
-            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:3px;">
-              ${allExprs.slice(0, 8).map(t => `<span class="asset-syntax-chip" style="cursor:pointer;" onclick="openCharExpressionModal('${c.id}', 'assetManagerModal')" title="Click to manage faces">[${escapeHtml(c.name)}:${t}]</span>`).join('')}
-              ${allExprs.length > 8 ? `<span style="font-size:10px; color:#94a3b8; align-self:center;">+${allExprs.length - 8} more</span>` : ''}
+            <div class="asset-info-col">
+              <div class="asset-title-row">
+                <span class="asset-item-title">${escapeHtml(c.name)}</span>
+                <span class="asset-badge" style="background:#1e293b; color:${c.color || '#38bdf8'}; border:1px solid #334155;">${sideDesc}</span>
+                <span class="asset-badge" style="background:#090d16; color:#a855f7;">${exprEntries.length} Faces</span>
+              </div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                Voice Pitch: <b>${(c.pitch || 1.05).toFixed(2)}x</b> • Script tag: <code style="color:#38bdf8;">[${escapeHtml(c.name)}]</code>
+              </div>
+            </div>
+            <div class="asset-actions-row">
+              <button type="button" class="icon-btn" style="padding:5px 9px; font-size:11px;" onclick="renameCharacter('${c.id}')" title="Rename Character">✏️ Rename</button>
+              <button type="button" class="icon-btn" style="padding:5px 9px; font-size:11px; background:#0284c7; color:#fff;" onclick="openCharExpressionModal('${c.id}', 'assetManagerModal')" title="Manage Full Wardrobe">🎭 Wardrobe</button>
+              <button type="button" class="icon-btn danger" style="padding:5px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('cast', '${c.id}', this)" title="Delete Character">🗑️</button>
             </div>
           </div>
-          <div class="asset-actions-row">
-            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCharacter('${c.id}')" title="Rename Character">✏️ Rename</button>
-            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="openCharExpressionModal('${c.id}', 'assetManagerModal')" title="Manage Facial Expressions">🎭 Faces</button>
-            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('cast', '${c.id}', this)" title="Delete Character">🗑️</button>
+
+          <!-- VISUAL EXPRESSION GALLERY FOR THIS CHARACTER -->
+          <div style="background:#0b1120; border-radius:8px; padding:6px 10px; border:1px solid #1e293b;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase;">Configured Facial Expressions</span>
+              <button type="button" class="icon-btn" style="padding:2px 8px; font-size:10.5px; background:#00a884; color:#fff;" onclick="triggerAddExprForChar('${c.id}')" title="Upload new facial expression image">+ Add Face</button>
+            </div>
+            <div class="asset-expr-strip">
+              ${exprsHtml}
+            </div>
           </div>
         `;
         container.appendChild(card);
@@ -6766,14 +7098,18 @@ if (msg.type === 'quest') {
         filteredCustom.forEach(st => {
           const card = document.createElement('div');
           card.className = 'asset-item-card';
+
+          const currentSoundDesc = st.customAudioLabel ? ('🎵 ' + st.customAudioLabel) : (st.sfx ? ('🔊 ' + st.sfx) : '🔇 Sound');
+
           card.innerHTML = `
-            <div class="asset-thumb-wrap">
+            <div class="asset-thumb-wrap" style="width:56px; height:56px; min-width:56px;">
               <img src="${st.data || st.url || ''}" alt="${escapeHtml(st.label || 'Sticker')}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('STK', '#38bdf8', '🖼️');">
             </div>
             <div class="asset-info-col">
               <div class="asset-title-row">
                 <span class="asset-item-title">${escapeHtml(st.label || 'Sticker')}</span>
                 <span class="asset-badge" style="background:#065f46; color:#6ee7b7;">Custom</span>
+                <button type="button" class="asset-sound-pill" onclick="openStickerSoundPairModal('${st.id}', false)" title="Click to pair sound or meme voice">${escapeHtml(currentSoundDesc)}</button>
               </div>
               <span class="asset-syntax-chip">[Character:STICKER]: ${escapeHtml(st.label || 'LABEL')}</span>
             </div>
@@ -6796,18 +7132,23 @@ if (msg.type === 'quest') {
         filteredBuilt.forEach(st => {
           const card = document.createElement('div');
           card.className = 'asset-item-card';
+
+          const currentSoundDesc = st.customAudioLabel ? ('🎵 ' + st.customAudioLabel) : (st.sfx ? ('🔊 ' + st.sfx) : '🔇 Sound');
+
           card.innerHTML = `
-            <div class="asset-thumb-wrap" style="background:${st.bg || '#1e293b'}; font-size:26px;">
+            <div class="asset-thumb-wrap" style="background:${st.bg || '#1e293b'}; font-size:30px; width:56px; height:56px; min-width:56px;">
               ${st.emoji || '💬'}
             </div>
             <div class="asset-info-col">
               <div class="asset-title-row">
                 <span class="asset-item-title">${escapeHtml(st.label || st.id)}</span>
                 <span class="asset-badge" style="background:#1e293b; color:#cbd5e1;">Built-in</span>
+                <button type="button" class="asset-sound-pill" onclick="openStickerSoundPairModal('${st.id}', true)" title="Click to change or pair sound">${escapeHtml(currentSoundDesc)}</button>
               </div>
               <span class="asset-syntax-chip">[Character:STICKER]: ${escapeHtml(st.label || st.id)}</span>
             </div>
             <div class="asset-actions-row">
+              <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="customizeBuiltInSticker('${st.id}')" title="Rename or customize label">✏️ Rename</button>
               <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendStickerItem(builtInStickers.find(s=>s.id==='${st.id}'))" title="Send into Chat">💬 Send</button>
             </div>
           `;
@@ -6863,18 +7204,22 @@ if (msg.type === 'quest') {
       filtered.forEach(snd => {
         const card = document.createElement('div');
         card.className = 'asset-item-card';
+
+        const dur = getOrCalculateAudioDuration(snd);
+
         card.innerHTML = `
-          <button type="button" class="icon-btn" id="assetAudioBtn_${snd.id}" style="background:#00a884; color:#fff; border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="playCustomAudio('${snd.data}', null, 'assetAudioBtn_${snd.id}')" title="Play / Pause Audio">▶</button>
+          <button type="button" class="icon-btn" id="assetAudioBtn_${snd.id}" style="background:#00a884; color:#fff; border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="playAssetAudioById('${snd.id}')" title="Play / Pause Audio">▶</button>
           <div class="asset-info-col">
             <div class="asset-title-row">
               <span class="asset-item-title">${escapeHtml(snd.label || 'Song')}</span>
               <span class="asset-badge" style="background:#065f46; color:#6ee7b7;">Audio</span>
+              <span class="asset-badge" id="dur_assetAudio_${snd.id}" style="background:#090d16; color:#38bdf8;">⏱ ${dur}</span>
             </div>
             <div class="asset-audio-scrubber-bar">
               <div class="audio-scrubber-track" id="assetAudioTrack_${snd.id}" style="flex:1; cursor:pointer;" onclick="seekAssetAudioPosition(event, '${snd.id}')" title="Click to seek">
                 <div class="audio-scrubber-fill" id="fill_assetAudioBtn_${snd.id}"></div>
               </div>
-              <span id="timer_assetAudioBtn_${snd.id}" style="font-size:11px; color:#94a3b8; font-family:monospace; min-width:65px; text-align:right;">0:00</span>
+              <span id="timer_assetAudioBtn_${snd.id}" style="font-size:11px; color:#94a3b8; font-family:monospace; min-width:70px; text-align:right;">0:00 / ${dur}</span>
             </div>
             <span class="asset-syntax-chip" style="margin-top:3px;">[Character:AUDIO]: ${escapeHtml(snd.label || 'Song')}</span>
           </div>
@@ -6905,20 +7250,24 @@ if (msg.type === 'quest') {
       filtered.forEach(v => {
         const card = document.createElement('div');
         card.className = 'asset-item-card';
+
+        const dur = getOrCalculateVideoDuration(v);
+
         card.innerHTML = `
-          <div class="asset-thumb-wrap" style="cursor:pointer;" onclick="openFullscreenVideo('${v.data || v.url || ''}')" title="Watch Video">
+          <div class="asset-thumb-wrap" style="cursor:pointer; width:64px; height:64px; min-width:64px;" onclick="playAssetVideoById('${v.id}')" title="Watch Video">
             <video src="${v.data || v.url || ''}" preload="metadata" style="pointer-events:none;"></video>
-            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px;">▶</div>
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">▶</div>
           </div>
           <div class="asset-info-col">
             <div class="asset-title-row">
               <span class="asset-item-title">${escapeHtml(v.label || 'Video')}</span>
               <span class="asset-badge" style="background:#1e1b4b; color:#a5b4fc;">Video</span>
+              <span class="asset-badge" id="dur_assetVideo_${v.id}" style="background:#090d16; color:#a855f7;">⏱ ${dur}</span>
             </div>
             <span class="asset-syntax-chip">[Character:VIDEO]: ${escapeHtml(v.label || 'Video')}</span>
           </div>
           <div class="asset-actions-row">
-            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="openFullscreenVideo('${v.data || v.url || ''}')" title="Play Fullscreen Lightbox">⛶ Watch</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="playAssetVideoById('${v.id}')" title="Play Fullscreen Lightbox">⛶ Watch</button>
             <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomVideo('${v.id}')" title="Rename Video">✏️ Rename</button>
             <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendMediaItemToChat(customStickers.find(s=>s.id==='${v.id}'), 'video')" title="Send into Chat">💬 Send</button>
             <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('stickers', '${v.id}', this)" title="Delete Video">🗑️</button>
@@ -7256,8 +7605,18 @@ if (msg.type === 'quest') {
   window.renameCustomVideo = renameCustomVideo;
   window.handleInlineDeleteAsset = handleInlineDeleteAsset;
   window.playSfxById = playSfxById;
+  window.playAssetAudioById = playAssetAudioById;
+  window.playAssetVideoById = playAssetVideoById;
+  window.openStickerSoundPairModal = openStickerSoundPairModal;
+  window.closeStickerSoundPairModal = closeStickerSoundPairModal;
+  window.customizeBuiltInSticker = customizeBuiltInSticker;
+  window.renameCharacterExpression = renameCharacterExpression;
+  window.deleteCharacterExpression = deleteCharacterExpression;
+  window.triggerAddExprForChar = triggerAddExprForChar;
+  window.handleAssetExprFileUpload = handleAssetExprFileUpload;
   window.loadDemoScriptIntoModal = loadDemoScriptIntoModal;
   window.copyChatGptTemplate = copyChatGptTemplate;
+  window.toggleDropdownMenu = toggleDropdownMenu;
 
   // Converts in-memory messages array to script dialogue text format
   function convertChatMessagesToScriptText(msgList) {
@@ -8125,8 +8484,9 @@ if (msg.type === 'quest') {
   }
 
   function toggleDropdownMenu(e) {
-    e.stopPropagation();
-    document.getElementById('studioDropdown').classList.toggle('open');
+    if (e && e.stopPropagation) e.stopPropagation();
+    const drop = document.getElementById('studioDropdown');
+    if (drop) drop.classList.toggle('open');
   }
 
   function closeDropdownMenu() {
