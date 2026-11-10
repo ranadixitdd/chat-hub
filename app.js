@@ -1827,9 +1827,20 @@ function playSciFiChimeSound() {
       if (speakerPill) {
         speakerPill.style.borderColor = activeChar.color || '#facc15';
       }
-      const sideText = `⇄ Side: ${activeChar.side === 'left' ? 'Left' : 'Right'}`;
+      const sideText = `⇄ ${activeChar.side === 'left' ? 'Left' : 'Right'}`;
       if (sideSwitchBtn) sideSwitchBtn.textContent = sideText;
       if (sideSwitchBtnStrip) sideSwitchBtnStrip.textContent = sideText;
+
+      const appLabels = { whatsapp: '💬 WA', chatgpt: '🤖 GPT', gemini: '✨ GEM' };
+      const appBgs = { whatsapp: '#00a884', chatgpt: '#10a37f', gemini: '#0284c7' };
+      const deckBtn = document.getElementById('deckQuickAppBtn');
+      const deckBtnStrip = document.getElementById('deckQuickAppBtnStrip');
+      [deckBtn, deckBtnStrip].forEach(b => {
+        if (b) {
+          b.textContent = appLabels[activeAppMode] || '📱 App';
+          b.style.background = appBgs[activeAppMode] || '#0284c7';
+        }
+      });
     }
 
     // 3. Render Expanded Strip Row (All Characters Horizontal Carousel)
@@ -3545,6 +3556,7 @@ if (msg.type === 'quest') {
         <div class="cast-dp-btn" style="border-color:${accentColor};" onclick="${inHub ? 'closeGlobalSettingsModal(); ' : ''}startAvatarCrop('${c.id}')" title="Click to Upload & Crop DP">
           <img src="${c.avatar}" alt="${escapeHtml(c.name)}">
           <div class="cast-dp-overlay">✂️ CROP</div>
+          <div class="cast-dp-badge" title="Tap to Crop / Upload DP">📷</div>
         </div>
 
         <div class="cast-card-main-info">
