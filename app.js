@@ -1459,17 +1459,116 @@ function playSciFiChimeSound() {
     });
   }
 
-  function playCustomAudio(dataUrl) {
-    if (!soundEnabled || !dataUrl) return;
-    const audio = new Audio(dataUrl);
-    audio.volume = 0.85;
-    audio.play().catch(() => {});
+  /* =====================================================================
+     GLOBAL AUDIO PLAYBACK CONTROLLER (SINGLE ACTIVE INSTANCE, NO ECHOING)
+     ===================================================================== */
+  let activeAudioPlayer = null;
+  let activeAudioMsgId = null;
+  let activeAudioBtnId = null;
+
+  function stopCurrentAudio() {
+    if (activeAudioPlayer) {
+      try {
+        activeAudioPlayer.pause();
+        activeAudioPlayer.currentTime = 0;
+      } catch (e) {}
+      activeAudioPlayer = null;
+    }
+    if (activeAudioBtnId) {
+      const b = document.getElementById(activeAudioBtnId);
+      if (b) b.innerHTML = '▶';
+    }
+    if (activeAudioMsgId) {
+      const icon = document.getElementById(`audioIcon_${activeAudioMsgId}`);
+      if (icon) icon.textContent = '▶';
+      const fill = document.getElementById(`audioFill_${activeAudioMsgId}`);
+      if (fill) fill.style.width = '0%';
+    }
+    activeAudioMsgId = null;
+    activeAudioBtnId = null;
   }
+
+  function playCustomAudio(dataUrl, msgId = null, btnId = null) {
+    if (!soundEnabled || !dataUrl) return;
+
+    // 1. If clicking the exact same audio that is currently playing -> PAUSE it!
+    if (activeAudioPlayer && (activeAudioMsgId === msgId && msgId !== null || activeAudioBtnId === btnId && btnId !== null)) {
+      stopCurrentAudio();
+      return;
+    }
+
+    // 2. Stop any other audio before starting new one (NO ECHOING / OVERLAPPING)
+    stopCurrentAudio();
+
+    // 3. Create fresh single instance
+    const audio = new Audio(dataUrl);
+    audio.volume = 0.88;
+    activeAudioPlayer = audio;
+    activeAudioMsgId = msgId;
+    activeAudioBtnId = btnId;
+
+    if (btnId) {
+      const b = document.getElementById(btnId);
+      if (b) b.innerHTML = '⏸';
+    }
+    if (msgId) {
+      const icon = document.getElementById(`audioIcon_${msgId}`);
+      if (icon) icon.textContent = '⏸';
+    }
+
+    audio.ontimeupdate = () => {
+      if (!msgId) return;
+      const timer = document.getElementById(`audioTimer_${msgId}`);
+      const fill = document.getElementById(`audioFill_${msgId}`);
+      const cur = audio.currentTime || 0;
+      const dur = audio.duration || 0;
+      if (timer) {
+        const curM = Math.floor(cur / 60);
+        const curS = Math.floor(cur % 60).toString().padStart(2, '0');
+        if (dur && isFinite(dur)) {
+          const durM = Math.floor(dur / 60);
+          const durS = Math.floor(dur % 60).toString().padStart(2, '0');
+          timer.textContent = `${curM}:${curS} / ${durM}:${durS}`;
+        } else {
+          timer.textContent = `${curM}:${curS}`;
+        }
+      }
+      if (fill && dur && isFinite(dur)) {
+        const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
+        fill.style.width = `${pct}%`;
+      }
+    };
+
+    audio.onended = () => {
+      stopCurrentAudio();
+    };
+
+    audio.onerror = () => {
+      stopCurrentAudio();
+    };
+
+    audio.play().catch(() => {
+      stopCurrentAudio();
+    });
+  }
+
+  function seekAudioPosition(e, msgId) {
+    if (!activeAudioPlayer || activeAudioMsgId !== msgId) return;
+    const track = document.getElementById(`audioTrack_${msgId}`);
+    if (!track || !activeAudioPlayer.duration) return;
+    const rect = track.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    activeAudioPlayer.currentTime = pct * activeAudioPlayer.duration;
+  }
+
+  window.seekAudioPosition = seekAudioPosition;
+  window.stopCurrentAudio = stopCurrentAudio;
 
   function playCustomAudioById(soundId) {
     const clip = customAudioClips.find(s => s.id === soundId);
     if (clip && clip.data) {
-      playCustomAudio(clip.data);
+      playCustomAudio(clip.data, null, `sndBtn_${soundId}`);
     } else {
       playBoingSound();
     }
@@ -1947,6 +2046,76 @@ function playSciFiChimeSound() {
   window.selectActiveSpeaker = selectActiveSpeaker;
   window.toggleCleanRecordMode = toggleCleanRecordMode;
 
+  /* =====================================================================
+     DIRECTOR DECK ADJUSTABLE LAYOUT CONTROLLER (USER CHOICE)
+     Modes: 'classic' (above input), 'bottom' (dock below input), 'floating' (minimal tag)
+     ===================================================================== */
+  let directorBarLayout = safeGetStorage('chathub_director_layout') || 'classic';
+
+  function applyDirectorBarLayout() {
+    const wrapper = document.getElementById('phoneWrapper');
+    if (!wrapper) return;
+    wrapper.classList.remove('deck-layout-classic', 'deck-layout-bottom', 'deck-layout-floating');
+    wrapper.classList.add('deck-layout-' + directorBarLayout);
+
+    const layoutBtn = document.getElementById('deckLayoutToggleBtn');
+    if (layoutBtn) {
+      const icons = { classic: '📌', bottom: '📱', floating: '🏷️' };
+      const titles = {
+        classic: 'Layout: Above Composer (Click to switch)',
+        bottom: 'Layout: Bottom Dock (Click to switch)',
+        floating: 'Layout: Floating Tag (Click to switch)'
+      };
+      layoutBtn.textContent = icons[directorBarLayout] || '📌';
+      layoutBtn.title = titles[directorBarLayout] || 'Switch Layout Mode';
+    }
+  }
+
+  function setDirectorBarLayout(layoutMode) {
+    if (!['classic', 'bottom', 'floating'].includes(layoutMode)) return;
+    directorBarLayout = layoutMode;
+    safeSetStorage('chathub_director_layout', directorBarLayout);
+    applyDirectorBarLayout();
+    const names = {
+      classic: '📌 Director Bar: Above Composer (Classic)',
+      bottom: '📱 Director Bar: Bottom Dock (Below Input)',
+      floating: '🏷️ Director Bar: Floating Tag (Max Chat Space)'
+    };
+    showToast(names[layoutMode] || 'Layout Updated');
+  }
+
+  function cycleDirectorBarLayout() {
+    const modes = ['classic', 'bottom', 'floating'];
+    const nextIdx = (modes.indexOf(directorBarLayout) + 1) % modes.length;
+    setDirectorBarLayout(modes[nextIdx]);
+  }
+
+  window.setDirectorBarLayout = setDirectorBarLayout;
+  window.cycleDirectorBarLayout = cycleDirectorBarLayout;
+
+  /* === FULLSCREEN VIDEO LIGHTBOX CONTROLLER === */
+  function openFullscreenVideo(url) {
+    const modal = document.getElementById('videoLightboxModal');
+    const player = document.getElementById('lightboxVideoPlayer');
+    if (!modal || !player || !url) return;
+    player.src = url;
+    modal.style.display = 'flex';
+    player.play().catch(() => {});
+  }
+
+  function closeFullscreenVideo() {
+    const modal = document.getElementById('videoLightboxModal');
+    const player = document.getElementById('lightboxVideoPlayer');
+    if (player) {
+      player.pause();
+      player.src = '';
+    }
+    if (modal) modal.style.display = 'none';
+  }
+
+  window.openFullscreenVideo = openFullscreenVideo;
+  window.closeFullscreenVideo = closeFullscreenVideo;
+
   function selectExpression(expr) {
     currentExpr = expr;
     document.querySelectorAll('.expr-pill').forEach(btn => {
@@ -2155,10 +2324,20 @@ if (msg.type === 'quest') {
     } else if (msg.type === 'video') {
       const srcUrl = msg.videoUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
-          <video src="${srcUrl}" controls playsinline style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain; display:block;"></video>
-          ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
-          <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
+        <div class="speech-bubble video-message-bubble">
+          ${replyBoxHtml}
+          <div class="whatsapp-video-container">
+            <video src="${srcUrl}" id="videoEl_${msg.id}" playsinline controls preload="metadata"
+              style="width:100%; height:auto; max-height:360px; min-height:160px; object-fit:cover; display:block; border-radius:12px; cursor:pointer;"
+              onclick="event.stopPropagation();">
+            </video>
+            <div class="video-overlay-actions">
+              <button type="button" class="video-action-pill" onclick="event.stopPropagation(); openFullscreenVideo('${srcUrl}')" title="Watch in Full View / Lightbox">⛶ Full</button>
+              <button type="button" class="video-action-pill" onclick="event.stopPropagation(); openMessageEditModal('${msg.id}')" title="Edit Message / Caption">✏️ Edit</button>
+            </div>
+          </div>
+          ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<div class="video-caption-text" style="padding:6px 8px 2px 8px; font-size:13.5px; color:#f8fafc; word-break:break-word;">${escapeHtml(msg.caption || msg.text)}</div>` : ''}
+          <div class="bubble-meta" style="padding:0 8px 4px 8px; width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
           </div>
         </div>
@@ -2166,14 +2345,22 @@ if (msg.type === 'quest') {
     } else if (msg.type === 'audio' || msg.type === 'voice') {
       const audioSrc = msg.audioUrl || msg.url || msg.data || '';
       bubbleContentHtml = `
-        <div class="speech-bubble" onclick="openMessageEditModal('${msg.id}')" style="min-width:180px;">
+        <div class="speech-bubble audio-voice-bubble" id="audioBubble_${msg.id}">
           ${replyBoxHtml}
-          <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
-            <button type="button" class="icon-btn" style="background:#00a884; color:#fff; border-radius:50%; width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="event.stopPropagation(); playCustomAudio('${audioSrc}')">▶</button>
-            <div style="display:flex; flex-direction:column;">
-              <span style="font-size:12px; font-weight:800; color:#f8fafc;">${escapeHtml(msg.label || 'Voice Message')}</span>
-              <span style="font-size:10px; color:#94a3b8;">${msg.duration || '0:05'}</span>
+          <div class="audio-player-card">
+            <button type="button" class="audio-play-btn" id="audioBtn_${msg.id}" onclick="event.stopPropagation(); playCustomAudio('${audioSrc}', '${msg.id}', 'audioBtn_${msg.id}')" title="Play / Pause Audio">
+              <span id="audioIcon_${msg.id}">▶</span>
+            </button>
+            <div class="audio-track-info">
+              <div class="audio-track-top">
+                <span class="audio-title">${escapeHtml(msg.label || 'Audio Message')}</span>
+                <span class="audio-timer" id="audioTimer_${msg.id}">0:00</span>
+              </div>
+              <div class="audio-scrubber-track" id="audioTrack_${msg.id}" onclick="event.stopPropagation(); seekAudioPosition(event, '${msg.id}')" title="Click to seek position">
+                <div class="audio-scrubber-fill" id="audioFill_${msg.id}"></div>
+              </div>
             </div>
+            <button type="button" class="audio-edit-dots-btn" onclick="event.stopPropagation(); openMessageEditModal('${msg.id}')" title="Edit / Delete Message">⋮</button>
           </div>
           <span class="bubble-meta">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -7028,6 +7215,7 @@ If JSON format is preferred, you can output this JSON structure directly:
   loadStudioState();
   ensureAiCastMembers();
   applyChatStyle(chatThemeStyle);
+  applyDirectorBarLayout();
   switchAppMode(activeAppMode);
   renderGroupHeader();
   renderDirectorStrip();
