@@ -1478,14 +1478,14 @@ function playSciFiChimeSound() {
   function triggerSfxByName(sfxKey, charPitch = 1.0) {
     if (!soundEnabled) return;
     switch (sfxKey) {
-      case 'punch': playPunchSound(); break;
-      case 'sword': playSwordSlashSound(); break;
-      case 'vineboom': playVineBoomSound(); break;
+      case 'punch': playPunchSound(); triggerScreenShake(); break;
+      case 'sword': playSwordSlashSound(); triggerScreenShake(); break;
+      case 'vineboom': playVineBoomSound(); triggerScreenShake(); break;
       case 'sting': playAnimeStingSound(); break;
       case 'scifi': playSciFiChimeSound(); break;
       case 'boing': playBoingSound(); break;
-      case 'boom': playBoomSound(); break;
-      case 'shock': playShockSound(); break;
+      case 'boom': playBoomSound(); triggerScreenShake(); break;
+      case 'shock': playShockSound(); triggerScreenShake(); break;
       case 'sad': playSadSlideSound(); break;
       case 'sparkle': playSparkleSound(); break;
       default: playPopSound(charPitch); break;
@@ -1516,8 +1516,10 @@ function playSciFiChimeSound() {
       playBoingSound();
     } else if (expr === 'angry') {
       playBoomSound();
+      triggerScreenShake();
     } else if (expr === 'shock') {
       playShockSound();
+      triggerScreenShake();
     } else if (expr === 'love') {
       playSparkleSound();
     } else {
@@ -1525,8 +1527,17 @@ function playSciFiChimeSound() {
     }
   }
 
+  let screenShakeTimer = null;
   function triggerScreenShake() {
-    // Screen shake permanently removed to eliminate lag & screen freeze
+    const wrapper = document.getElementById('phoneWrapper');
+    if (!wrapper) return;
+    wrapper.classList.remove('screen-shake-active');
+    void wrapper.offsetWidth; // force instantaneous reflow for crisp re-trigger
+    wrapper.classList.add('screen-shake-active');
+    if (screenShakeTimer) clearTimeout(screenShakeTimer);
+    screenShakeTimer = setTimeout(() => {
+      wrapper.classList.remove('screen-shake-active');
+    }, 280);
   }
 
   let directorDeckMode = safeGetStorage('chathub_director_deck_mode') || 'compact';
@@ -2194,15 +2205,26 @@ if (msg.type === 'quest') {
     return row;
   }
 
+  let cachedGeminiHeroNode = null;
+
   function renderChatStream(subsetMessages = null) {
     const stream = document.getElementById('chatStream');
+    if (!stream) return;
+
+    if (!cachedGeminiHeroNode) {
+      const existingHero = document.getElementById('geminiHeroContainer');
+      if (existingHero) {
+        cachedGeminiHeroNode = existingHero.cloneNode(true);
+      }
+    }
+
     stream.innerHTML = '';
     const listToRender = subsetMessages || messages;
     const fragment = document.createDocumentFragment();
 
     if (activeAppMode === 'gemini') {
-      const hero = document.getElementById('geminiHeroContainer');
-      if (hero) stream.appendChild(hero);
+      const hero = cachedGeminiHeroNode ? cachedGeminiHeroNode.cloneNode(true) : document.getElementById('geminiHeroContainer');
+      if (hero) fragment.appendChild(hero);
     }
 
     listToRender.forEach((msg, index) => {
@@ -4576,7 +4598,7 @@ if (msg.type === 'quest') {
           stream.innerHTML = '';
 
           if (targetApp === 'gemini') {
-            const hero = document.getElementById('geminiHeroContainer');
+            const hero = cachedGeminiHeroNode ? cachedGeminiHeroNode.cloneNode(true) : document.getElementById('geminiHeroContainer');
             if (hero) stream.appendChild(hero);
           }
 

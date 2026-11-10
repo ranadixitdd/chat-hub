@@ -609,7 +609,20 @@
   }
 
   /* === SCREEN SHAKE ANIMATION === */
-  
+  @keyframes combatMicroShake {
+    0% { transform: translate3d(0, 0, 0); }
+    15% { transform: translate3d(-4px, 2px, 0); }
+    30% { transform: translate3d(4px, -2px, 0); }
+    45% { transform: translate3d(-3px, -1px, 0); }
+    60% { transform: translate3d(3px, 1px, 0); }
+    75% { transform: translate3d(-1px, 1px, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+
+  .screen-shake-active {
+    animation: combatMicroShake 0.26s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    will-change: transform;
+  }
 
   /* === WHATSAPP COMIC HEADER === */
   .wa-header {
