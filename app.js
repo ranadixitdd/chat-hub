@@ -15,6 +15,10 @@
 
   function safeGetStorage(key) {
     try {
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.get === 'function') {
+        const val = window.ChatHubStorage.get(key);
+        if (val !== undefined && val !== null) return val;
+      }
       return localStorage.getItem(key);
     } catch (e) {
       return null;
@@ -23,10 +27,17 @@
 
   function safeSetStorage(key, value) {
     try {
-      localStorage.setItem(key, value);
+      const strVal = typeof value === 'string' ? value : JSON.stringify(value);
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.set === 'function') {
+        window.ChatHubStorage.set(key, strVal);
+      }
+      try {
+        localStorage.setItem(key, strVal);
+      } catch (quotaErr) {
+        // Quota safely absorbed by IndexedDB - prevents 5MB storage crash
+      }
       return true;
     } catch (e) {
-      showToast('⚠️ Storage full! Use a smaller image or export JSON.');
       return false;
     }
   }
@@ -1542,6 +1553,22 @@ function playSciFiChimeSound() {
       deletedCastIds: deletedCastIds || []
     };
     safeSetStorage(STORAGE_KEY, JSON.stringify(payload));
+
+    if (window.ChatHubStorage && typeof window.ChatHubStorage.requestAutoSave === 'function') {
+      window.ChatHubStorage.requestAutoSave(async () => {
+        if (currentStoryId && Array.isArray(savedStories)) {
+          const idx = savedStories.findIndex(s => s.id === currentStoryId);
+          if (idx >= 0) {
+            savedStories[idx].messages = JSON.parse(JSON.stringify(messages || []));
+            savedStories[idx].storyScenes = JSON.parse(JSON.stringify(storyScenes || {}));
+            savedStories[idx].characters = JSON.parse(JSON.stringify(characters || []));
+            savedStories[idx].updatedAt = Date.now();
+            safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+            window.ChatHubStorage.saveStory(savedStories[idx]);
+          }
+        }
+      });
+    }
   }
 
   function ensureDefaultCastMembers() {
@@ -5410,6 +5437,9 @@ if (msg.type === 'quest') {
     const titleInput = document.getElementById('currentStoryTitleInput');
     if (titleInput) titleInput.value = currentStoryTitle;
     renderStoriesList();
+    if (window.ChatHubStorage && typeof window.ChatHubStorage.updateStorageStatusUi === 'function') {
+      window.ChatHubStorage.updateStorageStatusUi();
+    }
     document.getElementById('storiesModal').classList.add('open');
   }
 
@@ -5457,6 +5487,9 @@ if (msg.type === 'quest') {
     }
 
     safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+    if (window.ChatHubStorage && typeof window.ChatHubStorage.saveStory === 'function') {
+      window.ChatHubStorage.saveStory(storyData);
+    }
     saveStudioState();
     renderStoriesList();
     showToast(isSaveAsNew ? `💾 Saved as new episode "${title}"!` : `💾 Story "${title}" updated!`);
@@ -5560,6 +5593,9 @@ if (msg.type === 'quest') {
           safeSetStorage('wh_current_story_id', '');
         }
         safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+        if (window.ChatHubStorage && typeof window.ChatHubStorage.deleteStory === 'function') {
+          window.ChatHubStorage.deleteStory(storyId);
+        }
         renderStoriesList();
         showToast('🗑️ Story deleted');
       }
@@ -5585,6 +5621,9 @@ if (msg.type === 'quest') {
           if (titleInput) titleInput.value = currentStoryTitle;
         }
         safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+        if (window.ChatHubStorage && typeof window.ChatHubStorage.saveStory === 'function') {
+          window.ChatHubStorage.saveStory(target);
+        }
         renderStoriesList();
         showToast(`✏️ Renamed story to "${clean}"`);
       }
@@ -5600,6 +5639,9 @@ if (msg.type === 'quest') {
     clone.date = new Date().toLocaleDateString();
     savedStories.unshift(clone);
     safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
+    if (window.ChatHubStorage && typeof window.ChatHubStorage.saveStory === 'function') {
+      window.ChatHubStorage.saveStory(clone);
+    }
     renderStoriesList();
     showToast(`📑 Duplicated "${clone.title}"`);
   }
