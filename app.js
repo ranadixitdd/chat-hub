@@ -2310,10 +2310,9 @@ function playSciFiChimeSound() {
       }
 
       // Squad Group Chat or Global Broadcast Channel:
-      // The designated POV character (Nobita / right-side character) is on the RIGHT.
+      // Whoever is designated as the POV character (side === 'right') is on the RIGHT.
       // ALL other members are on the LEFT!
-      const povChar = characters.find(c => (c.name.toLowerCase() === 'nobita' && c.side === 'right') || (c.id === 'c1' && c.side === 'right')) ||
-                      characters.find(c => c.side === 'right' && c.id !== 'c_gpt' && c.id !== 'c_gem') ||
+      const povChar = characters.find(c => c.side === 'right' && c.id !== 'c_gpt' && c.id !== 'c_gem') ||
                       characters.find(c => c.name.toLowerCase() === 'nobita' || c.id === 'c1') ||
                       characters[0];
       if (povChar && char.id === povChar.id) {
