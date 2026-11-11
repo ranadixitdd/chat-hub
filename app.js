@@ -4970,6 +4970,49 @@ if (msg.type === 'quest') {
       gemini: []
     };
 
+    // WhatsApp Mode Scene Isolation: Separate Group, Private DMs, and Global Channel
+    let currentWaChatMode = groupProfile.chatType || 'group';
+    let currentWaPrivateCharId = groupProfile.privateCharId || null;
+    const waChatModeStreams = {
+      group: [],
+      private: {},
+      global: []
+    };
+
+    function getWaThreadKey(mode, charId) {
+      if (mode === 'private') return 'pvt_' + (charId || 'default');
+      if (mode === 'global') return 'global';
+      return 'group';
+    }
+
+    function saveCurrentWaStream() {
+      if (currentCinemaApp !== 'whatsapp') return;
+      const key = getWaThreadKey(currentWaChatMode, currentWaPrivateCharId);
+      const nodes = Array.from(stream.children);
+      if (currentWaChatMode === 'private') {
+        waChatModeStreams.private[key] = nodes;
+      } else if (currentWaChatMode === 'global') {
+        waChatModeStreams.global = nodes;
+      } else {
+        waChatModeStreams.group = nodes;
+      }
+    }
+
+    function restoreWaStream(mode, charId) {
+      const key = getWaThreadKey(mode, charId);
+      let nodes = [];
+      if (mode === 'private') {
+        nodes = waChatModeStreams.private[key] || [];
+      } else if (mode === 'global') {
+        nodes = waChatModeStreams.global || [];
+      } else {
+        nodes = waChatModeStreams.group || [];
+      }
+      stream.innerHTML = '';
+      nodes.forEach(node => stream.appendChild(node));
+      stream.scrollTop = stream.scrollHeight;
+    }
+
     let stepIndex = 0;
 
     resumeCinemaAfterChoiceCallback = (selectedOpt) => {
@@ -5057,21 +5100,46 @@ if (msg.type === 'quest') {
 
       // Chat Mode Scene Switch (WhatsApp Group <-> Private DM <-> Global Channel)
       if (nextMsg.type === 'chat_mode_switch') {
-        if (activeAppMode !== 'whatsapp') {
-          switchAppMode('whatsapp', true);
-          currentCinemaApp = 'whatsapp';
-        }
         const targetMode = nextMsg.targetChatMode || 'group';
         let targetCharId = null;
         if (targetMode === 'private' && nextMsg.chatParam) {
           const found = characters.find(c => c.name.toLowerCase() === nextMsg.chatParam.toLowerCase() || c.id === nextMsg.chatParam);
           if (found) targetCharId = found.id;
         }
-        setWhatsAppChatType(targetMode, targetCharId);
-        if (statusText) statusText.textContent = `💬 ${targetMode.toUpperCase()} CHAT`;
-        const stepDelay = Math.max(200, (nextMsg.delayMs || 1000) / cinemaSpeedMultiplier);
-        stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, stepDelay);
+
+        // Pacing: Ensure user has ample time to read previous message before switching chat rooms!
+        const prevMsg = stepIndex > 0 ? fullQueue[stepIndex - 1] : null;
+        const prevText = (prevMsg && (prevMsg.type === 'text' || prevMsg.type === 'sfx')) ? (prevMsg.text || '') : '';
+        const autoReadMs = prevText.length > 0 ? Math.max(1600, Math.min(4500, prevText.length * 45)) : 0;
+        const configuredHold = nextMsg.preDelayMs || autoReadMs;
+        const readBuffer = Math.max(150, configuredHold / cinemaSpeedMultiplier);
+
+        if (statusText && autoReadMs > 0) statusText.textContent = `⏳ Reading message...`;
+
+        setTimeout(() => {
+          if (!isCinemaPlaying) return;
+
+          if (activeAppMode !== 'whatsapp') {
+            switchAppMode('whatsapp', true);
+            currentCinemaApp = 'whatsapp';
+          }
+
+          // 1. Save current WhatsApp thread stream before switching
+          saveCurrentWaStream();
+
+          // 2. Switch WhatsApp mode & update UI
+          setWhatsAppChatType(targetMode, targetCharId);
+          currentWaChatMode = targetMode;
+          currentWaPrivateCharId = targetCharId;
+
+          // 3. Clear and restore target WhatsApp thread stream (no message leakage!)
+          restoreWaStream(targetMode, targetCharId);
+
+          if (statusText) statusText.textContent = `💬 ${targetMode.toUpperCase()} CHAT`;
+          const stepDelay = Math.max(250, (nextMsg.delayMs || 1000) / cinemaSpeedMultiplier);
+          stepIndex++;
+          cinemaStepTimeout = setTimeout(playNextStep, stepDelay);
+        }, readBuffer);
         return;
       }
 
@@ -5084,60 +5152,78 @@ if (msg.type === 'quest') {
           gemini: { title: 'Google Gemini', icon: '✨', sub: 'Launching Google Gemini AI...' }
         }[targetApp] || { title: targetApp, icon: '🚀', sub: 'Switching App...' };
 
-        if (statusText) statusText.textContent = `🚀 ${appInfo.title}`;
+        // Pacing: Ensure user has ample time to read previous dialogue before app switcher opens!
+        const prevMsg = stepIndex > 0 ? fullQueue[stepIndex - 1] : null;
+        const prevText = (prevMsg && (prevMsg.type === 'text' || prevMsg.type === 'sfx')) ? (prevMsg.text || '') : '';
+        const autoReadMs = prevText.length > 0 ? Math.max(1800, Math.min(4800, prevText.length * 48)) : 0;
+        const configuredHold = nextMsg.preDelayMs || autoReadMs;
+        const preSwitchWait = Math.max(150, configuredHold / cinemaSpeedMultiplier);
 
-        // 1. Sleek audio whoosh chime
-        playAppSwitchSound();
-
-        // 2. Realistic Mobile OS App-Switcher transition animation
-        showAppSwitchTransition(targetApp, appInfo);
-
-        // 3. Save current active stream children
-        appSceneStreams[currentCinemaApp] = Array.from(stream.children);
-
-        // Calculate transition hold time: respect explicit preDelayMs (e.g. from /delay 3sec), delayMs, or minimum 1200ms
-        const configuredHoldMs = nextMsg.preDelayMs || nextMsg.delayMs || 1500;
-        const transitionHold = Math.max(1200, configuredHoldMs) / cinemaSpeedMultiplier;
+        if (statusText && autoReadMs > 0) statusText.textContent = `⏳ Reading message...`;
 
         setTimeout(() => {
           if (!isCinemaPlaying) return;
 
-          // 4. Switch app mode shell & theme
-          switchAppMode(targetApp, true);
-          currentCinemaApp = targetApp;
+          if (statusText) statusText.textContent = `🚀 ${appInfo.title}`;
 
-          document.getElementById('directorDeck').classList.add('hidden');
-          const switchWaBar = document.getElementById('waInputBar');
-          if (switchWaBar) switchWaBar.style.display = 'flex';
-          if (dock) dock.classList.add('active');
+          // 1. Sleek audio whoosh chime
+          playAppSwitchSound();
 
-          // 5. SEPARATE CHAT STREAM PER APP:
-          // Clear current screen so previous app's messages NEVER leak into this app!
-          stream.innerHTML = '';
+          // 2. Realistic Mobile OS App-Switcher transition animation
+          showAppSwitchTransition(targetApp, appInfo);
 
-          if (targetApp === 'gemini') {
-            const hero = cachedGeminiHeroNode ? cachedGeminiHeroNode.cloneNode(true) : document.getElementById('geminiHeroContainer');
-            if (hero) stream.appendChild(hero);
+          // 3. Save current active stream children
+          if (currentCinemaApp === 'whatsapp') {
+            saveCurrentWaStream();
+          } else {
+            appSceneStreams[currentCinemaApp] = Array.from(stream.children);
           }
 
-          // Restore only this app's conversation history
-          if (appSceneStreams[targetApp] && appSceneStreams[targetApp].length > 0) {
-            appSceneStreams[targetApp].forEach(node => {
-              if (node.id !== 'geminiHeroContainer') {
-                stream.appendChild(node);
-              }
-            });
-          }
-
-          stream.scrollTop = stream.scrollHeight;
+          // Transition animation hold
+          const transitionHold = Math.max(900, (nextMsg.delayMs || 1200)) / cinemaSpeedMultiplier;
 
           setTimeout(() => {
-            hideAppSwitchTransition();
-          }, 220);
+            if (!isCinemaPlaying) return;
 
-          stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, 800 / cinemaSpeedMultiplier);
-        }, transitionHold);
+            // 4. Switch app mode shell & theme
+            switchAppMode(targetApp, true);
+            currentCinemaApp = targetApp;
+
+            document.getElementById('directorDeck').classList.add('hidden');
+            const switchWaBar = document.getElementById('waInputBar');
+            if (switchWaBar) switchWaBar.style.display = 'flex';
+            if (dock) dock.classList.add('active');
+
+            // 5. SEPARATE CHAT STREAM PER APP:
+            // Clear current screen so previous app's messages NEVER leak into this app!
+            stream.innerHTML = '';
+
+            if (targetApp === 'gemini') {
+              const hero = cachedGeminiHeroNode ? cachedGeminiHeroNode.cloneNode(true) : document.getElementById('geminiHeroContainer');
+              if (hero) stream.appendChild(hero);
+            }
+
+            // Restore only this app's conversation history
+            if (targetApp === 'whatsapp') {
+              restoreWaStream(currentWaChatMode, currentWaPrivateCharId);
+            } else if (appSceneStreams[targetApp] && appSceneStreams[targetApp].length > 0) {
+              appSceneStreams[targetApp].forEach(node => {
+                if (node.id !== 'geminiHeroContainer') {
+                  stream.appendChild(node);
+                }
+              });
+            }
+
+            stream.scrollTop = stream.scrollHeight;
+
+            setTimeout(() => {
+              hideAppSwitchTransition();
+            }, 220);
+
+            stepIndex++;
+            cinemaStepTimeout = setTimeout(playNextStep, 700 / cinemaSpeedMultiplier);
+          }, transitionHold);
+        }, preSwitchWait);
         return;
       }
 
@@ -7672,9 +7758,20 @@ if (msg.type === 'quest') {
     md += `• Suspense Pause: [PAUSE: 2s]\n`;
     md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
     md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
+    md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
     md += `• App Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
     md += `• Interactive Choice Card (near the climax):\n`;
     md += `  [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
+
+    // 2b. Mandatory Pacing & Reading Delays
+    md += `=== ⏳ MANDATORY READING DELAYS BEFORE APP & SCENE SWITCHES ===\n`;
+    md += `CRITICAL PACING RULE: Before switching apps ([SCENE: chatgpt], [SCENE: gemini], [SCENE: whatsapp]) or switching WhatsApp chat modes ([CHAT: private: CharacterName], [CHAT: group], [CHAT: global]):\n`;
+    md += `You MUST ALWAYS insert a reading delay (/delay 2sec or /delay 2.5sec) right after the preceding dialogue line so viewers have time to read the message on screen before the phone switches!\n`;
+    md += `Correct Pacing Example:\n`;
+    md += `  [Nobita:angry]: Doraemon you have to do something or Gian will destroy my room!!\n`;
+    md += `  /delay 2.2sec\n`;
+    md += `  [SCENE: chatgpt]\n`;
+    md += `  [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!\n\n`;
 
     // 3. Strict Negative Output Mandates
     md += `=== ⛔ MANDATORY OUTPUT FORMAT RULES ===\n`;
