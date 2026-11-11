@@ -170,7 +170,7 @@
     {
       id: 'c1',
       name: 'Nobita',
-      side: 'left',
+      side: 'right',
       color: '#eab308',
       pitch: 1.25,
       avatar: makeComicAvatarDataUri('NO', '#facc15', '👓')
@@ -178,7 +178,7 @@
     {
       id: 'c2',
       name: 'Doraemon',
-      side: 'right',
+      side: 'left',
       color: '#0284c7',
       pitch: 0.92,
       avatar: makeComicAvatarDataUri('DO', '#38bdf8', '🔔')
@@ -1831,7 +1831,7 @@ function playSciFiChimeSound() {
       characters.unshift({
         id: 'c1',
         name: 'Nobita',
-        side: 'left',
+        side: 'right',
         color: '#eab308',
         pitch: 1.25,
         avatar: makeComicAvatarDataUri('NO', '#facc15', '👓')
@@ -1844,7 +1844,7 @@ function playSciFiChimeSound() {
       characters.splice(idx > 0 ? idx : 1, 0, {
         id: 'c2',
         name: 'Doraemon',
-        side: 'right',
+        side: 'left',
         color: '#0284c7',
         pitch: 0.92,
         avatar: makeComicAvatarDataUri('DO', '#38bdf8', '🔔')
@@ -1870,6 +1870,13 @@ function playSciFiChimeSound() {
           pitch: 1.05,
           ...c
         }));
+      }
+      // Migrate legacy side assignment: Nobita is the POV phone owner (right), others left
+      const nobitaChar = characters.find(c => c.name.toLowerCase() === 'nobita' || c.id === 'c1');
+      const doraemonChar = characters.find(c => c.name.toLowerCase() === 'doraemon' || c.id === 'c2');
+      if (nobitaChar && doraemonChar && nobitaChar.side === 'left' && doraemonChar.side === 'right') {
+        nobitaChar.side = 'right';
+        doraemonChar.side = 'left';
       }
       ensureAiCastMembers();
       ensureDefaultCastMembers();
@@ -2145,7 +2152,16 @@ function playSciFiChimeSound() {
   function toggleCurrentCharSide() {
     const char = characters.find(c => c.id === currentCharId);
     if (!char) return;
-    char.side = char.side === 'left' ? 'right' : 'left';
+    const currentEffective = getEffectiveSideForMessage(char, activeAppMode);
+    const newSide = currentEffective === 'left' ? 'right' : 'left';
+    char.side = newSide;
+    if (newSide === 'right') {
+      characters.forEach(c => {
+        if (c.id !== char.id && c.id !== 'c_gpt' && c.id !== 'c_gem') {
+          c.side = 'left';
+        }
+      });
+    }
     saveStudioState();
     renderDirectorStrip();
     renderChatStream();
@@ -2273,6 +2289,37 @@ function playSciFiChimeSound() {
     if (appMode === 'gemini') {
       const isAi = (char.id === 'c_gem' || (char.name && char.name.toLowerCase().includes('gemini')) || char.role === 'Lore Master');
       return isAi ? 'left' : 'right';
+    }
+    if (appMode === 'whatsapp') {
+      const chatType = groupProfile.chatType || 'group';
+
+      // 1-on-1 Private DM (e.g. Chatting with Shizuka):
+      // The contact in the top header is ALWAYS on the LEFT.
+      // The POV phone owner replying to them is ALWAYS on the RIGHT!
+      if (chatType === 'private') {
+        const pCharId = groupProfile.privateCharId;
+        const pChar = characters.find(c => c.id === pCharId);
+        const pName = pChar ? pChar.name.toLowerCase() : '';
+
+        // If char is the private chat partner: they must be on the LEFT
+        if ((pCharId && char.id === pCharId) || (pName && char.name && char.name.toLowerCase() === pName)) {
+          return 'left';
+        }
+        // The POV phone owner replying to them is on the RIGHT
+        return 'right';
+      }
+
+      // Squad Group Chat or Global Broadcast Channel:
+      // The designated POV character (Nobita / right-side character) is on the RIGHT.
+      // ALL other members are on the LEFT!
+      const povChar = characters.find(c => (c.name.toLowerCase() === 'nobita' && c.side === 'right') || (c.id === 'c1' && c.side === 'right')) ||
+                      characters.find(c => c.side === 'right' && c.id !== 'c_gpt' && c.id !== 'c_gem') ||
+                      characters.find(c => c.name.toLowerCase() === 'nobita' || c.id === 'c1') ||
+                      characters[0];
+      if (povChar && char.id === povChar.id) {
+        return 'right';
+      }
+      return 'left';
     }
     return char.side || 'left';
   }
@@ -2801,9 +2848,19 @@ if (msg.type === 'quest') {
 
   function showTypingIndicatorThenRun(char, durationMs, callback, expr = 'normal') {
     clearTypingTimers();
+    const effectiveSide = getEffectiveSideForMessage(char, activeAppMode);
+
+    // If right side (POV user), DO NOT show typing indicator bubble on screen!
+    // It is not logical to see myself typing on screen.
+    if (effectiveSide === 'right') {
+      pendingMessageCommit = null;
+      callback();
+      return;
+    }
+
     const stream = document.getElementById('chatStream');
     const typingRow = document.createElement('div');
-    typingRow.className = `typing-indicator-row ${char.side}`;
+    typingRow.className = `typing-indicator-row ${effectiveSide}`;
     const avatarSrc = getCharacterAvatarForExpr(char, expr || currentExpr || 'normal');
     typingRow.innerHTML = `
       <img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #0f172a; object-fit:cover;">
@@ -2818,7 +2875,7 @@ if (msg.type === 'quest') {
     stream.scrollTop = stream.scrollHeight;
 
     const statusEl = document.getElementById('headerGroupStatus');
-    if (statusEl && char.side === 'left') {
+    if (statusEl && effectiveSide === 'left') {
       statusEl.textContent = `${char.name} is typing...`;
       statusEl.classList.add('typing-pulse-status');
     }
