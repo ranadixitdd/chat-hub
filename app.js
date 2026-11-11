@@ -7599,7 +7599,8 @@ if (msg.type === 'quest') {
     md += `3. DO NOT include any outro or notes (NO "Hope you like it!").\n`;
     md += `4. DO NOT wrap the output in markdown code fences (DO NOT use \`\`\` or \`\`\`markdown).\n`;
     md += `5. DO NOT use bullet points (- or *) or line numbering (1., 2.).\n`;
-    md += `6. Start Line 1 immediately with [SYSTEM: Episode Title].\n\n`;
+    md += `6. Start Line 1 immediately with [SYSTEM: Episode Title].\n`;
+    md += `7. STRICT LINE BREAKS: Every dialogue line, delay (/delay), or system banner MUST be on its own separate line (press Enter after every line). Do NOT group multiple tags onto the same line.\n\n`;
 
     // 4. Cast & Expressions
     md += `=== 🎭 CONFIGURED CHARACTERS & EMOTION TAGS ===\n`;
@@ -7889,7 +7890,22 @@ if (msg.type === 'quest') {
   // Parse Dialogue Script into Structured Data Objects (with Smart Auto-Timing)
   function parseScriptLinesToMessages(rawScript) {
     if (!rawScript || typeof rawScript !== 'string') return [];
-    const lines = rawScript.split('\n').map(l => l.trim()).filter(Boolean);
+
+    let cleaned = rawScript;
+    // 1. Remove leading ":-" or stray punctuation (common from chat messages)
+    cleaned = cleaned.replace(/^[:\-–—\s]+/, '');
+
+    // 2. Unescape markdown backslashes like "\..." -> "..."
+    cleaned = cleaned.replace(/\\([^\w\s])/g, '$1');
+
+    // 3. Normalize "/ delay" with space to "/delay"
+    cleaned = cleaned.replace(/\/\s+delay/gi, '/delay');
+
+    // 4. Auto-split packed scripts: insert newlines before directives if multiple tags are on one line
+    cleaned = cleaned.replace(/\s+(\/(?:\s*delay|pause))/gi, '\n$1');
+    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED|[A-Za-z0-9_\-\s]+:[^\]]+)\])/gi, '\n$1');
+
+    const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
     const parsedMsgs = [];
     const validExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
     let pendingDelayMs = 0;
