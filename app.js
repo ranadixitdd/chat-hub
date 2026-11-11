@@ -6467,8 +6467,53 @@ if (msg.type === 'quest') {
      ===================================================================== */
   let activeScriptStudioTab = 'text';
 
-  // 5 Curated Built-In Anime/Manhwa Episodes
+  // 6 Curated Built-In Anime/Manhwa Episodes
   const BUILTIN_STORY_PRESETS = [
+    {
+      id: 'preset_master_showcase',
+      title: "🌟 Ultimate Master Showcase: Multiverse AI & System Crisis",
+      desc: "Complete studio showcase: Multiverse Apps (WhatsApp ➔ ChatGPT ➔ Gemini), WhatsApp Private DM/Group/Global, SFX multi-tags, Stickers, Solo Leveling Quest, and Interactive Choice Climax!",
+      cast: ['Nobita', 'Doraemon', 'Shizuka', 'ChatGPT', 'Gemini'],
+      script: `[SYSTEM: 🎬 ULTIMATE MASTER SHOWCASE: THE SECRET SYSTEM CRISIS]
+[CHAT: group]
+/delay 1.2sec
+[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with baseball bats!
+/delay 1.5sec
+[Doraemon:angry]: Again?! What did you do to anger him this time?!
+/delay 1sec
+[Nobita:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!
+[PAUSE: 2s]
+[QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
+/delay 1.5sec
+[Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
+/delay 1.5sec
+[SCENE: chatgpt]
+[Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
+/delay 2.2sec
+[ChatGPT]: Tactical Advice: 1. Distract with a shiny baseball. 2. Offer emergency snacks. 3. Engage maximum sprint velocity!
+/delay 1.5sec
+[SCENE: gemini]
+[Nobita]: Gemini, double check ChatGPT's tactical calculations!
+/delay 2sec
+[Gemini]: Deep Lore Scan: Calculations verified with 99.4% probability of success!
+/delay 1.5sec
+[SCENE: whatsapp]
+[CHAT: private: Shizuka]
+/delay 1.2sec
+[Nobita:love:sparkle]: Shizuka... If I don't survive this baseball crisis, remember me!
+/delay 1.5sec
+[Shizuka:love]: Nobita, silly! You won't lose if you stay calm!
+/delay 1sec
+[CHAT: group]
+/delay 1sec
+[SPEED: 1.2x]
+[CHOICE: How should Nobita resolve this crisis? | 💨 Use Nigerundayo Sprint Speed -> Nobita: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice Doraemon's Dorayaki -> Doraemon: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]
+/delay 1.5sec
+[Nobita:STICKER]: DEAD
+[CHAT: global]
+/delay 1sec
+[SYSTEM: 🎬 MISSION COMPLETE — TO BE CONTINUED IN EPISODE 2]`
+    },
     {
       id: 'preset_gian_revenge',
       title: "Episode 1: Gian's Revenge & Dorayaki Crisis",
@@ -7819,6 +7864,48 @@ if (msg.type === 'quest') {
 [Nobita:STICKER]: DEAD
 [SYSTEM: 🎬 TO BE CONTINUED — LIKE FOR PART 2]`;
       showToast('🔥 Loaded Sample 5: Viral Hook (High-Retention Opener)!');
+    } else if (sampleIdx === 6) {
+      // 🌟 Sample 6: Ultimate All-In-One Master Showcase
+      box.value = `[SYSTEM: 🎬 ULTIMATE MASTER SHOWCASE: THE SECRET SYSTEM CRISIS]
+[CHAT: group]
+/delay 1.2sec
+[Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with baseball bats!
+/delay 1.5sec
+[Doraemon:angry]: Again?! What did you do to anger him this time?!
+/delay 1sec
+[Nobita:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!
+[PAUSE: 2s]
+[QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
+/delay 1.5sec
+[Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
+/delay 1.5sec
+[SCENE: chatgpt]
+[Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
+/delay 2.2sec
+[ChatGPT]: Tactical Advice: 1. Distract with a shiny baseball. 2. Offer emergency snacks. 3. Engage maximum sprint velocity!
+/delay 1.5sec
+[SCENE: gemini]
+[Nobita]: Gemini, double check ChatGPT's tactical calculations!
+/delay 2sec
+[Gemini]: Deep Lore Scan: Calculations verified with 99.4% probability of success!
+/delay 1.5sec
+[SCENE: whatsapp]
+[CHAT: private: Shizuka]
+/delay 1.2sec
+[Nobita:love:sparkle]: Shizuka... If I don't survive this baseball crisis, remember me!
+/delay 1.5sec
+[Shizuka:love]: Nobita, silly! You won't lose if you stay calm!
+/delay 1sec
+[CHAT: group]
+/delay 1sec
+[SPEED: 1.2x]
+[CHOICE: How should Nobita resolve this crisis? | 💨 Use Nigerundayo Sprint Speed -> Nobita: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice Doraemon's Dorayaki -> Doraemon: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]
+/delay 1.5sec
+[Nobita:STICKER]: DEAD
+[CHAT: global]
+/delay 1sec
+[SYSTEM: 🎬 MISSION COMPLETE — TO BE CONTINUED IN EPISODE 2]`;
+      showToast('🌟 Loaded Sample 6: Ultimate All-In-One Master Showcase!');
     }
   }
 
