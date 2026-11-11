@@ -6659,40 +6659,42 @@ if (msg.type === 'quest') {
 [CHAT: group]
 /delay 1.2sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with baseball bats!
-/delay 1.5sec
+/delay 1.8sec
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
-/delay 1sec
+/delay 1.5sec
 [Nobita:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!
+/delay 1.5sec
 [PAUSE: 2s]
 [QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
-/delay 1.5sec
+/delay 2sec
 [Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
-/delay 2.2sec
+/delay 2.5sec
 [ChatGPT]: Tactical Advice: 1. Distract with a shiny baseball. 2. Offer emergency snacks. 3. Engage maximum sprint velocity!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: gemini]
 [Nobita]: Gemini, double check ChatGPT's tactical calculations!
-/delay 2sec
+/delay 2.5sec
 [Gemini]: Deep Lore Scan: Calculations verified with 99.4% probability of success!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: whatsapp]
 [CHAT: private: Shizuka]
 /delay 1.2sec
 [Nobita:love:sparkle]: Shizuka... If I don't survive this baseball crisis, remember me!
-/delay 1.5sec
+/delay 2sec
 [Shizuka:love]: Nobita, silly! You won't lose if you stay calm!
-/delay 1sec
+/delay 2.2sec
 [CHAT: group]
-/delay 1sec
+/delay 1.2sec
 [SPEED: 1.2x]
 [CHOICE: How should Nobita resolve this crisis? | 💨 Use Nigerundayo Sprint Speed -> Nobita: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice Doraemon's Dorayaki -> Doraemon: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]
-/delay 1.5sec
+/delay 2.2sec
 [Nobita:STICKER]: DEAD
+/delay 2sec
 [CHAT: global]
-/delay 1sec
+/delay 1.2sec
 [SYSTEM: 🎬 MISSION COMPLETE — TO BE CONTINUED IN EPISODE 2]`
     },
     {
@@ -6701,16 +6703,26 @@ if (msg.type === 'quest') {
       desc: "Gian cornered Nobita outside his house! A Solo Leveling Quest suddenly appears!",
       cast: ['Nobita', 'Doraemon', 'Gian'],
       script: `[SYSTEM: EPISODE 1: GIAN'S REVENGE]
+[CHAT: group]
+/delay 1.2sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with a baseball bat!
-[Nobita:SFX]: 😭 WAAAHH!!
+[Nobita:sfx]: 😭 WAAAHH!!
+/delay 1.8sec
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
+/delay 1.6sec
 [Nobita]: I accidentally stepped on his prized baseball card...
-[Gian:SFX]: 👊 POW!!
-[Gian]: NOBITAAA! COME OUT HERE RIGHT NOW!
+/delay 1.2sec
+[Gian:sfx]: 👊 POW!!
+/delay 1.2sec
+[Gian:angry]: NOBITAAA! COME OUT HERE RIGHT NOW!
+/delay 1.5sec
 [QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without using any 4D gadgets!]
-[Nobita:shock]: A System Quest appeared?! Since when do we have manhwa quests?!
-[Doraemon:laugh]: Bwahaha! Looks like you have to face him like a man!
-[Nobita:SFX]: 💨 NIGERUNDAYO!!`
+/delay 2sec
+[Nobita:shock:vineboom]: A System Quest appeared?! Since when do we have manhwa quests?!
+/delay 1.8sec
+[Doraemon:laugh:boing]: Bwahaha! Looks like you have to face him like a man!
+/delay 1.5sec
+[Nobita:sfx]: 💨 NIGERUNDAYO!!`
     },
     {
       id: 'preset_solo_awakening',
@@ -6718,17 +6730,29 @@ if (msg.type === 'quest') {
       desc: "Trapped in the temple of the God Statue! Player Jinwoo awakens his hunter system!",
       cast: ['Sung_Jinwoo', 'Hunter_Song', 'System'],
       script: `[SYSTEM: EPISODE: AWAKENING IN THE DOUBLE DUNGEON]
+[CHAT: group]
+/delay 1.2sec
 [Sung_Jinwoo:shock]: The statue's eyes... they're glowing red?!
+/delay 1.8sec
 [Hunter_Song:angry]: Everyone get down! Don't look into its eyes!
-[Sung_Jinwoo:SFX]: ⚡ NANI?!
-[Statue_God:SFX]: 💀 OMAE WA MOU...
+/delay 1.5sec
+[Sung_Jinwoo:sfx]: ⚡ NANI?!
+/delay 1.2sec
+[Statue_God:sfx]: 💀 OMAE WA MOU...
+/delay 1.8sec
 [Sung_Jinwoo:cry]: My leg... I can't move! Is this how it ends?!
+/delay 1.5sec
 [QUEST: COURAGE OF THE WEAK: Complete the secret trial of the God Statue!]
+/delay 1.5sec
 [QUEST: REWARD: Player Awakening & System Administrator Access]
+/delay 2sec
 [Sung_Jinwoo:shock]: A holographic quest window in front of my eyes?!
+/delay 1.8sec
 [System]: Welcome, Player Sung Jinwoo. Will you accept the quest?
+/delay 2sec
 [Sung_Jinwoo:angry]: If I don't... I'll die anyway. I ACCEPT!
-[Sung_Jinwoo:SFX]: 🔥 AWAKEN!!`
+/delay 1.5sec
+[Sung_Jinwoo:sfx]: 🔥 AWAKEN!!`
     },
     {
       id: 'preset_jjk_showdown',
@@ -6736,16 +6760,28 @@ if (msg.type === 'quest') {
       desc: "Sukuna infiltrates the Tokyo Jujutsu squad chat. Gojo drops the ultimate catchphrase.",
       cast: ['Megumi', 'Sukuna', 'Gojo'],
       script: `[SYSTEM: EPISODE: SHINJUKU SHOWDOWN IN THE GROUP CHAT]
+[CHAT: group]
+/delay 1.2sec
 [Megumi:shock]: Gojo-sensei... Sukuna just joined the squad chat!
+/delay 1.8sec
 [Sukuna:laugh]: Bwahaha! What a pathetic gathering of insects.
-[Sukuna:SFX]: 💀 OMAE WA MOU...
+/delay 1.5sec
+[Sukuna:sfx]: 💀 OMAE WA MOU...
+/delay 1.8sec
 [Gojo:laugh]: Oh? Look who decided to crawl out of his fingers!
+/delay 1.5sec
 [Gojo]: You know you're just a challenger here, right?
+/delay 1.8sec
 [Sukuna:angry]: Insolent brat. I'll cleave you before you can blink!
-[Sukuna:SFX]: 💥 BAM!!
+/delay 1.2sec
+[Sukuna:sfx]: 💥 BAM!!
+/delay 1.8sec
 [Gojo:love]: Nah, I'd win. 💅
-[Gojo:SFX]: ⚡ HOLLOW PURPLE!!
+/delay 1.5sec
+[Gojo:sfx]: ⚡ HOLLOW PURPLE!!
+/delay 1.5sec
 [QUEST: SYSTEM ALERT: Special Grade Cursed Energy Surge Detected!]
+/delay 2sec
 [Megumi:cry]: Sensei please don't destroy Tokyo again...`
     },
     {
@@ -6754,14 +6790,24 @@ if (msg.type === 'quest') {
       desc: "Light Yagami faces L's surveillance cameras while eating a potato chip with godlike drama.",
       cast: ['L', 'Light', 'Ryuk'],
       script: `[SYSTEM: EPISODE: LIGHT'S ULTIMATE DEDUCTION]
+[CHAT: group]
+/delay 1.2sec
 [L:shock]: The suspect must be someone within the police department...
+/delay 1.8sec
 [Light]: I'm just an innocent student studying for university entrance exams.
+/delay 1.8sec
 [Ryuk:laugh]: Hehehe... humans are so interesting.
-[Ryuk:SFX]: 🤣 BWAHAHA!
+/delay 1.5sec
+[Ryuk:sfx]: 🤣 BWAHAHA!
+/delay 1.8sec
 [Light]: I'll take a potato chip...
+/delay 1.5sec
 [Light:angry]: AND EAT IT!!
-[Light:SFX]: 💥 BAM!!
+/delay 1.2sec
+[Light:sfx]: 💥 BAM!!
+/delay 1.5sec
 [QUEST: MIND GAME: Deduce L's real name before the 40-second timer expires!]
+/delay 2sec
 [L:shock]: His heart rate didn't change at all... Could he really not be Kira?!`
     },
     {
@@ -6770,14 +6816,24 @@ if (msg.type === 'quest') {
       desc: "Sakura is caught red-handed with her secret notebook on the school rooftop.",
       cast: ['Senpai', 'Sakura'],
       script: `[SYSTEM: EPISODE: AFTER-SCHOOL ROOFTOP CONFESSION]
+[CHAT: private: Sakura]
+/delay 1.2sec
 [Senpai]: Hey Sakura, thanks for meeting me on the rooftop.
+/delay 1.8sec
 [Sakura:angry]: D-Don't get the wrong idea! I only came because it was on my way home!
-[Sakura:SFX]: 😡 B-BAKA!!
+/delay 1.5sec
+[Sakura:sfx]: 😡 B-BAKA!!
+/delay 1.8sec
 [Senpai]: I found your notebook... the one with all the sketches of me.
+/delay 1.8sec
 [Sakura:shock]: WH-WHAT?! YOU SAW THAT?!
+/delay 1.8sec
 [Sakura:cry]: I'm so embarrassed I could die right now!!
+/delay 1.5sec
 [QUEST: ROM-COM MISSION: Confess your true feelings before the bell rings!]
+/delay 2sec
 [Senpai:love]: Actually... I really liked the drawings.
+/delay 1.8sec
 [Sakura:love]: I-It's not like I like you or anything... baka!`
     }
   ];
@@ -7829,6 +7885,24 @@ if (msg.type === 'quest') {
     md += `  [SCENE: chatgpt]\n`;
     md += `  [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!\n\n`;
 
+    // 2c. POV & Chat Alignment Rules
+    md += `=== 📱 POV (PHONE OWNER) & CHAT ALIGNMENT RULES ===\n`;
+    md += `Chat Hub renders chat screens strictly from the POV perspective of the phone owner:\n`;
+    md += `1. POV Main Character (e.g. Nobita / Right Side):\n`;
+    md += `   • The story is viewed through the phone owner's screen. Their messages appear on the RIGHT side.\n`;
+    md += `   • Right-side POV characters send messages naturally without an incoming typing bubble (you never watch yourself type an incoming bubble on your own phone).\n`;
+    md += `2. WhatsApp Chat Modes & Left/Right Screen Alignment:\n`;
+    md += `   • [CHAT: private: CharacterName] (e.g. [CHAT: private: Shizuka]):\n`;
+    md += `     Switches WhatsApp into a 1-on-1 private DM with that person.\n`;
+    md += `     That partner's name is displayed in the top header and their messages appear on the LEFT side.\n`;
+    md += `     The POV user's replies appear on the RIGHT side.\n`;
+    md += `   • [CHAT: group]:\n`;
+    md += `     Switches WhatsApp into the squad group chat.\n`;
+    md += `     The POV character is on the RIGHT side; all other squad members appear on the LEFT side with distinct avatar colors and names.\n`;
+    md += `   • [CHAT: global]:\n`;
+    md += `     Switches WhatsApp into the global public feed / community channel.\n`;
+    md += `     The POV character is on the RIGHT side; other community participants appear on the LEFT side.\n\n`;
+
     // 3. Strict Negative Output Mandates
     md += `=== ⛔ MANDATORY OUTPUT FORMAT RULES ===\n`;
     md += `1. Output ONLY the raw script lines ready to copy-paste directly into Chat Hub.\n`;
@@ -7885,18 +7959,39 @@ if (msg.type === 'quest') {
 
     // 8. Quality Example
     md += `=== 📖 SCREENPLAY EXAMPLE (FOLLOW THIS EXACT STYLE) ===\n`;
-    const c1 = charNames[0] || 'Nobita';
-    const c2 = charNames[1] || 'Doraemon';
-    md += `[SYSTEM: EPISODE 1: THE SECRET GADGET DILEMMA]\n`;
+    const povChar = (characters.find(c => c.side === 'right') || {}).name || charNames[0] || 'Nobita';
+    const otherChars = charNames.filter(n => n !== povChar);
+    const partnerChar = otherChars[0] || 'Doraemon';
+    const friendChar = otherChars[1] || 'Shizuka';
+    md += `[SYSTEM: EPISODE 1: THE MULTIVERSE AI CRISIS]\n`;
+    md += `[CHAT: group]\n`;
     md += `/delay 1.2sec\n`;
-    md += `[${c1}:cry]: ${c2}!! Help me! A major crisis just occurred!\n`;
+    md += `[${povChar}:cry]: ${partnerChar}!! Help me! A major crisis just occurred!\n`;
+    md += `/delay 1.8sec\n`;
+    md += `[${partnerChar}:angry]: Again?! What did you do this time?!\n`;
     md += `/delay 1.5sec\n`;
-    md += `[${c2}:angry]: Again?! What did you do this time?!\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${c1}:shock:vineboom]: Look at this system alert on my phone!\n`;
+    md += `[${povChar}:shock:vineboom]: Look at this system quest window on my screen!\n`;
     md += `[QUEST: URGENT QUEST: Resolve the secret mission before time expires!]\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[CHOICE: What should we do? | Run Away -> ${c1}: NIGERUNDAYO!! | Stand and Fight -> ${c2}: Take this secret gadget!]\n`;
+    md += `/delay 2.2sec\n`;
+    md += `[SCENE: chatgpt]\n`;
+    md += `[${povChar}]: ChatGPT, calculate a tactical escape strategy immediately!\n`;
+    md += `/delay 2.5sec\n`;
+    md += `[ChatGPT]: Tactical Advice: 1. Stay calm. 2. Contact your allies. 3. Engage maximum sprint!\n`;
+    md += `/delay 2.5sec\n`;
+    md += `[SCENE: whatsapp]\n`;
+    md += `[CHAT: private: ${friendChar}]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[${povChar}:love:sparkle]: ${friendChar}... If I don't survive this mission, remember me!\n`;
+    md += `/delay 1.8sec\n`;
+    md += `[${friendChar}:love]: Silly! Don't panic, you can hide at my house! ❤️\n`;
+    md += `/delay 2.2sec\n`;
+    md += `[CHAT: group]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[CHOICE: What should we do? | 💨 Nigerundayo Sprint -> ${povChar}: 💨 NIGERUNDAYO!! | 🍪 Dorayaki Shield -> ${partnerChar}: 🤬 DON'T TOUCH MY DORAYAKI!!]\n`;
+    md += `/delay 2sec\n`;
+    md += `[CHAT: global]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[SYSTEM: 🎬 MISSION COMPLETE — TO BE CONTINUED IN EPISODE 2]\n`;
 
     return md;
   }
@@ -7940,6 +8035,7 @@ if (msg.type === 'quest') {
     if (sampleIdx === 1) {
       // ⚡ Sample 1: System Quest (Comedy & Manhwa Solo Leveling Parody)
       box.value = `[SYSTEM: EPISODE 1: GIAN'S REVENGE & THE SYSTEM QUEST]
+[CHAT: group]
 /delay 1.2sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with baseball bats!
 [Nobita:sfx]: 😭 WAAAHH!!
@@ -7948,70 +8044,87 @@ if (msg.type === 'quest') {
 /delay 1.4sec
 [Nobita]: I accidentally stepped on his ultra-rare signed baseball card...
 [Gian:sfx]: 👊 POW!!
-/delay 1sec
+/delay 1.2sec
 [Gian:angry]: NOBITAAA! COME OUT HERE RIGHT NOW OR I'LL FOLD YOU LIKE ORIGAMI!
 [QUEST: SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
-/delay 1.2sec
+/delay 1.8sec
 [Nobita:shock:vineboom]: A System Quest appeared?! Since when does my life have Solo Leveling blue windows?!
+/delay 1.6sec
 [Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
-/delay 2sec
+/delay 2.2sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
 /delay 2.5sec
 [ChatGPT]: Tactical Advice: 1. Distract with shiny object. 2. Offer emergency snacks. 3. Engage maximum sprint velocity!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: whatsapp]
-[Nobita:bliss:sparkle]: That's actually genius! Doraemon, lend me a snack from your stash!
+[CHAT: private: Doraemon]
 /delay 1.2sec
+[Nobita:bliss:sparkle]: That's actually genius! Doraemon, lend me a snack from your stash!
+/delay 1.8sec
 [Doraemon:angry]: Anything EXCEPT my secret Dorayaki!
-/delay 1sec
+/delay 1.8sec
+[CHAT: group]
+/delay 1.2sec
 [CHOICE: How should Nobita escape Gian? | 💨 Use Nigerundayo Sprint Speed -> Nobita: 💨 NIGERUNDAYO!! | 🍪 Sacrifice Doraemon's Dorayaki -> Doraemon: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]
-/delay 1.5sec
+/delay 2sec
 [Gian:shock:vineboom]: NANI?! HE DISAPPEARED INTO THIN AIR?!`;
       showToast('⚡ Loaded Sample 1: System Quest (Comedy & Manhwa Parody)!');
     } else if (sampleIdx === 2) {
       // ⚡ Sample 2: Rom-Com Dilemma (Romance & High School Banter)
       box.value = `[SYSTEM: EPISODE 2: THE AFTER-SCHOOL STUDY CRISIS]
+[CHAT: group]
 /delay 1.2sec
 [Shizuka:bliss:sparkle]: Hey everyone! Are we still doing our math study session today?
-/delay 1.5sec
+/delay 1.6sec
 [Nobita:love:sparkle]: YES! OF COURSE! I've been studying since 6 AM! (Total lie)
 /delay 1.8sec
 [Doraemon:laugh:boing]: Nobita, you were literally snoring until 1 PM...
-/delay 1.4sec
+/delay 1.6sec
 [Suneo:smug:vineboom]: Hold on, Shizuka! Why study with Nobita when my private tutor prepared French macarons at my mansion?
-/delay 1.6sec
-[Nobita:angry:punch]: Suneo!! Stop using rich boy bribery to hijack my study date!
 /delay 1.8sec
-[Shizuka:bliss]: French macarons sound lovely, but Nobita really needs help or he'll fail his test tomorrow...
+[Nobita:angry:punch]: Suneo!! Stop using rich boy bribery to hijack my study date!
+/delay 2.2sec
+[CHAT: private: Shizuka]
 /delay 1.2sec
+[Shizuka:love]: Nobita... Don't worry about Suneo. I made special study notes just for you ❤️
+/delay 1.8sec
+[Nobita:love:sparkle]: SHIZUKA! YOU'RE LITERALLY AN ANGEL!!
+/delay 2.2sec
+[CHAT: group]
+/delay 1.2sec
+[Shizuka:bliss]: French macarons sound lovely Suneo, but Nobita really needs help or he'll fail his test tomorrow...
+/delay 1.5sec
 [PAUSE: 1.5s]
-[CHOICE: Who should Shizuka study with? | 👓 Nobita (He desperately needs help) -> Nobita: 🎉 YES!! BEST DAY OF MY LIFE!! | 🥐 Suneo (Luxury French pastries) -> Suneo: 😎 Sophistication and taste always win!]
-/delay 1.6sec
+[CHOICE: Who should Shizuka study with? | 👓 Nobita (Personal study date) -> Nobita: 🎉 YES!! BEST DAY OF MY LIFE!! | 🥐 Suneo (Luxury French pastries) -> Suneo: 😎 Sophistication and taste always win!]
+/delay 1.8sec
 [Doraemon:love:sparkle]: Can I come too if there are Dorayaki macarons?!`;
       showToast('⚡ Loaded Sample 2: Rom-Com Dilemma (Romance & Banter)!');
     } else if (sampleIdx === 3) {
       // ⚡ Sample 3: Midnight Mystery (Suspense & Thriller Parody)
       box.value = `[SYSTEM: EPISODE 3: 2:47 AM BASEMENT MYSTERY]
-/delay 1.5sec
+[CHAT: private: Doraemon]
+/delay 1.2sec
 [Nobita:shock:shock]: Doraemon... Are you awake? Don't leave me on read...
 /delay 2sec
 [Doraemon:angry]: Nobita, it's 2:47 in the morning! Go back to sleep!
-/delay 1.6sec
+/delay 1.8sec
 [Nobita:cry]: I'm serious! The basement door downstairs just creaked open by itself!
 [Nobita:sfx]: 💀 OMAE WA MOU...
 /delay 2.2sec
 [Doraemon:normal]: It's just the wind. Or a stray cat.
-/delay 1.4sec
-[Gian:shock:vineboom]: Guys... I just saw a weird shadow moving outside Nobita's window...
-/delay 1.8sec
-[Nobita:shock:vineboom]: GIAN?! Why are you texting in our group at 3 AM?!
-/delay 1.5sec
-[Gian:angry]: Because I couldn't sleep after you ruined my baseball card!
+/delay 2.2sec
+[CHAT: group]
 /delay 1.2sec
+[Gian:shock:vineboom]: Guys... I just saw a weird shadow moving outside Nobita's window...
+/delay 2sec
+[Nobita:shock:vineboom]: GIAN?! Why are you texting in our squad group at 3 AM?!
+/delay 1.8sec
+[Gian:angry]: Because I couldn't sleep after you ruined my baseball card!
+/delay 1.5sec
 [PAUSE: 2s]
 [CHOICE: The basement footsteps are getting louder! | 🔦 Check the basement door with flashlight -> Nobita: 😱 DORAEMON LOOK OUT!! | 🚪 Barricade bedroom door and hide -> Doraemon: ⚡ GADGET MALFUNCTION!! THE POCKET IS JAMMED!!]
-/delay 1.5sec
+/delay 2.2sec
 [Doraemon:shock:shock]: WAIT! THAT WASN'T A GHOST... THAT'S MY CAT FRIEND MII-CHAN!`;
       showToast('⚡ Loaded Sample 3: Midnight Mystery (Suspense & Thriller)!');
     } else if (sampleIdx === 4) {
@@ -8020,40 +8133,48 @@ if (msg.type === 'quest') {
 [CHAT: group]
 /delay 1.2sec
 [Nobita:shock:vineboom]: Doraemon! The homework assignment is written in ancient alien hieroglyphics!
-/delay 1.5sec
+/delay 1.8sec
 [Doraemon:angry]: Ask ChatGPT, I'm busy recalibrating the Time Machine!
-/delay 1.5sec
+/delay 2.2sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, translate ancient alien hieroglyphics for me!
-/delay 2.2sec
+/delay 2.5sec
 [ChatGPT]: Decrypted Message: "Whoever finishes their math homework by sunset unlocks infinite Dorayaki."
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: gemini]
 [Nobita]: Gemini, is ChatGPT telling the truth or making a secret deal with Doraemon?!
-/delay 2sec
+/delay 2.5sec
 [Gemini]: Deep scan complete: 99.9% probability of Dorayaki bribery detected in the timeline!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: whatsapp]
+[CHAT: private: Doraemon]
+/delay 1.2sec
 [Nobita:laugh:vineboom]: DORAEMON! EVEN GEMINI EXPOSED YOUR SECRET MOTIVE!!
+/delay 1.8sec
+[Doraemon:shock:boing]: N-NANI?! Who leaked my classified Dorayaki treaty?!
+/delay 2sec
+[CHAT: group]
 /delay 1.2sec
 [CHOICE: What will Nobita do with this revelation? | 📢 Expose in Group Chat -> Nobita: 🤣 THE ENTIRE SQUAD KNOWS YOUR SECRET NOW!! | 🍪 Blackmail for Gadgets -> Doraemon: 😱 OKAY OKAY! TAKE THE ANYWHERE DOOR JUST DON'T TELL MOM!!]
-/delay 1.5sec
+/delay 2sec
 [Nobita:STICKER]: DEAD`;
       showToast('⚡ Loaded Sample 4: Multiverse AI (WhatsApp ➔ ChatGPT ➔ Gemini)!');
     } else if (sampleIdx === 5) {
       // 🔥 Sample 5: Viral Hook (High Retention Reels/Shorts Thriller Opener)
       box.value = `[SYSTEM: 🚨 2:47 AM — YOU HAVE 1 UNREAD EMERGENCY BROADCAST]
-/delay 1sec
+[CHAT: private: Doraemon]
+/delay 1.2sec
 [Nobita:shock:vineboom]: Doraemon... Tell me you see what is standing outside our second-floor window right now.
-/delay 1.8sec
+/delay 2.2sec
 [Doraemon:shock:shock]: Don't move. Don't blink. It's looking directly at your phone screen.
 [QUEST: ⚠️ SURVIVAL QUEST: Evade eye contact for 10 seconds without making a sound!]
-/delay 2sec
+/delay 2.2sec
 [Nobita:cry]: I can hear footsteps coming from INSIDE our ceiling!!
-/delay 1.4sec
+/delay 1.8sec
 [CHOICE: The bedroom doorknob starts turning slowly! | 🔦 Shine UV flashlight at the door -> Nobita: 😱 AHHH!! WHAT IS THAT THING?! | 🚪 Slam the Anywhere Door -> Doraemon: ⚡ GADGET OVERHEAT!! WE'RE TRAPPED!!]
-/delay 1.5sec
+/delay 2.2sec
 [Nobita:STICKER]: DEAD
+/delay 1.5sec
 [SYSTEM: 🎬 TO BE CONTINUED — LIKE FOR PART 2]`;
       showToast('🔥 Loaded Sample 5: Viral Hook (High-Retention Opener)!');
     } else if (sampleIdx === 6) {
@@ -8062,40 +8183,42 @@ if (msg.type === 'quest') {
 [CHAT: group]
 /delay 1.2sec
 [Nobita:cry]: Doraemon!! Help me! Gian is waiting outside my house with baseball bats!
-/delay 1.5sec
+/delay 1.8sec
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
-/delay 1sec
+/delay 1.5sec
 [Nobita:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!
+/delay 1.5sec
 [PAUSE: 2s]
 [QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
-/delay 1.5sec
+/delay 2sec
 [Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
-/delay 2.2sec
+/delay 2.5sec
 [ChatGPT]: Tactical Advice: 1. Distract with a shiny baseball. 2. Offer emergency snacks. 3. Engage maximum sprint velocity!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: gemini]
 [Nobita]: Gemini, double check ChatGPT's tactical calculations!
-/delay 2sec
+/delay 2.5sec
 [Gemini]: Deep Lore Scan: Calculations verified with 99.4% probability of success!
-/delay 1.5sec
+/delay 2.5sec
 [SCENE: whatsapp]
 [CHAT: private: Shizuka]
 /delay 1.2sec
 [Nobita:love:sparkle]: Shizuka... If I don't survive this baseball crisis, remember me!
-/delay 1.5sec
+/delay 2sec
 [Shizuka:love]: Nobita, silly! You won't lose if you stay calm!
-/delay 1sec
+/delay 2.2sec
 [CHAT: group]
-/delay 1sec
+/delay 1.2sec
 [SPEED: 1.2x]
 [CHOICE: How should Nobita resolve this crisis? | 💨 Use Nigerundayo Sprint Speed -> Nobita: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice Doraemon's Dorayaki -> Doraemon: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]
-/delay 1.5sec
+/delay 2.2sec
 [Nobita:STICKER]: DEAD
+/delay 2sec
 [CHAT: global]
-/delay 1sec
+/delay 1.2sec
 [SYSTEM: 🎬 MISSION COMPLETE — TO BE CONTINUED IN EPISODE 2]`;
       showToast('🌟 Loaded Sample 6: Ultimate All-In-One Master Showcase!');
     }
