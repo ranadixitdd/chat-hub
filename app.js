@@ -7777,8 +7777,67 @@ if (msg.type === 'quest') {
 /delay 1.5sec
 [Doraemon:shock:shock]: WAIT! THAT WASN'T A GHOST... THAT'S MY CAT FRIEND MII-CHAN!`;
       showToast('⚡ Loaded Sample 3: Midnight Mystery (Suspense & Thriller)!');
+    } else if (sampleIdx === 4) {
+      // ⚡ Sample 4: Multiverse AI (WhatsApp ➔ ChatGPT ➔ Gemini ➔ WhatsApp)
+      box.value = `[SYSTEM: MULTIVERSE EPISODE: THE AI TAKEOVER]
+[CHAT: group]
+/delay 1.2sec
+[Nobita:shock:vineboom]: Doraemon! The homework assignment is written in ancient alien hieroglyphics!
+/delay 1.5sec
+[Doraemon:angry]: Ask ChatGPT, I'm busy recalibrating the Time Machine!
+/delay 1.5sec
+[SCENE: chatgpt]
+[Nobita]: ChatGPT, translate ancient alien hieroglyphics for me!
+/delay 2.2sec
+[ChatGPT]: Decrypted Message: "Whoever finishes their math homework by sunset unlocks infinite Dorayaki."
+/delay 1.5sec
+[SCENE: gemini]
+[Nobita]: Gemini, is ChatGPT telling the truth or making a secret deal with Doraemon?!
+/delay 2sec
+[Gemini]: Deep scan complete: 99.9% probability of Dorayaki bribery detected in the timeline!
+/delay 1.5sec
+[SCENE: whatsapp]
+[Nobita:laugh:vineboom]: DORAEMON! EVEN GEMINI EXPOSED YOUR SECRET MOTIVE!!
+/delay 1.2sec
+[CHOICE: What will Nobita do with this revelation? | 📢 Expose in Group Chat -> Nobita: 🤣 THE ENTIRE SQUAD KNOWS YOUR SECRET NOW!! | 🍪 Blackmail for Gadgets -> Doraemon: 😱 OKAY OKAY! TAKE THE ANYWHERE DOOR JUST DON'T TELL MOM!!]
+/delay 1.5sec
+[Nobita:STICKER]: DEAD`;
+      showToast('⚡ Loaded Sample 4: Multiverse AI (WhatsApp ➔ ChatGPT ➔ Gemini)!');
+    } else if (sampleIdx === 5) {
+      // 🔥 Sample 5: Viral Hook (High Retention Reels/Shorts Thriller Opener)
+      box.value = `[SYSTEM: 🚨 2:47 AM — YOU HAVE 1 UNREAD EMERGENCY BROADCAST]
+/delay 1sec
+[Nobita:shock:vineboom]: Doraemon... Tell me you see what is standing outside our second-floor window right now.
+/delay 1.8sec
+[Doraemon:shock:shock]: Don't move. Don't blink. It's looking directly at your phone screen.
+[QUEST: ⚠️ SURVIVAL QUEST: Evade eye contact for 10 seconds without making a sound!]
+/delay 2sec
+[Nobita:cry]: I can hear footsteps coming from INSIDE our ceiling!!
+/delay 1.4sec
+[CHOICE: The bedroom doorknob starts turning slowly! | 🔦 Shine UV flashlight at the door -> Nobita: 😱 AHHH!! WHAT IS THAT THING?! | 🚪 Slam the Anywhere Door -> Doraemon: ⚡ GADGET OVERHEAT!! WE'RE TRAPPED!!]
+/delay 1.5sec
+[Nobita:STICKER]: DEAD
+[SYSTEM: 🎬 TO BE CONTINUED — LIKE FOR PART 2]`;
+      showToast('🔥 Loaded Sample 5: Viral Hook (High-Retention Opener)!');
     }
   }
+
+  function insertScriptTag(templateText) {
+    const box = document.getElementById('scriptInputBox');
+    if (!box) return;
+    const start = box.selectionStart || box.value.length;
+    const end = box.selectionEnd || box.value.length;
+    const before = box.value.substring(0, start);
+    const after = box.value.substring(end);
+    const prefix = (before.length > 0 && !before.endsWith('\n')) ? '\n' : '';
+    const suffix = (!after.startsWith('\n')) ? '\n' : '';
+    box.value = before + prefix + templateText + suffix + after;
+    box.focus();
+    const newPos = start + prefix.length + templateText.length;
+    box.setSelectionRange(newPos, newPos);
+    showToast(`✨ Inserted tag`);
+  }
+  window.insertScriptTag = insertScriptTag;
 
   window.openAssetManagerModal = openAssetManagerModal;
   window.closeAssetManagerModal = closeAssetManagerModal;

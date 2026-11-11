@@ -2689,6 +2689,18 @@
     font-weight: 800;
     padding: 2px 7px;
     border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+  }
+  .script-tag-pill:hover {
+    background: #1e293b;
+    border-color: #38bdf8;
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .script-tag-pill:active {
+    transform: scale(0.96);
   }
   .script-library-grid {
     display: flex;

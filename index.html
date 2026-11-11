@@ -944,30 +944,31 @@
       <div class="script-tab-panel active" id="scriptPanelText">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
           <div class="script-format-tags">
-            <span class="script-tag-pill" title="Character dialogue with emotion">[Name:emotion]: text</span>
-            <span class="script-tag-pill" title="Custom wardrobe face expression">[Name:custom_face]: text</span>
-            <span class="script-tag-pill" title="Natural typing delay: /delay 3sec (incoming typing bubble or POV composer typing)">/delay 3sec</span>
-            <span class="script-tag-pill" title="Photo/image card">[IMAGE: url]</span>
-            <span class="script-tag-pill" title="Video clip card">[VIDEO: url]</span>
-            <span class="script-tag-pill" title="Voice note / audio card">[AUDIO: url]</span>
-            <span class="script-tag-pill" title="Waiting seconds / suspense pause">[PAUSE: 2s]</span>
-            <span class="script-tag-pill" title="Switch interface to WhatsApp, ChatGPT, or Gemini">[SCENE: chatgpt]</span>
-            <span class="script-tag-pill" title="Action sound effect burst">[Name:SFX]: 💥 BAM!!</span>
-            <span class="script-tag-pill" title="Reaction sticker from vault">[Name:STICKER]: label</span>
-            <span class="script-tag-pill" title="Solo Leveling holographic quest alert">[QUEST: text]</span>
-            <span class="script-tag-pill" title="Episode or scene title banner">[SYSTEM: text]</span>
-            <span class="script-tag-pill" title="Playback speed change">[SPEED: 1.2x]</span>
-            <span class="script-tag-pill" title="Interactive branching choice card" style="border-color:#ec4899; color:#f472b6;">[CHOICE: Option A | Option B]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:normal]: Hello!')" title="Click to insert dialogue with emotion">[Name:emotion]: text</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('/delay 1.5sec')" title="Click to insert typing delay">/delay 1.5sec</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[PAUSE: 2s]')" title="Click to insert suspense pause">[PAUSE: 2s]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SCENE: chatgpt]')" title="Click to switch scene to ChatGPT">[SCENE: chatgpt]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SCENE: gemini]')" title="Click to switch scene to Gemini">[SCENE: gemini]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SCENE: whatsapp]')" title="Click to switch scene to WhatsApp">[SCENE: whatsapp]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[CHAT: private: Shizuka]')" title="Click to switch to 1-on-1 private DM">[CHAT: private: Name]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[CHAT: group]')" title="Click to switch to squad group chat">[CHAT: group]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[QUEST: ⚠️ URGENT QUEST: Enter mission objective here]')" title="Click to insert Solo Leveling quest alert">[QUEST: text]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SYSTEM: 🎬 EPISODE 1: TITLE]')" title="Click to insert episode or scene banner">[SYSTEM: text]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:shock:vineboom]: NANI?!')" title="Click to insert dialogue with face and sound effect">[Name:shock:vineboom]: text</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:STICKER]: DEAD')" title="Click to trigger reaction sticker">[Name:STICKER]: label</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[CHOICE: Choose reply | Option A -> Nobita: Reply A | Option B -> Doraemon: Reply B]')" title="Click to insert interactive branching choice dilemma" style="border-color:#ec4899; color:#f472b6;">[CHOICE: Option A | Option B]</span>
           </div>
           <div style="display:flex; gap:5px; margin-left:auto; flex-wrap:wrap; align-items:center;">
             <button type="button" class="icon-btn" style="background:#6366f1; color:#fff; font-size:11px; padding:4px 9px;" onclick="openAssetManagerModal('scriptModal')" title="Open Studio Asset Manager">📦 Assets</button>
             <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="loadCurrentChatIntoScriptEditor()" title="Convert current chat into screenplay dialogue script">💬 Chat to Script</button>
             <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="copyChatGptTemplate()" title="Copy prompt template with characters, custom expressions & vault stickers">📋 Copy AI Prompt</button>
             <button type="button" class="icon-btn" style="background:#8b5cf6; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertScriptToJsonView()" title="Convert script into JSON">🔄 To JSON</button>
-            <div style="display:inline-flex; gap:3px;">
+            <div style="display:inline-flex; gap:3px; flex-wrap:wrap;">
               <button type="button" class="icon-btn" style="background:#f59e0b; color:#0f172a; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(1)" title="Sample 1: System Quest (Comedy & Action)">⚡ Quest</button>
               <button type="button" class="icon-btn" style="background:#ec4899; color:#fff; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(2)" title="Sample 2: Rom-Com Dilemma (Romance & Banter)">⚡ Romance</button>
               <button type="button" class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(3)" title="Sample 3: Midnight Mystery (Suspense & Thriller)">⚡ Mystery</button>
+              <button type="button" class="icon-btn" style="background:#8b5cf6; color:#fff; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(4)" title="Sample 4: Multiverse AI (WhatsApp ➔ ChatGPT ➔ Gemini)">⚡ Multiverse</button>
+              <button type="button" class="icon-btn" style="background:#ef4444; color:#fff; font-size:11px; padding:4px 7px; font-weight:700;" onclick="loadDemoScriptIntoModal(5)" title="Sample 5: Viral Hook (High-Retention Reels/Shorts Opener)">🔥 Hook</button>
             </div>
           </div>
         </div>
