@@ -2373,6 +2373,24 @@ function playSciFiChimeSound() {
       return banner;
     }
 
+    if (msg.type === 'chat_mode_switch') {
+      const banner = document.createElement('div');
+      banner.className = 'scene-switch-banner';
+      banner.title = 'Click to edit or delete Chat Mode Transition';
+      const targetMode = msg.targetChatMode || 'group';
+      const icon = targetMode === 'private' ? '🔒' : (targetMode === 'global' ? '🌍' : '👥');
+      const modeLabel = targetMode === 'private' ? 'PRIVATE 1-ON-1 DM' : (targetMode === 'global' ? 'GLOBAL BROADCAST CHANNEL' : 'SQUAD GROUP CHAT');
+      const paramLabel = msg.chatParam ? ` (${escapeHtml(msg.chatParam)})` : '';
+      banner.innerHTML = `
+        <div class="scene-switch-pill" style="border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1);">
+          <span class="scene-switch-icon">${icon}</span>
+          <span class="scene-switch-label" style="color: #38bdf8;">WHATSAPP MODE ➔ ${modeLabel}${paramLabel}</span>
+        </div>
+      `;
+      banner.onclick = () => openMessageEditModal(msg.id);
+      return banner;
+    }
+
     if (msg.type === 'divider') {
       const div = document.createElement('div');
       div.className = 'episode-divider';
@@ -3710,7 +3728,9 @@ if (msg.type === 'quest') {
     }
     updateGroupModalUI();
     renderGroupHeader();
-    rerenderAllMessages();
+    if (!isCinemaPlaying) {
+      renderChatStream();
+    }
     saveStudioState();
     const modeLabel = type === 'private' ? '🔒 Private 1-on-1 DM' : (type === 'global' ? '🌍 Global Channel' : '👥 Squad Group Chat');
     showToast(`WhatsApp Mode: ${modeLabel}`);
@@ -3832,7 +3852,9 @@ if (msg.type === 'quest') {
 
     saveStudioState();
     renderGroupHeader();
-    rerenderAllMessages();
+    if (!isCinemaPlaying) {
+      renderChatStream();
+    }
     closeGroupModal();
     showToast('✅ WhatsApp settings & mode saved!');
   }
@@ -4611,7 +4633,7 @@ if (msg.type === 'quest') {
     dismissLingeringModals();
   }
 
-  window.selectVaultMediaForEdit = function(url, label, stickerObj) {
+  function selectVaultMediaForEdit(url, label, stickerObj) {
     editingMediaData.url = url;
     if (stickerObj) {
       editingMediaData.stickerData = stickerObj;
@@ -4621,7 +4643,8 @@ if (msg.type === 'quest') {
     renderMsgEditMediaPreview();
     closeVaultPickModal();
     showToast('✅ Attached from Vault');
-  };
+  }
+  window.selectVaultMediaForEdit = selectVaultMediaForEdit;
 
   function openMessageEditModal(msgId) {
     if (isCinemaPlaying) return;
@@ -4971,7 +4994,8 @@ if (msg.type === 'quest') {
         return;
       }
 
-      if (stepIndex >= fullQueue.length) {
+      try {
+        if (stepIndex >= fullQueue.length) {
         resetCinemaCamera();
         const statusText = document.getElementById('cinemaStatusText');
         if (statusText) statusText.textContent = '✅ Finished';
@@ -5033,6 +5057,10 @@ if (msg.type === 'quest') {
 
       // Chat Mode Scene Switch (WhatsApp Group <-> Private DM <-> Global Channel)
       if (nextMsg.type === 'chat_mode_switch') {
+        if (activeAppMode !== 'whatsapp') {
+          switchAppMode('whatsapp', true);
+          currentCinemaApp = 'whatsapp';
+        }
         const targetMode = nextMsg.targetChatMode || 'group';
         let targetCharId = null;
         if (targetMode === 'private' && nextMsg.chatParam) {
@@ -5507,6 +5535,17 @@ if (msg.type === 'quest') {
 
           typeNextChar();
         }, povWait);
+      }
+      } catch (cinemaErr) {
+        console.error('Cinema playback step error at index', stepIndex, cinemaErr);
+        stepIndex++;
+        if (stepIndex < fullQueue.length) {
+          cinemaStepTimeout = setTimeout(playNextStep, 250);
+        } else {
+          resetCinemaCamera();
+          const statusText = document.getElementById('cinemaStatusText');
+          if (statusText) statusText.textContent = '✅ Finished';
+        }
       }
     }
 
