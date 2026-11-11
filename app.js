@@ -475,30 +475,44 @@
     dismissLingeringModals();
 
     const openModals = Array.from(document.querySelectorAll('.modal-backdrop.open'));
-    if (openModals.length === 0) return;
+    if (openModals.length === 0) {
+      modalHistoryStack = [];
+      return;
+    }
 
     const currentModal = openModals[openModals.length - 1];
     const currentModalId = currentModal ? currentModal.id : null;
 
     let previousModalId = modalHistoryStack.pop();
 
-    if (previousModalId === currentModalId) {
+    while (previousModalId && previousModalId === currentModalId) {
       previousModalId = modalHistoryStack.pop();
     }
 
+    // Contextual sub-modal fallback ONLY if stack didn't record it
     if (!previousModalId) {
       if (currentModalId === 'exprEditModal') {
         previousModalId = 'charExpressionModal';
-      } else if (currentModalId === 'charExpressionModal') {
-        previousModalId = 'castModal';
+      } else if (currentModalId === 'stickerSoundPairModal') {
+        previousModalId = 'assetManagerModal';
       } else if (currentModalId === 'cropperModal' || currentModalId === 'vaultPickModal') {
-        previousModalId = (typeof currentCharWardrobeId !== 'undefined' && currentCharWardrobeId) ? 'charExpressionModal' : 'castModal';
-      } else if (currentModalId === 'storiesModal' || currentModalId === 'scriptModal' || currentModalId === 'specialEventModal' || currentModalId === 'cinemaSpeedModal' || currentModalId === 'assetManagerModal') {
-        previousModalId = 'globalSettingsModal';
+        if (typeof currentCharWardrobeId !== 'undefined' && currentCharWardrobeId) {
+          previousModalId = 'charExpressionModal';
+        } else if (document.getElementById('castModal')) {
+          previousModalId = 'castModal';
+        }
       }
+      // Note: If a modal was opened from the main screen, previousModalId is intentionally null!
+      // This ensures clicking "Back" cleanly closes the modal and returns to the studio!
     }
 
-    if (currentModal) currentModal.classList.remove('open');
+    // Close the current modal
+    if (currentModal) {
+      currentModal.classList.remove('open');
+      if (currentModalId === 'assetManagerModal' && typeof stopCurrentAudio === 'function') {
+        stopCurrentAudio();
+      }
+    }
 
     if (previousModalId) {
       const prevEl = document.getElementById(previousModalId);
@@ -510,8 +524,19 @@
         if (previousModalId === 'globalSettingsModal' && typeof updateGlobalSettingsModalUI === 'function') updateGlobalSettingsModalUI();
         if (previousModalId === 'assetManagerModal' && typeof renderAssetCategory === 'function') renderAssetCategory();
       }
+    } else {
+      // Returned to base studio view: clear stack cleanly
+      modalHistoryStack = [];
     }
   }
+
+  // Physical & browser back button handler (prevents accidental page exit)
+  window.addEventListener('popstate', () => {
+    const openModals = document.querySelectorAll('.modal-backdrop.open');
+    if (openModals.length > 0) {
+      navigateModalBack();
+    }
+  });
 
   window.navigateModalBack = navigateModalBack;
   window.pushModalHistory = pushModalHistory;
@@ -4153,8 +4178,8 @@ if (msg.type === 'quest') {
      ===================================================================== */
   let currentCharWardrobeId = null;
 
-  function openCharExpressionModal(charId) {
-    pushModalHistory('castModal');
+  function openCharExpressionModal(charId, parentModalId = 'castModal') {
+    pushModalHistory(parentModalId || 'castModal');
     currentCharWardrobeId = charId;
     const char = characters.find(c => c.id === charId);
     if (!char) return;
@@ -4506,6 +4531,7 @@ if (msg.type === 'quest') {
   }
 
   function pickMediaFromVaultForEdit() {
+    pushModalHistory('messageEditModal');
     const modal = document.getElementById('vaultPickModal');
     const grid = document.getElementById('vaultPickModalGrid');
     const title = document.getElementById('vaultPickModalTitle');
@@ -6258,20 +6284,97 @@ if (msg.type === 'quest') {
     });
   }
 
+  function buildCleanStoryJson(story) {
+    const rawStory = story || {
+      title: currentStoryTitle,
+      activeAppMode: activeAppMode,
+      style: chatThemeStyle,
+      speedMultiplier: cinemaSpeedMultiplier,
+      characters: characters,
+      messages: messages
+    };
+
+    const cleanChars = (rawStory.characters || characters || []).map(c => ({
+      id: c.id,
+      name: c.name,
+      side: c.side || 'left',
+      color: c.color || '#3b82f6',
+      pitch: c.pitch || 1.0
+    }));
+
+    const cleanMsgs = (rawStory.messages || messages || []).map(m => {
+      const cleanMsg = {
+        id: m.id,
+        type: m.type || 'text',
+        time: m.time || ''
+      };
+
+      if (m.charId) {
+        const found = cleanChars.find(c => c.id === m.charId);
+        cleanMsg.char = found ? found.name : m.charId;
+        cleanMsg.charId = m.charId;
+      }
+      if (m.text) cleanMsg.text = m.text;
+      if (m.expr) cleanMsg.expr = m.expr;
+      if (m.title) cleanMsg.title = m.title;
+      if (m.preDelayMs) cleanMsg.preDelayMs = m.preDelayMs;
+      if (m.delayMs) cleanMsg.delayMs = m.delayMs;
+      if (m.targetApp) cleanMsg.targetApp = m.targetApp;
+      if (m.question) cleanMsg.question = m.question;
+      if (Array.isArray(m.options)) cleanMsg.options = m.options;
+      if (m.replyToId) cleanMsg.replyToId = m.replyToId;
+
+      if (m.type === 'sticker' && m.stickerData) {
+        cleanMsg.sticker = {
+          id: m.stickerData.id || '',
+          label: m.stickerData.label || '',
+          emoji: m.stickerData.emoji || ''
+        };
+      }
+      if (m.imageUrl && !m.imageUrl.startsWith('data:')) cleanMsg.imageUrl = m.imageUrl;
+      if (m.videoUrl && !m.videoUrl.startsWith('data:')) cleanMsg.videoUrl = m.videoUrl;
+      if (m.audioUrl && !m.audioUrl.startsWith('data:')) cleanMsg.audioUrl = m.audioUrl;
+
+      return cleanMsg;
+    });
+
+    return {
+      format: 'ChatHub_Story_Script',
+      version: '1.0',
+      title: rawStory.title || currentStoryTitle || 'My Anime Manhwa Episode',
+      activeApp: rawStory.activeAppMode || rawStory.activeApp || activeAppMode || 'whatsapp',
+      style: rawStory.style || chatThemeStyle || 'comic',
+      speedMultiplier: rawStory.speedMultiplier || cinemaSpeedMultiplier || 1.0,
+      characters: cleanChars,
+      messages: cleanMsgs
+    };
+  }
+
+  function downloadJsonFile(filename, jsonObj) {
+    const jsonStr = JSON.stringify(jsonObj, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function exportStoryById(storyId) {
     const story = savedStories.find(s => s.id === storyId) || {
       title: currentStoryTitle,
-      groupProfile,
+      activeAppMode,
+      style: chatThemeStyle,
+      speedMultiplier: cinemaSpeedMultiplier,
       characters,
-      messages,
-      customStickers
+      messages
     };
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(story, null, 2));
-    const a = document.createElement('a');
-    a.href = dataStr;
-    const safeName = (story.title || 'manhwa_story').toLowerCase().replace(/[^a-z0-9]/g, '_');
-    a.download = `${safeName}.json`;
-    a.click();
+    const cleanJson = buildCleanStoryJson(story);
+    const safeName = (cleanJson.title || 'manhwa_story').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    downloadJsonFile(`${safeName}.json`, cleanJson);
     showToast('💾 Story JSON exported!');
   }
 
@@ -6283,14 +6386,68 @@ if (msg.type === 'quest') {
       try {
         const data = JSON.parse(ev.target.result);
         const title = data.title || (data.groupProfile && data.groupProfile.name) || 'Imported Story';
+        
+        // Normalize characters: preserve custom avatars/expressions or generate defaults
+        const rawChars = Array.isArray(data.characters) ? data.characters : characters;
+        const normalizedChars = rawChars.map((c, idx) => {
+          let existing = characters.find(ex => ex.id === c.id || ex.name.toLowerCase() === (c.name || '').toLowerCase());
+          if (existing) {
+            return {
+              ...existing,
+              name: c.name || existing.name,
+              side: c.side || existing.side,
+              color: c.color || existing.color,
+              pitch: c.pitch || existing.pitch
+            };
+          }
+          const palette = ['#eab308', '#0284c7', '#ec4899', '#a855f7', '#10b981', '#f97316'];
+          const color = c.color || palette[idx % palette.length];
+          const newChar = {
+            id: c.id || ('c_imp_' + Date.now() + '_' + idx),
+            name: c.name || ('Character ' + (idx + 1)),
+            side: c.side || (idx % 2 === 0 ? 'left' : 'right'),
+            color,
+            pitch: c.pitch || 1.0,
+            avatar: c.avatar || makeComicAvatarDataUri(c.name || 'CH', color, '⚡')
+          };
+          ensureCharacterExpressions(newChar);
+          return newChar;
+        });
+
+        // Normalize messages: map char name to charId if needed
+        const rawMsgs = Array.isArray(data.messages) ? data.messages : [];
+        const normalizedMsgs = rawMsgs.map((m, mIdx) => {
+          let charId = m.charId;
+          if (!charId && m.char) {
+            const found = normalizedChars.find(c => c.name.toLowerCase() === m.char.toLowerCase());
+            if (found) charId = found.id;
+          }
+          return {
+            id: m.id || ('m_imp_' + Date.now() + '_' + mIdx),
+            type: m.type || 'text',
+            charId: charId || currentCharId,
+            text: m.text || '',
+            expr: m.expr || 'normal',
+            time: m.time || getNextStoryTime(),
+            preDelayMs: m.preDelayMs || 0,
+            delayMs: m.delayMs || 1000,
+            title: m.title || '',
+            targetApp: m.targetApp || '',
+            question: m.question || '',
+            options: m.options || null,
+            stickerData: m.sticker ? { id: m.sticker.id, label: m.sticker.label, emoji: m.sticker.emoji } : (m.stickerData || null)
+          };
+        });
+
         const newStory = {
           id: 'story_imp_' + Date.now(),
           title: title,
           date: new Date().toLocaleDateString(),
-          messageCount: Array.isArray(data.messages) ? data.messages.length : 0,
+          activeAppMode: data.activeApp || data.activeAppMode || 'whatsapp',
+          messageCount: normalizedMsgs.length,
           groupProfile: data.groupProfile || groupProfile,
-          characters: data.characters || characters,
-          messages: data.messages || [],
+          characters: normalizedChars,
+          messages: normalizedMsgs,
           customStickers: data.customStickers || []
         };
         savedStories.unshift(newStory);
@@ -6649,7 +6806,6 @@ if (msg.type === 'quest') {
 
   function openAssetManagerModal(parentModalId = null) {
     if (parentModalId) pushModalHistory(parentModalId);
-    else pushModalHistory('globalSettingsModal');
 
     const m = document.getElementById('assetManagerModal');
     if (m) m.classList.add('open');
@@ -6662,6 +6818,9 @@ if (msg.type === 'quest') {
     stopCurrentAudio();
     const m = document.getElementById('assetManagerModal');
     if (m) m.classList.remove('open');
+    if (document.querySelectorAll('.modal-backdrop.open').length === 0) {
+      modalHistoryStack = [];
+    }
   }
 
   function switchAssetCategory(category) {
@@ -6840,6 +6999,7 @@ if (msg.type === 'quest') {
   let activePairingIsBuiltIn = false;
 
   function openStickerSoundPairModal(stickerId, isBuiltIn = false) {
+    pushModalHistory('assetManagerModal');
     activePairingStickerId = stickerId;
     activePairingIsBuiltIn = isBuiltIn;
 
@@ -7402,10 +7562,46 @@ if (msg.type === 'quest') {
 
   function generateStudioAssetMarkdown() {
     let md = '';
-    md += `# 🎬 CHAT HUB — COMPLETE STUDIO ASSET INVENTORY\n`;
-    md += `(Live Studio Export: Characters, Expressions, SFX, Stickers & Songs)\n\n`;
+    const charNames = (Array.isArray(characters) && characters.length > 0)
+      ? characters.map(c => c.name)
+      : ['Nobita', 'Doraemon', 'Shizuka'];
 
-    // 1. Cast & Expressions
+    md += `# 🎬 CHAT HUB — MASTER SCREENPLAY PROMPT & LIVE ASSET INVENTORY\n`;
+    md += `You are an expert anime, manhwa, and vertical comic chat screenwriter for "Chat Hub". Your task is to write a high-stakes, hilarious, or dramatic chat episode using ONLY the exact studio assets configured below.\n\n`;
+
+    // 1. Strict Cast Enforcement
+    md += `=== ⛔ STRICT CAST CONSTRAINT (ZERO UNLISTED CHARACTERS) ===\n`;
+    md += `The ONLY allowed character speakers in this story are:\n`;
+    md += `👉 [ ${charNames.join(', ')} ]\n\n`;
+    md += `MANDATORY CAST RULES:\n`;
+    md += `1. DO NOT INVENT ANY NEW CHARACTERS, narrators, sidekicks, parents, teachers, or guests (e.g. NO Mom, Dad, Gian, Suneo, Teacher, Stranger, Host, etc. unless they appear in the allowed list above).\n`;
+    md += `2. If your story needs narration or an environmental announcement, DO NOT create a character name. Use [SYSTEM: narration text].\n`;
+    md += `3. Every single dialogue line MUST start with one of the exact character names above.\n\n`;
+
+    // 2. Strict Screenplay Syntax
+    md += `=== 📝 STRICT SCREENPLAY SYNTAX (USE EXACTLY THIS FORMAT) ===\n`;
+    md += `Every line in your script MUST follow one of these exact syntaxes:\n`;
+    md += `• Dialogue: [Character:emotion]: dialogue text\n`;
+    md += `• Dialogue + SFX: [Character:emotion:sfx_id]: dialogue text\n`;
+    md += `• Reaction Sticker: [Character:STICKER]: sticker_label\n`;
+    md += `• Realistic Delay: /delay 1.5sec\n`;
+    md += `• Suspense Pause: [PAUSE: 2s]\n`;
+    md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
+    md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
+    md += `• App Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
+    md += `• Interactive Choice Card (near the climax):\n`;
+    md += `  [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
+
+    // 3. Strict Negative Output Mandates
+    md += `=== ⛔ MANDATORY OUTPUT FORMAT RULES ===\n`;
+    md += `1. Output ONLY the raw script lines ready to copy-paste directly into Chat Hub.\n`;
+    md += `2. DO NOT include any conversational intro (NO "Here is your script:", NO "Sure!").\n`;
+    md += `3. DO NOT include any outro or notes (NO "Hope you like it!").\n`;
+    md += `4. DO NOT wrap the output in markdown code fences (DO NOT use \`\`\` or \`\`\`markdown).\n`;
+    md += `5. DO NOT use bullet points (- or *) or line numbering (1., 2.).\n`;
+    md += `6. Start Line 1 immediately with [SYSTEM: Episode Title].\n\n`;
+
+    // 4. Cast & Expressions
     md += `=== 🎭 CONFIGURED CHARACTERS & EMOTION TAGS ===\n`;
     if (Array.isArray(characters) && characters.length > 0) {
       characters.forEach(c => {
@@ -7414,14 +7610,11 @@ if (msg.type === 'quest') {
         const allTags = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
         md += `• ${c.name} [${sideDesc} | Color: ${c.color || '#3b82f6'}]:\n`;
         md += `  Available facial tags: ${allTags.map(t => `[${c.name}:${t}]`).join(', ')}\n`;
-        md += `  Multi-tag example: [${c.name}:shock:vineboom]: NANI?!\n\n`;
+        md += `  Multi-tag example: [${c.name}:${allTags[1] || 'shock'}:vineboom]: NANI?!\n\n`;
       });
-    } else {
-      md += `• Nobita [POV User - Right Side]: [Nobita:normal], [Nobita:cry], [Nobita:shock], [Nobita:angry], [Nobita:love], [Nobita:laugh]\n`;
-      md += `• Doraemon [Squad - Left Side]: [Doraemon:normal], [Doraemon:laugh], [Doraemon:angry], [Doraemon:shock]\n\n`;
     }
 
-    // 2. Sound Effects
+    // 5. Sound Effects
     md += `=== 🔊 AVAILABLE SOUND EFFECTS (SFX) ===\n`;
     md += `Use these inside dialogues on impact moments, shock twists, or punchlines:\n`;
     if (Array.isArray(builtInSounds) && builtInSounds.length > 0) {
@@ -7433,7 +7626,7 @@ if (msg.type === 'quest') {
     }
     md += `\n`;
 
-    // 3. Stickers & Memes
+    // 6. Stickers & Memes
     md += `=== 🖼️ CONFIGURED STICKERS & MEMES ===\n`;
     md += `Syntax to trigger a sticker: [CharacterName:STICKER]: label\n`;
     const customLabels = (customStickers || []).filter(s => !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
@@ -7445,35 +7638,27 @@ if (msg.type === 'quest') {
     }
     md += `\n`;
 
-    // 4. Songs & Background Audio
+    // 7. Songs & Background Audio
     if (Array.isArray(customAudioClips) && customAudioClips.length > 0) {
       md += `=== 🎵 BACKGROUND SONGS & AUDIO CLIPS ===\n`;
       md += `Syntax to play audio in story: [CharacterName:AUDIO]: song_name\n`;
       md += `Available songs: ${customAudioClips.map(s => s.label).join(', ')}\n\n`;
     }
 
-    // 5. Interface Morphing
-    md += `=== 📱 MULTI-APP SCENE SHIFTING ===\n`;
-    md += `• [SCENE: whatsapp] -> WhatsApp UI (typing indicator, double checkmarks)\n`;
-    md += `• [SCENE: chatgpt]  -> ChatGPT UI (authentic AI thinking indicator)\n`;
-    md += `• [SCENE: gemini]   -> Google Gemini UI (sparkle thinking)\n\n`;
-
-    // 6. Interactive Branching Choices
-    md += `=== 🎮 INTERACTIVE BRANCHING CHOICES ("Choose Your Reply") ===\n`;
-    md += `Pause cinema recording and let viewers tap to branch the dialogue:\n`;
-    md += `[CHOICE: Dilemma Question | Option A -> Character: Reply A | Option B -> Character: Reply B]\n\n`;
-
-    // 7. Directing Rules
-    md += `=== 📜 SCREENPLAY SYNTAX CHEATSHEET ===\n`;
-    md += `1. Typing delay: /delay 1.5sec\n`;
-    md += `2. Dialogue: [Character:emotion]: text\n`;
-    md += `3. Multi-tag (Face + SFX): [Character:emotion:sfx]: text\n`;
-    md += `4. System banner: [SYSTEM: Episode Title]\n`;
-    md += `5. System quest: [QUEST: Solo Leveling Quest Title]\n`;
-    md += `6. Dramatic pause: [PAUSE: 2s]\n\n`;
-
-    md += `=== 💡 SCREENWRITER DIRECTIVE ===\n`;
-    md += `Write a hilarious, dramatic anime/manhwa comic chat story using ONLY the characters, facial emotion tags, sound effects, and stickers listed above. Always include at least 1 interactive [CHOICE: ...] dilemma card near the climax!\n`;
+    // 8. Quality Example
+    md += `=== 📖 SCREENPLAY EXAMPLE (FOLLOW THIS EXACT STYLE) ===\n`;
+    const c1 = charNames[0] || 'Nobita';
+    const c2 = charNames[1] || 'Doraemon';
+    md += `[SYSTEM: EPISODE 1: THE SECRET GADGET DILEMMA]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[${c1}:cry]: ${c2}!! Help me! A major crisis just occurred!\n`;
+    md += `/delay 1.5sec\n`;
+    md += `[${c2}:angry]: Again?! What did you do this time?!\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[${c1}:shock:vineboom]: Look at this system alert on my phone!\n`;
+    md += `[QUEST: URGENT QUEST: Resolve the secret mission before time expires!]\n`;
+    md += `/delay 1.5sec\n`;
+    md += `[CHOICE: What should we do? | Run Away -> ${c1}: NIGERUNDAYO!! | Stand and Fight -> ${c2}: Take this secret gadget!]\n`;
 
     return md;
   }
@@ -7616,6 +7801,7 @@ if (msg.type === 'quest') {
   window.handleAssetExprFileUpload = handleAssetExprFileUpload;
   window.loadDemoScriptIntoModal = loadDemoScriptIntoModal;
   window.copyChatGptTemplate = copyChatGptTemplate;
+  window.downloadScriptJsonBox = downloadScriptJsonBox;
   window.toggleDropdownMenu = toggleDropdownMenu;
 
   // Converts in-memory messages array to script dialogue text format
@@ -7702,12 +7888,34 @@ if (msg.type === 'quest') {
 
   // Parse Dialogue Script into Structured Data Objects (with Smart Auto-Timing)
   function parseScriptLinesToMessages(rawScript) {
-    const lines = (rawScript || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (!rawScript || typeof rawScript !== 'string') return [];
+    const lines = rawScript.split('\n').map(l => l.trim()).filter(Boolean);
     const parsedMsgs = [];
     const validExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
     let pendingDelayMs = 0;
 
-    lines.forEach((line, idx) => {
+    // Filters for AI chatter & formatting artifacts
+    const conversationalRegex = /^(here\s+is\s+(the|your)|hope\s+you\s+(enjoy|like)|sure[!,.]|let\s+me\s+know|end\s+of\s+script)/i;
+    const metadataSkipRegex = /^(note|author|description|summary|synopsis|cast|prompt|setting|instructions?|options?|warning|act\s*\d*):\s*/i;
+    const titleRegex = /^(title|episode|chapter):\s*(.+)$/i;
+
+    lines.forEach((origLine, idx) => {
+      // 1. Skip code fences (``` or ~~~) & conversational AI preamble
+      if (origLine.startsWith('```') || origLine.startsWith('~~~')) return;
+      if (conversationalRegex.test(origLine)) return;
+
+      // Clean leading bullet marks: "-", "*", "•", "1.", "1)"
+      let line = origLine.replace(/^[\*\-\•]\s+/, '').replace(/^\d+[\.\)]\s+/, '').trim();
+      if (!line) return;
+
+      // Convert "Title: ..." or "Episode: ..." to [SYSTEM: ...]
+      const titleMatch = line.match(titleRegex);
+      if (titleMatch) {
+        line = `[SYSTEM: ${titleMatch[1].toUpperCase()}: ${titleMatch[2].trim()}]`;
+      } else if (metadataSkipRegex.test(line)) {
+        return; // Skip metadata commentary
+      }
+
       // 0. Custom delay command: /delay 3sec, /delay 1.5s, /delay 800ms, /delay 2.5sec, /delay 3sec[push]
       const delayCmdMatch = line.match(/^\/delay\s+([\d\.]+)\s*(seconds|second|secs|sec|ms|s)?(?:\s*\[?([a-zA-Z0-9_\-]+)\]?)?/i);
       if (delayCmdMatch) {
@@ -7891,15 +8099,39 @@ if (msg.type === 'quest') {
       } else {
         const colonIdx = line.indexOf(':');
         if (colonIdx === -1) return;
-        charName = line.slice(0, colonIdx).trim();
-        msgBody = line.slice(colonIdx + 1).trim();
+        const candidateName = line.slice(0, colonIdx).trim();
+        const candidateBody = line.slice(colonIdx + 1).trim();
+
+        // Reject if candidateName is clearly not a character name (too long, contains sentence punctuation, etc.)
+        if (!candidateName || candidateName.length > 25 || /[\?\!\,\[\]\{\}\<\>]/.test(candidateName) || candidateName.split(/\s+/).length > 3) {
+          return;
+        }
+
+        // Check if candidateName matches an existing character or is a known metadata word
+        const isExisting = characters.some(c => c.name.toLowerCase() === candidateName.toLowerCase());
+        if (!isExisting && /^(note|scene|act|episode|title|here|hope|script|prompt|summary|setting|author|warning)/i.test(candidateName)) {
+          return;
+        }
+
+        charName = candidateName;
+        msgBody = candidateBody;
       }
 
       if (!charName || !msgBody) return;
 
-      // Auto-create missing characters with vibrant palette & avatar
+      // Match character case-insensitively or check partial match
       let char = characters.find(c => c.name.toLowerCase() === charName.toLowerCase());
       if (!char) {
+        const partial = characters.find(c => c.name.toLowerCase().startsWith(charName.toLowerCase()));
+        if (partial) {
+          char = partial;
+        }
+      }
+
+      // Auto-create missing characters with vibrant palette & avatar ONLY for valid character names
+      if (!char) {
+        if (/^\d+$/.test(charName) || charName.length > 25) return;
+
         const palette = ['#eab308', '#0284c7', '#ec4899', '#a855f7', '#10b981', '#f97316', '#06b6d4'];
         const cIdx = characters.length;
         const color = palette[cIdx % palette.length];
@@ -8151,16 +8383,32 @@ if (msg.type === 'quest') {
   }
 
   function exportCurrentChatToJsonBox() {
-    const fullJson = {
+    const cleanJson = buildCleanStoryJson({
       title: currentStoryTitle,
-      activeApp: activeAppMode,
+      activeAppMode: activeAppMode,
       style: chatThemeStyle,
       speedMultiplier: cinemaSpeedMultiplier,
       characters,
       messages
-    };
-    document.getElementById('scriptJsonBox').value = JSON.stringify(fullJson, null, 2);
+    });
+    document.getElementById('scriptJsonBox').value = JSON.stringify(cleanJson, null, 2);
     showToast('📥 Current chat exported to JSON Studio!');
+  }
+
+  function downloadScriptJsonBox() {
+    const raw = (document.getElementById('scriptJsonBox').value || '').trim();
+    if (!raw) {
+      showToast('⚠️ JSON box is empty! Enter or convert JSON first.');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      const safeTitle = (parsed.title || currentStoryTitle || 'chat_story').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      downloadJsonFile(`${safeTitle}.json`, parsed);
+      showToast('💾 Script JSON downloaded!');
+    } catch (e) {
+      showToast('⚠️ Invalid JSON! Please check formatting.');
+    }
   }
 
   function handleScriptStudioImport(replaceExisting, autoPlayCinema) {
@@ -8193,13 +8441,47 @@ if (msg.type === 'quest') {
           safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
         }
         if (Array.isArray(data.characters)) {
-          data.characters.forEach(c => {
-            if (!characters.some(existing => existing.id === c.id || existing.name.toLowerCase() === c.name.toLowerCase())) {
-              characters.push(c);
+          data.characters.forEach((c, idx) => {
+            let existing = characters.find(ex => ex.id === c.id || ex.name.toLowerCase() === (c.name || '').toLowerCase());
+            if (!existing) {
+              const palette = ['#eab308', '#0284c7', '#ec4899', '#a855f7', '#10b981', '#f97316'];
+              const color = c.color || palette[characters.length % palette.length];
+              const newChar = {
+                id: c.id || ('c_auto_' + Date.now() + '_' + idx),
+                name: c.name || ('Character ' + (characters.length + 1)),
+                side: c.side || 'left',
+                color,
+                pitch: c.pitch || 1.0,
+                avatar: c.avatar || makeComicAvatarDataUri(c.name || 'CH', color, '⚡')
+              };
+              ensureCharacterExpressions(newChar);
+              characters.push(newChar);
             }
           });
         }
-        parsedMsgs = Array.isArray(data) ? data : (data.messages || []);
+        const rawList = Array.isArray(data) ? data : (data.messages || []);
+        parsedMsgs = rawList.map((m, mIdx) => {
+          let charId = m.charId;
+          if (!charId && m.char) {
+            const found = characters.find(c => c.name.toLowerCase() === m.char.toLowerCase());
+            if (found) charId = found.id;
+          }
+          return {
+            id: m.id || ('m_json_' + Date.now() + '_' + mIdx),
+            type: m.type || 'text',
+            charId: charId || currentCharId,
+            text: m.text || '',
+            expr: m.expr || 'normal',
+            time: m.time || getNextStoryTime(),
+            preDelayMs: m.preDelayMs || 0,
+            delayMs: m.delayMs || 1000,
+            title: m.title || '',
+            targetApp: m.targetApp || '',
+            question: m.question || '',
+            options: m.options || null,
+            stickerData: m.sticker ? { id: m.sticker.id, label: m.sticker.label, emoji: m.sticker.emoji } : (m.stickerData || null)
+          };
+        });
       } catch (err) {
         showToast('⚠️ Invalid JSON! Parsing as text script...');
         parsedMsgs = parseScriptLinesToMessages(scriptContent);
@@ -8494,13 +8776,16 @@ if (msg.type === 'quest') {
   }
 
   function exportBackupJson() {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({
-      groupProfile, characters, messages, customStickers
-    }, null, 2));
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = 'manhwa_chat_story.json';
-    a.click();
+    const cleanJson = buildCleanStoryJson({
+      title: currentStoryTitle,
+      activeAppMode,
+      style: chatThemeStyle,
+      speedMultiplier: cinemaSpeedMultiplier,
+      characters,
+      messages
+    });
+    const safeName = (currentStoryTitle || 'manhwa_chat_story').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    downloadJsonFile(`${safeName}.json`, cleanJson);
     showToast('💾 Story JSON exported!');
   }
 
@@ -8616,6 +8901,7 @@ if (msg.type === 'quest') {
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
       modal.classList.remove('open');
     });
+    modalHistoryStack = [];
     dismissLingeringModals();
   }
 
@@ -8625,6 +8911,9 @@ if (msg.type === 'quest') {
     if (e.target.classList.contains('modal-backdrop')) {
       e.target.classList.remove('open');
       dismissLingeringModals();
+      if (document.querySelectorAll('.modal-backdrop.open').length === 0) {
+        modalHistoryStack = [];
+      }
     }
 
     // 2. If studio dropdown menu is open and click was outside

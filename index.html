@@ -1015,6 +1015,7 @@
             <button type="button" class="icon-btn" style="background:#1e293b; border:1px solid #334155; font-size:11px; padding:3px 9px;" onclick="pasteScriptJsonText()" title="Paste JSON from clipboard">📥 Paste</button>
             <button type="button" class="icon-btn danger" style="background:#450a0a; border:1px solid #991b1b; color:#fca5a5; font-size:11px; padding:3px 9px;" onclick="clearScriptJsonText()" title="Clear JSON editor">🗑️ Clear</button>
             <button type="button" class="icon-btn" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 9px;" onclick="exportCurrentChatToJsonBox()">📥 Current Chat ➔ JSON</button>
+            <button type="button" class="icon-btn" style="background:#3b82f6; color:#fff; font-size:11px; padding:4px 9px;" onclick="downloadScriptJsonBox()" title="Download current JSON as file">💾 Download JSON</button>
             <button type="button" class="icon-btn" style="background:#10b981; color:#fff; font-size:11px; padding:4px 9px;" onclick="convertJsonToScriptView()">🔄 To Script</button>
           </div>
         </div>
@@ -1339,6 +1340,7 @@
   <div class="modal-window" style="max-width:440px; width:92vw;">
     <div class="modal-header">
       <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to Studio Asset Manager">← Back</button>
         <span class="modal-title" id="stickerSoundPairTitle">🔊 Pair Sound with Sticker</span>
       </div>
       <button class="modal-close-btn" onclick="closeStickerSoundPairModal()">✕</button>
