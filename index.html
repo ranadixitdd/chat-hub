@@ -1315,6 +1315,7 @@
     <div class="asset-category-tabs" id="assetCategoryTabs" style="padding:8px 18px; display:flex; gap:6px; overflow-x:auto; background:#0f172a; border-bottom:1px solid #1e293b;">
       <button type="button" class="asset-tab-btn active" id="assetTab_cast" onclick="switchAssetCategory('cast')">🎭 Cast & Faces</button>
       <button type="button" class="asset-tab-btn" id="assetTab_stickers" onclick="switchAssetCategory('stickers')">🖼️ Stickers & Memes</button>
+      <button type="button" class="asset-tab-btn" id="assetTab_images" onclick="switchAssetCategory('images')">📷 Photos & Images</button>
       <button type="button" class="asset-tab-btn" id="assetTab_sfx" onclick="switchAssetCategory('sfx')">🔊 Sound Effects</button>
       <button type="button" class="asset-tab-btn" id="assetTab_audio" onclick="switchAssetCategory('audio')">🎵 Songs & Audio</button>
       <button type="button" class="asset-tab-btn" id="assetTab_videos" onclick="switchAssetCategory('videos')">🎬 Videos & Media</button>
@@ -1353,6 +1354,14 @@
       <label class="form-label" style="font-size:11px; text-transform:uppercase; color:#94a3b8; margin:0;">Choose Sound Effect or Custom Meme Voice</label>
       <div id="stickerSoundPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
     </div>
+  </div>
+</div>
+
+<!-- === FULLSCREEN IMAGE LIGHTBOX MODAL === -->
+<div class="modal-backdrop" id="imageLightboxModal" style="z-index:10060; background:rgba(0,0,0,0.92); display:none; align-items:center; justify-content:center; padding:12px;" onclick="closeFullscreenImage()">
+  <div style="position:relative; max-width:680px; width:100%; max-height:90vh; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
+    <button type="button" class="icon-btn" onclick="closeFullscreenImage()" style="position:absolute; top:-40px; right:0; background:#334155; color:#fff; border-radius:50%; width:34px; height:34px; font-size:15px; font-weight:800; z-index:10; cursor:pointer;" title="Close Image">✕</button>
+    <img id="lightboxImagePlayer" style="max-width:100%; max-height:85vh; border-radius:14px; box-shadow:0 16px 48px rgba(0,0,0,0.9); background:#000; object-fit:contain;">
   </div>
 </div>
 

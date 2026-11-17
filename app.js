@@ -1905,8 +1905,25 @@ function playSciFiChimeSound() {
         const t = getActiveGeminiThread();
         messages = t ? (t.messages || []) : [];
       }
-      if (Array.isArray(parsed.customStickers)) customStickers = parsed.customStickers;
-      if (Array.isArray(parsed.customAudioClips)) customAudioClips = parsed.customAudioClips;
+      if (Array.isArray(parsed.customStickers)) {
+        customStickers = parsed.customStickers;
+        customStickers.forEach(item => {
+          if (!item.data && item.imageUrl) item.data = item.imageUrl;
+          if (!item.imageUrl && item.data) item.imageUrl = item.data;
+          if (!item.url) item.url = item.data || item.imageUrl || item.videoUrl || '';
+          if (!item.videoUrl && (item.isVideo || item.mediaType === 'video')) item.videoUrl = item.data || item.imageUrl || '';
+          if (item.isSticker === undefined) {
+            item.isSticker = (item.mediaType === 'sticker');
+          }
+        });
+      }
+      if (Array.isArray(parsed.customAudioClips)) {
+        customAudioClips = parsed.customAudioClips;
+        customAudioClips.forEach(item => {
+          if (!item.data && item.audioUrl) item.data = item.audioUrl;
+          if (!item.data && item.url) item.data = item.url;
+        });
+      }
       if (typeof parsed.groupConsecutiveMessages === 'boolean') {
         groupConsecutiveMessages = parsed.groupConsecutiveMessages;
       }
@@ -2244,8 +2261,69 @@ function playSciFiChimeSound() {
     if (modal) modal.style.display = 'none';
   }
 
+  /* === FULLSCREEN IMAGE LIGHTBOX CONTROLLER === */
+  function openFullscreenImage(url) {
+    const modal = document.getElementById('imageLightboxModal');
+    const player = document.getElementById('lightboxImagePlayer');
+    if (!modal || !player || !url) return;
+    player.src = url;
+    modal.style.display = 'flex';
+  }
+
+  function closeFullscreenImage() {
+    const modal = document.getElementById('imageLightboxModal');
+    const player = document.getElementById('lightboxImagePlayer');
+    if (player) player.src = '';
+    if (modal) modal.style.display = 'none';
+  }
+
+  function handleStickerMessageClick(msgId, ev) {
+    if (isCinemaPlaying) return;
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg) return;
+    const pairedAudio = msg.customAudioData || (msg.stickerData && msg.stickerData.customAudioData);
+    const pairedSfx = msg.sfx || (msg.stickerData && msg.stickerData.sfx);
+    if (pairedAudio) {
+      playCustomAudio(pairedAudio);
+      showToast(`🎵 Playing "${msg.customAudioLabel || (msg.stickerData && msg.stickerData.customAudioLabel) || 'Sticker Audio'}"`);
+      return;
+    } else if (pairedSfx) {
+      const char = characters.find(c => c.id === msg.charId) || characters[0];
+      triggerSfxByName(pairedSfx, char.pitch || 1.05);
+      showToast(`🔊 Playing SFX ":${pairedSfx}:"`);
+      return;
+    }
+    openMessageEditModal(msgId);
+  }
+
+  function handleImageMessageClick(msgId, ev) {
+    if (isCinemaPlaying) return;
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg) return;
+    const pairedAudio = msg.customAudioData;
+    const pairedSfx = msg.sfx;
+    if (pairedAudio) {
+      playCustomAudio(pairedAudio);
+      showToast(`🎵 Playing "${msg.customAudioLabel || 'Photo Audio'}"`);
+    } else if (pairedSfx) {
+      const char = characters.find(c => c.id === msg.charId) || characters[0];
+      triggerSfxByName(pairedSfx, char.pitch || 1.05);
+      showToast(`🔊 Playing SFX ":${pairedSfx}:"`);
+    }
+    const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
+    if (srcUrl) {
+      openFullscreenImage(srcUrl);
+    } else {
+      openMessageEditModal(msgId);
+    }
+  }
+
   window.openFullscreenVideo = openFullscreenVideo;
   window.closeFullscreenVideo = closeFullscreenVideo;
+  window.openFullscreenImage = openFullscreenImage;
+  window.closeFullscreenImage = closeFullscreenImage;
+  window.handleStickerMessageClick = handleStickerMessageClick;
+  window.handleImageMessageClick = handleImageMessageClick;
 
   function selectExpression(expr) {
     currentExpr = expr;
@@ -2569,16 +2647,20 @@ if (msg.type === 'quest') {
     let bubbleContentHtml = '';
 
     if (msg.type === 'sticker') {
-      const st = msg.stickerData || builtInStickers[0];
+      const st = msg.stickerData || builtInStickers[0] || {};
+      const stkImg = msg.imageUrl || st.imageUrl || st.data || st.url || '';
+      const hasSound = msg.customAudioData || msg.sfx || st.customAudioData || st.sfx;
+      const soundLabel = msg.customAudioLabel || st.customAudioLabel || msg.sfx || st.sfx;
       const innerArt = st.isVideo
-        ? `<video src="${st.imageUrl}" autoplay loop muted playsinline style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain;"></video>`
-        : (st.imageUrl
-            ? `<img src="${st.imageUrl}" alt="${escapeHtml(st.label || 'Sticker')}" style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; object-fit:contain;">`
+        ? `<video src="${stkImg}" autoplay loop muted playsinline style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain;"></video>`
+        : (stkImg
+            ? `<img src="${stkImg}" alt="${escapeHtml(st.label || 'Sticker')}" style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; object-fit:contain;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('STK', '#38bdf8', '🖼️');">`
             : `<div class="sticker-emoji-art" style="background:${st.bg || '#fef08a'}">${st.emoji || '🎭'}</div>`);
 
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
+        <div class="sticker-card" onclick="handleStickerMessageClick('${msg.id}', event)" title="Click to play sound or edit">
           ${innerArt}
+          ${hasSound ? `<div class="sticker-sound-pill-tag" style="position:absolute; bottom:2px; right:4px; background:rgba(15,23,42,0.88); color:#facc15; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:8px; border:1px solid rgba(250,204,21,0.4); display:flex; align-items:center; gap:3px;"><span>${(msg.customAudioData || st.customAudioData) ? '🎵' : '🔊'}</span><span>${escapeHtml(soundLabel || 'Sound')}</span></div>` : ''}
           ${st.label ? `<span class="sticker-caption">${escapeHtml(st.label)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -2587,11 +2669,17 @@ if (msg.type === 'quest') {
       `;
     } else if (msg.type === 'image') {
       const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
+      const hasSound = msg.customAudioData || msg.sfx;
+      const soundLabel = msg.customAudioLabel || msg.sfx;
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="openMessageEditModal('${msg.id}')">
-          <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Image')}" style="max-width:var(--chat-sticker-size, 120px); max-height:var(--chat-sticker-size, 120px); width:auto; height:auto; border-radius:12px; object-fit:contain; display:block;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '🖼️');">
-          ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<span class="sticker-caption">${escapeHtml(msg.caption || msg.text)}</span>` : ''}
-          <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
+        <div class="speech-bubble image-message-bubble" onclick="handleImageMessageClick('${msg.id}', event)" title="Click to view photo or play sound">
+          ${replyBoxHtml}
+          <div class="image-media-card" style="position:relative; border-radius:10px; overflow:hidden; cursor:pointer;">
+            <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Photo')}" style="max-width:240px; max-height:280px; width:100%; height:auto; object-fit:cover; display:block; border-radius:10px;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '📷');">
+            ${hasSound ? `<div class="media-sound-badge" style="position:absolute; top:8px; right:8px; background:rgba(15,23,42,0.85); color:#38bdf8; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; border:1px solid rgba(56,189,248,0.4); display:flex; align-items:center; gap:3px; backdrop-filter:blur(4px);"><span>${msg.customAudioData ? '🎵' : '🔊'}</span><span>${escapeHtml(soundLabel || 'Sound')}</span></div>` : ''}
+          </div>
+          ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<div class="bubble-caption" style="padding:6px 4px 2px 4px; font-size:13.5px; line-height:1.35; color:inherit; word-break:break-word;">${escapeHtml(msg.caption || msg.text)}</div>` : ''}
+          <div class="bubble-meta" style="padding:0 4px 2px 4px; width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
           </div>
         </div>
@@ -2952,6 +3040,9 @@ if (msg.type === 'quest') {
       type: 'sticker',
       charId: char.id,
       stickerData: stickerObj,
+      customAudioData: stickerObj.customAudioData || null,
+      customAudioLabel: stickerObj.customAudioLabel || null,
+      sfx: stickerObj.sfx || null,
       expr: exprToUse,
       replyToId: activeReplyMsgId || null,
       time: getNextStoryTime()
@@ -2965,6 +3056,8 @@ if (msg.type === 'quest') {
       playCustomAudio(stickerObj.customAudioData);
     } else if (stickerObj.sfx) {
       triggerSfxByName(stickerObj.sfx, char.pitch || 1.05);
+    } else {
+      playPopSound(char.pitch || 1.05);
     }
     triggerExpressionEffects(exprToUse, char.pitch || 1.05);
   }
@@ -3121,6 +3214,9 @@ if (msg.type === 'quest') {
     if (isVideo) newMsgType = 'video';
     else if (isAudio) newMsgType = 'audio';
 
+    const pairedAudio = mediaItem.customAudioData;
+    const pairedSfx = mediaItem.sfx;
+
     const newMsg = {
       id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       type: newMsgType,
@@ -3128,9 +3224,12 @@ if (msg.type === 'quest') {
       expr: currentExpr || 'normal',
       replyToId: activeReplyMsgId || null,
       time: getNextStoryTime(),
-      imageUrl: isImage ? (mediaItem.imageUrl || mediaItem.url || '') : null,
-      videoUrl: isVideo ? (mediaItem.videoUrl || mediaItem.imageUrl || mediaItem.url || '') : null,
+      imageUrl: isImage ? (mediaItem.imageUrl || mediaItem.data || mediaItem.url || '') : null,
+      videoUrl: isVideo ? (mediaItem.videoUrl || mediaItem.data || mediaItem.imageUrl || mediaItem.url || '') : null,
       audioUrl: isAudio ? (mediaItem.data || mediaItem.audioUrl || mediaItem.url || '') : null,
+      customAudioData: pairedAudio || null,
+      customAudioLabel: mediaItem.customAudioLabel || null,
+      sfx: pairedSfx || null,
       label: mediaItem.label || mediaItem.name || (isVideo ? 'Video' : (isAudio ? 'Song' : 'Photo')),
       caption: ''
     };
@@ -3142,6 +3241,10 @@ if (msg.type === 'quest') {
 
     if (isAudio && (newMsg.audioUrl)) {
       playCustomAudio(newMsg.audioUrl);
+    } else if (pairedAudio) {
+      playCustomAudio(pairedAudio);
+    } else if (pairedSfx) {
+      triggerSfxByName(pairedSfx, char.pitch || 1.05);
     } else {
       playPopSound(char.pitch || 1.05);
     }
@@ -3410,13 +3513,20 @@ if (msg.type === 'quest') {
           if (isDrawerEditMode) {
             renameCustomSticker(st.id);
           } else {
-            sendStickerItem(st);
+            if (st.isVideo || st.mediaType === 'video') {
+              sendMediaItemToChat(st, 'video');
+            } else if (st.isSticker || st.mediaType === 'sticker') {
+              sendStickerItem(st);
+            } else {
+              sendMediaItemToChat(st, 'image');
+            }
           }
         };
 
+        const mediaSrc = st.imageUrl || st.data || st.url || '';
         const mediaPreview = st.isVideo
-          ? `<video src="${st.imageUrl}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05); pointer-events:none;"></video>`
-          : `<img src="${st.imageUrl}" alt="Media" style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05);">`;
+          ? `<video src="${st.videoUrl || mediaSrc}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05); pointer-events:none;"></video>`
+          : `<img src="${mediaSrc}" alt="Media" style="width:52px; height:52px; border-radius:8px; object-fit:${st.isSticker ? 'contain' : 'cover'}; background:rgba(0,0,0,0.05);">`;
 
         card.innerHTML = `
           ${isDrawerEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
@@ -3498,42 +3608,54 @@ if (msg.type === 'quest') {
     let processed = 0;
     files.forEach((file, idx) => {
       const reader = new FileReader();
-      const isVideo = explicitFilter === 'video' || file.type.startsWith('video');
-      const isAudio = explicitFilter === 'audio' || file.type.startsWith('audio');
+      const uploadTarget = (e.target.dataset && e.target.dataset.uploadAs) || explicitFilter;
+      const isVideo = uploadTarget === 'video' || file.type.startsWith('video');
+      const isAudio = uploadTarget === 'audio' || file.type.startsWith('audio');
+      const isSticker = uploadTarget === 'sticker';
       const cleanBase = file.name.replace(/\.[^/.]+$/, '').trim();
-      const baseLabel = cleanBase.replace(/[\-_]/g, ' ').slice(0, 20).toUpperCase() || (isVideo ? 'VIDEO' : (isAudio ? 'SONG' : 'MEDIA'));
+      const baseLabel = cleanBase.replace(/[\-_]/g, ' ').slice(0, 20).toUpperCase() || (isVideo ? 'VIDEO' : (isAudio ? 'SONG' : (isSticker ? 'STICKER' : 'PHOTO')));
 
       reader.onload = (ev) => {
+        const fileData = ev.target.result;
         if (isAudio) {
           customAudioClips.unshift({
             id: 'aud_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
             label: baseLabel,
-            data: ev.target.result,
+            data: fileData,
+            audioUrl: fileData,
+            url: fileData,
             name: file.name
           });
         } else {
           customStickers.unshift({
             id: 'cust_media_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
-            imageUrl: ev.target.result,
+            imageUrl: fileData,
+            data: fileData,
+            url: fileData,
+            videoUrl: isVideo ? fileData : null,
             label: baseLabel,
             isVideo: isVideo,
-            mediaType: isVideo ? 'video' : 'image',
+            isSticker: isSticker,
+            mediaType: isVideo ? 'video' : (isSticker ? 'sticker' : 'image'),
             expr: 'normal',
-            sfx: isVideo ? 'pop' : 'boing',
+            sfx: isVideo ? 'pop' : (isSticker ? 'boing' : null),
             isCustom: true
           });
         }
         processed++;
         if (processed === files.length) {
           saveStudioState();
+          if (typeof renderDrawerContent === 'function') renderDrawerContent();
+          if (typeof renderAssetCategory === 'function') renderAssetCategory();
+          if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
           if (isAudio) {
             switchDrawerTab('audio');
           } else if (isVideo) {
             switchDrawerTab('videos');
-          } else if (explicitFilter === 'image') {
-            switchDrawerTab('images');
-          } else {
+          } else if (isSticker) {
             switchDrawerTab('uploads');
+          } else {
+            switchDrawerTab('images');
           }
           showToast(`📁 Added ${files.length} item${files.length > 1 ? 's' : ''} to Media Vault!`);
         }
@@ -3562,6 +3684,38 @@ if (msg.type === 'quest') {
     reader.readAsDataURL(file);
     e.target.value = '';
   }
+
+  function toggleMediaItemStickerType(id) {
+    const item = customStickers.find(s => s.id === id);
+    if (!item) return;
+    item.isSticker = !item.isSticker;
+    item.mediaType = item.isSticker ? 'sticker' : 'image';
+    saveStudioState();
+    if (typeof renderAssetCategory === 'function') renderAssetCategory();
+    if (typeof renderDrawerContent === 'function') renderDrawerContent();
+    if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
+    showToast(item.isSticker ? `✨ Converted "${item.label}" to Reaction Sticker!` : `📷 Converted "${item.label}" to Photo Message!`);
+  }
+
+  function playStickerOrImageSound(id) {
+    let item = customStickers.find(s => s.id === id);
+    if (!item && typeof builtInStickers !== 'undefined') {
+      item = builtInStickers.find(s => s.id === id);
+    }
+    if (!item) return;
+    if (item.customAudioData) {
+      playCustomAudio(item.customAudioData);
+      showToast(`🎵 Playing "${item.customAudioLabel || 'Audio'}"`);
+    } else if (item.sfx) {
+      triggerSfxByName(item.sfx, 1.05);
+      showToast(`🔊 Playing SFX ":${item.sfx}:"`);
+    } else {
+      openStickerSoundPairModal(id, false);
+    }
+  }
+
+  window.toggleMediaItemStickerType = toggleMediaItemStickerType;
+  window.playStickerOrImageSound = playStickerOrImageSound;
 
   function updateChatStickerSize(size) {
     chatStickerSize = Math.max(65, Math.min(180, parseInt(size, 10) || 120));
@@ -5365,7 +5519,19 @@ if (msg.type === 'quest') {
           stream.appendChild(el);
           if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
           stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
-          if (soundEnabled) playPopSound(char.pitch || 1.05);
+          const pairedCustomAudio = nextMsg.customAudioData || (nextMsg.stickerData && nextMsg.stickerData.customAudioData);
+          const pairedSfx = nextMsg.sfx || (nextMsg.stickerData && nextMsg.stickerData.sfx);
+          if (soundEnabled) {
+            if (nextMsg.type === 'audio' && nextMsg.audioUrl) {
+              playCustomAudio(nextMsg.audioUrl);
+            } else if (pairedCustomAudio) {
+              playCustomAudio(pairedCustomAudio);
+            } else if (pairedSfx) {
+              triggerSfxByName(pairedSfx, char.pitch || 1.05);
+            } else {
+              playPopSound(char.pitch || 1.05);
+            }
+          }
           stepIndex++;
           cinemaStepTimeout = setTimeout(playNextStep, 60);
           return;
@@ -5412,11 +5578,22 @@ if (msg.type === 'quest') {
           stream.appendChild(el);
           if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
           stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
-          if (soundEnabled) playPopSound(char.pitch || 1.05);
+          const pairedCustomAudio = nextMsg.customAudioData || (nextMsg.stickerData && nextMsg.stickerData.customAudioData);
+          const pairedSfx = nextMsg.sfx || (nextMsg.stickerData && nextMsg.stickerData.sfx);
+          if (soundEnabled) {
+            if (nextMsg.type === 'audio' && nextMsg.audioUrl) {
+              playCustomAudio(nextMsg.audioUrl);
+            } else if (pairedCustomAudio) {
+              playCustomAudio(pairedCustomAudio);
+            } else if (pairedSfx) {
+              triggerSfxByName(pairedSfx, char.pitch || 1.05);
+            } else {
+              playPopSound(char.pitch || 1.05);
+            }
+          }
 
           const bubbleEl = el.querySelector('.sticker-card') || el.querySelector('.speech-bubble');
           triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
-        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
 
           stepIndex++;
           cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 700) / cinemaSpeedMultiplier);
@@ -6051,6 +6228,7 @@ if (msg.type === 'quest') {
   }
 
   function stopCinemaMode() {
+    stopCurrentAudio();
     isCinemaPlaying = false;
     isCinemaPaused = false;
     isCinemaWaitingForChoice = false;
@@ -7114,9 +7292,10 @@ if (msg.type === 'quest') {
     if (addBtn) {
       if (category === 'cast') addBtn.textContent = '+ Add Character';
       else if (category === 'stickers') addBtn.textContent = '+ Upload Sticker';
+      else if (category === 'images') addBtn.textContent = '+ Upload Photo';
       else if (category === 'sfx') addBtn.textContent = '🔊 Test SFX';
       else if (category === 'audio') addBtn.textContent = '+ Upload Song';
-      else if (category === 'videos') addBtn.textContent = '+ Upload Media';
+      else if (category === 'videos') addBtn.textContent = '+ Upload Video';
     }
     renderAssetCategory();
   }
@@ -7130,9 +7309,10 @@ if (msg.type === 'quest') {
     const badge = document.getElementById('assetQuickStatsBadge');
     if (!badge) return;
     const totalFaces = (characters || []).reduce((acc, c) => acc + Object.keys(c.expressions || {}).length, 0);
-    const customStickerCount = (customStickers || []).filter(s => !s.isVideo && !s.isAudio).length;
+    const customStickerCount = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio).length;
+    const customImageCount = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio).length;
     const totalStickers = customStickerCount + (typeof builtInStickers !== 'undefined' ? builtInStickers.length : 0);
-    badge.textContent = `${(characters || []).length} Cast • ${totalFaces} Faces • ${totalStickers} Stickers • ${(builtInSounds || []).length} SFX • ${(customAudioClips || []).length} Songs`;
+    badge.textContent = `${(characters || []).length} Cast • ${totalFaces} Faces • ${customImageCount} Photos • ${totalStickers} Stickers • ${(builtInSounds || []).length} SFX • ${(customAudioClips || []).length} Songs`;
   }
 
   /* =====================================================================
@@ -7182,7 +7362,7 @@ if (msg.type === 'quest') {
 
   function getOrCalculateVideoDuration(v) {
     if (v.durationText) return v.durationText;
-    const src = v.data || v.url;
+    const src = v.videoUrl || v.data || v.url || v.imageUrl;
     if (!src) return '0:00';
     try {
       const vid = document.createElement('video');
@@ -7210,8 +7390,10 @@ if (msg.type === 'quest') {
 
   function playAssetVideoById(videoId) {
     const item = (customStickers || []).find(s => s.id === videoId);
-    if (!item || (!item.data && !item.url)) return;
-    openFullscreenVideo(item.data || item.url);
+    if (!item) return;
+    const src = item.videoUrl || item.data || item.url || item.imageUrl;
+    if (!src) return;
+    openFullscreenVideo(src);
   }
 
   let targetExprCharId = null;
@@ -7300,7 +7482,7 @@ if (msg.type === 'quest') {
 
     const thumbHtml = isBuiltIn
       ? `<div style="font-size:32px; background:${st.bg || '#1e293b'}; width:50px; height:50px; border-radius:10px; display:flex; align-items:center; justify-content:center;">${st.emoji || '💬'}</div>`
-      : `<img src="${st.data || st.url || ''}" style="width:50px; height:50px; object-fit:contain; border-radius:10px; background:#1e293b;" alt="Sticker">`;
+      : `<img src="${st.imageUrl || st.data || st.url || ''}" style="width:50px; height:50px; object-fit:contain; border-radius:10px; background:#1e293b;" alt="Media" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('MED', '#38bdf8', '🖼️');">`;
 
     const currentSoundDesc = st.customAudioLabel ? ('🎵 ' + st.customAudioLabel) : (st.sfx ? ('🔊 ' + st.sfx) : '🔇 Silent / None');
 
@@ -7520,7 +7702,7 @@ if (msg.type === 'quest') {
         container.appendChild(card);
       });
     } else if (activeAssetCategory === 'stickers') {
-      const customList = (customStickers || []).filter(s => !s.isVideo && !s.isAudio);
+      const customList = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio);
       const builtList = (typeof builtInStickers !== 'undefined') ? builtInStickers : [];
 
       const filteredCustom = customList.filter(s => !q || (s.label || '').toLowerCase().includes(q));
@@ -7542,20 +7724,23 @@ if (msg.type === 'quest') {
           card.className = 'asset-item-card';
 
           const currentSoundDesc = st.customAudioLabel ? ('🎵 ' + st.customAudioLabel) : (st.sfx ? ('🔊 ' + st.sfx) : '🔇 Sound');
+          const hasSound = Boolean(st.customAudioData || st.sfx);
 
           card.innerHTML = `
-            <div class="asset-thumb-wrap" style="width:56px; height:56px; min-width:56px;">
-              <img src="${st.data || st.url || ''}" alt="${escapeHtml(st.label || 'Sticker')}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('STK', '#38bdf8', '🖼️');">
+            <div class="asset-thumb-wrap" style="width:56px; height:56px; min-width:56px; background:#1e293b; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+              <img src="${st.imageUrl || st.data || st.url || ''}" alt="${escapeHtml(st.label || 'Sticker')}" style="width:100%; height:100%; object-fit:contain;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('STK', '#38bdf8', '🖼️');">
             </div>
             <div class="asset-info-col">
               <div class="asset-title-row">
                 <span class="asset-item-title">${escapeHtml(st.label || 'Sticker')}</span>
-                <span class="asset-badge" style="background:#065f46; color:#6ee7b7;">Custom</span>
+                <span class="asset-badge" style="background:#065f46; color:#6ee7b7;">Sticker</span>
                 <button type="button" class="asset-sound-pill" onclick="openStickerSoundPairModal('${st.id}', false)" title="Click to pair sound or meme voice">${escapeHtml(currentSoundDesc)}</button>
               </div>
               <span class="asset-syntax-chip">[Character:STICKER]: ${escapeHtml(st.label || 'LABEL')}</span>
             </div>
             <div class="asset-actions-row">
+              ${hasSound ? `<button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="playStickerOrImageSound('${st.id}')" title="Play Linked Sound">▶ Sound</button>` : ''}
+              <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="toggleMediaItemStickerType('${st.id}')" title="Convert to regular Photo">📷 To Photo</button>
               <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomSticker('${st.id}')" title="Rename Sticker Label">✏️ Rename</button>
               <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendStickerItem(customStickers.find(s=>s.id==='${st.id}'))" title="Send into Chat">💬 Send</button>
               <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('stickers', '${st.id}', this)" title="Delete Sticker">🗑️</button>
@@ -7597,6 +7782,58 @@ if (msg.type === 'quest') {
           container.appendChild(card);
         });
       }
+    } else if (activeAssetCategory === 'images') {
+      const imageList = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio);
+      const filtered = imageList.filter(s => !q || (s.label || '').toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:32px 10px; color:#94a3b8; display:flex; flex-direction:column; align-items:center; gap:8px;">
+            <span style="font-size:36px;">📷</span>
+            <strong style="color:#f8fafc; font-size:13px;">No Photos or Images Uploaded</strong>
+            <p style="font-size:11px; max-width:260px; margin:0;">Upload JPEG, PNG photos and screenshots to send in genuine WhatsApp photo bubbles.</p>
+            <button class="icon-btn" style="background:#0284c7; color:#fff; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="triggerCustomUploadForCategory('images')">+ Upload Photo</button>
+          </div>
+        `;
+        return;
+      }
+
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;';
+      header.textContent = `Custom Uploaded Photos & Screenshots (${filtered.length})`;
+      container.appendChild(header);
+
+      filtered.forEach(st => {
+        const card = document.createElement('div');
+        card.className = 'asset-item-card';
+
+        const imgSrc = st.imageUrl || st.data || st.url || '';
+        const currentSoundDesc = st.customAudioLabel ? ('🎵 ' + st.customAudioLabel) : (st.sfx ? ('🔊 ' + st.sfx) : '🔇 Sound');
+        const hasSound = Boolean(st.customAudioData || st.sfx);
+
+        card.innerHTML = `
+          <div class="asset-thumb-wrap" style="width:56px; height:56px; min-width:56px; cursor:pointer; background:#1e293b; border-radius:8px; overflow:hidden;" onclick="openFullscreenImage('${escapeHtml(imgSrc)}')" title="Click to view full photo">
+            <img src="${imgSrc}" alt="${escapeHtml(st.label || 'Photo')}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '📷');">
+          </div>
+          <div class="asset-info-col">
+            <div class="asset-title-row">
+              <span class="asset-item-title">${escapeHtml(st.label || 'Photo')}</span>
+              <span class="asset-badge" style="background:#0284c7; color:#fff;">Photo</span>
+              <button type="button" class="asset-sound-pill" onclick="openStickerSoundPairModal('${st.id}', false)" title="Click to pair sound or meme voice">${escapeHtml(currentSoundDesc)}</button>
+            </div>
+            <span class="asset-syntax-chip">[Character:IMAGE]: ${escapeHtml(st.label || 'LABEL')}</span>
+          </div>
+          <div class="asset-actions-row">
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#1e293b; color:#f8fafc;" onclick="openFullscreenImage('${escapeHtml(imgSrc)}')" title="View Fullscreen Lightbox">👁️ View</button>
+            ${hasSound ? `<button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="playStickerOrImageSound('${st.id}')" title="Play Linked Sound">▶ Sound</button>` : ''}
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="toggleMediaItemStickerType('${st.id}')" title="Convert to transparent Sticker cutout">✨ Make Sticker</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomSticker('${st.id}')" title="Rename Photo Label">✏️ Rename</button>
+            <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendMediaItemToChat(customStickers.find(s=>s.id==='${st.id}'), 'image')" title="Send into Chat">💬 Send</button>
+            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('images', '${st.id}', this)" title="Delete Photo">🗑️</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
     } else if (activeAssetCategory === 'sfx') {
       const sounds = (typeof builtInSounds !== 'undefined') ? builtInSounds : [];
       const filtered = sounds.filter(s => !q || (s.label || '').toLowerCase().includes(q) || (s.id || '').toLowerCase().includes(q));
@@ -7683,7 +7920,7 @@ if (msg.type === 'quest') {
             <span style="font-size:36px;">🎬</span>
             <strong style="color:#f8fafc; font-size:13px;">No Video Clips Uploaded</strong>
             <p style="font-size:11px; max-width:260px; margin:0;">Upload short MP4, WebM video clips to play in WhatsApp video bubbles.</p>
-            <button class="icon-btn" style="background:#0284c7; color:#fff; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="triggerCustomUploadForDrawer()">+ Upload Video Clip</button>
+            <button class="icon-btn" style="background:#0284c7; color:#fff; margin-top:6px; padding:6px 14px; font-size:12px;" onclick="triggerCustomUploadForCategory('video')">+ Upload Video Clip</button>
           </div>
         `;
         return;
@@ -7697,7 +7934,7 @@ if (msg.type === 'quest') {
 
         card.innerHTML = `
           <div class="asset-thumb-wrap" style="cursor:pointer; width:64px; height:64px; min-width:64px;" onclick="playAssetVideoById('${v.id}')" title="Watch Video">
-            <video src="${v.data || v.url || ''}" preload="metadata" style="pointer-events:none;"></video>
+            <video src="${v.videoUrl || v.data || v.url || v.imageUrl || ''}" preload="metadata" style="pointer-events:none;"></video>
             <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">▶</div>
           </div>
           <div class="asset-info-col">
@@ -7712,7 +7949,7 @@ if (msg.type === 'quest') {
             <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="playAssetVideoById('${v.id}')" title="Play Fullscreen Lightbox">⛶ Watch</button>
             <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px;" onclick="renameCustomVideo('${v.id}')" title="Rename Video">✏️ Rename</button>
             <button type="button" class="icon-btn" style="padding:4px 8px; font-size:11px; background:#00a884; color:#fff;" onclick="sendMediaItemToChat(customStickers.find(s=>s.id==='${v.id}'), 'video')" title="Send into Chat">💬 Send</button>
-            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('stickers', '${v.id}', this)" title="Delete Video">🗑️</button>
+            <button type="button" class="icon-btn danger" style="padding:4px 8px; font-size:11px;" onclick="handleInlineDeleteAsset('videos', '${v.id}', this)" title="Delete Video">🗑️</button>
           </div>
         `;
         container.appendChild(card);
@@ -7792,11 +8029,11 @@ if (msg.type === 'quest') {
         if (typeof renderCastModalList === 'function') renderCastModalList();
         if (typeof renderCharacterSelectorDeck === 'function') renderCharacterSelectorDeck();
         showToast('🗑️ Character deleted!');
-      } else if (category === 'stickers') {
+      } else if (category === 'stickers' || category === 'images' || category === 'videos') {
         customStickers = customStickers.filter(s => s.id !== id);
         saveStudioState();
         if (typeof renderDrawerContent === 'function') renderDrawerContent();
-        showToast('🗑️ Sticker deleted!');
+        showToast(category === 'images' ? '🗑️ Photo deleted!' : (category === 'videos' ? '🗑️ Video deleted!' : '🗑️ Sticker deleted!'));
       } else if (category === 'audio') {
         customAudioClips = customAudioClips.filter(s => s.id !== id);
         saveStudioState();
@@ -7825,12 +8062,34 @@ if (msg.type === 'quest') {
     }, 3500);
   }
 
+  function triggerCustomUploadForCategory(categoryType) {
+    const input = document.getElementById('hiddenMediaInput');
+    if (!input) return;
+    if (categoryType === 'image' || categoryType === 'images') {
+      input.dataset.uploadAs = 'image';
+      input.accept = 'image/*';
+    } else if (categoryType === 'sticker' || categoryType === 'stickers') {
+      input.dataset.uploadAs = 'sticker';
+      input.accept = 'image/*';
+    } else if (categoryType === 'video' || categoryType === 'videos') {
+      input.dataset.uploadAs = 'video';
+      input.accept = 'video/*';
+    } else {
+      delete input.dataset.uploadAs;
+      input.accept = 'image/*,video/*';
+    }
+    input.value = '';
+    input.click();
+  }
+
   function handleAssetContextAdd() {
     if (activeAssetCategory === 'cast') {
       closeAssetManagerModal();
       addNewCharacter();
     } else if (activeAssetCategory === 'stickers') {
-      triggerCustomUploadForDrawer();
+      triggerCustomUploadForCategory('sticker');
+    } else if (activeAssetCategory === 'images') {
+      triggerCustomUploadForCategory('image');
     } else if (activeAssetCategory === 'sfx') {
       playBoingSound();
       showToast('🔊 Click any "▶ Test" button to audition sound effects!');
@@ -7838,7 +8097,7 @@ if (msg.type === 'quest') {
       const input = document.getElementById('hiddenSoundInput');
       if (input) input.click();
     } else if (activeAssetCategory === 'videos') {
-      triggerCustomUploadForDrawer();
+      triggerCustomUploadForCategory('video');
     }
   }
 
@@ -7865,7 +8124,10 @@ if (msg.type === 'quest') {
     md += `Every line in your script MUST follow one of these exact syntaxes:\n`;
     md += `• Dialogue: [Character:emotion]: dialogue text\n`;
     md += `• Dialogue + SFX: [Character:emotion:sfx_id]: dialogue text\n`;
+    md += `• Photo / Image Bubble: [Character:IMAGE]: photo_label\n`;
     md += `• Reaction Sticker: [Character:STICKER]: sticker_label\n`;
+    md += `• Video Clip Bubble: [Character:VIDEO]: video_label\n`;
+    md += `• Background Audio / Song: [Character:AUDIO]: song_label\n`;
     md += `• Realistic Delay: /delay 1.5sec\n`;
     md += `• Suspense Pause: [PAUSE: 2s]\n`;
     md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
@@ -7938,17 +8200,35 @@ if (msg.type === 'quest') {
     }
     md += `\n`;
 
-    // 6. Stickers & Memes
-    md += `=== 🖼️ CONFIGURED STICKERS & MEMES ===\n`;
-    md += `Syntax to trigger a sticker: [CharacterName:STICKER]: label\n`;
-    const customLabels = (customStickers || []).filter(s => !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
-    if (customLabels.length > 0) {
-      md += `• Custom Vault Stickers: ${customLabels.join(', ')}\n`;
+    // 6. Photos, Stickers & Videos
+    const customPhotoLabels = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio).map(s => s.label).filter(Boolean);
+    const customStickerLabels = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
+    const customVideoLabels = (customStickers || []).filter(s => s.isVideo || s.mediaType === 'video').map(s => s.label).filter(Boolean);
+
+    md += `=== 📷 CONFIGURED PHOTOS & IMAGES ===\n`;
+    md += `Syntax to send a photo: [CharacterName:IMAGE]: photo_label\n`;
+    if (customPhotoLabels.length > 0) {
+      md += `• Available Photos: ${customPhotoLabels.join(', ')}\n`;
+    } else {
+      md += `• Photos: Any uploaded image label or image URL\n`;
+    }
+    md += `\n`;
+
+    md += `=== 🖼️ CONFIGURED REACTION STICKERS ===\n`;
+    md += `Syntax to trigger a sticker: [CharacterName:STICKER]: sticker_label\n`;
+    if (customStickerLabels.length > 0) {
+      md += `• Custom Stickers: ${customStickerLabels.join(', ')}\n`;
     }
     if (Array.isArray(builtInStickers) && builtInStickers.length > 0) {
       md += `• Built-in Comic Stickers: ${builtInStickers.map(s => s.label || s.id).join(', ')}\n`;
     }
     md += `\n`;
+
+    if (customVideoLabels.length > 0) {
+      md += `=== 🎬 CONFIGURED VIDEO CLIPS ===\n`;
+      md += `Syntax to send a video clip: [CharacterName:VIDEO]: video_label\n`;
+      md += `• Available Videos: ${customVideoLabels.join(', ')}\n\n`;
+    }
 
     // 7. Songs & Background Audio
     if (Array.isArray(customAudioClips) && customAudioClips.length > 0) {
@@ -8673,11 +8953,24 @@ if (msg.type === 'quest') {
 
       // Check Media within character bracket: [Dora:IMAGE]: url, [Dora:VIDEO]: url
       if (isImageType) {
+        let imgUrl = msgBody;
+        let pairedCustomAudio = null;
+        let pairedSfx = null;
+        const foundImg = (customStickers || []).find(s => !s.isVideo && !s.isAudio && s.label && s.label.toLowerCase() === msgBody.trim().toLowerCase()) ||
+                         (customStickers || []).find(s => !s.isVideo && !s.isAudio && s.label && s.label.toLowerCase().includes(msgBody.trim().toLowerCase()));
+        if (foundImg) {
+          imgUrl = foundImg.imageUrl || foundImg.data || foundImg.url || imgUrl;
+          pairedCustomAudio = foundImg.customAudioData || null;
+          pairedSfx = foundImg.sfx || null;
+        }
+
         parsedMsgs.push({
           id: 'm_img_' + Date.now() + '_' + idx,
           type: 'image',
           charId: char.id,
-          imageUrl: msgBody,
+          imageUrl: imgUrl,
+          customAudioData: pairedCustomAudio,
+          sfx: pairedSfx,
           preDelayMs: eventPreDelay,
           delayMs: 800,
           time: getNextStoryTime()
@@ -8685,11 +8978,16 @@ if (msg.type === 'quest') {
         return;
       }
       if (isVideoType) {
+        let vidUrl = msgBody;
+        const foundVid = (customStickers || []).find(s => (s.isVideo || s.mediaType === 'video') && s.label && s.label.toLowerCase().includes(msgBody.trim().toLowerCase()));
+        if (foundVid) {
+          vidUrl = foundVid.videoUrl || foundVid.data || foundVid.url || vidUrl;
+        }
         parsedMsgs.push({
           id: 'm_vid_' + Date.now() + '_' + idx,
           type: 'video',
           charId: char.id,
-          videoUrl: msgBody,
+          videoUrl: vidUrl,
           preDelayMs: eventPreDelay,
           delayMs: 800,
           time: getNextStoryTime()
@@ -8697,11 +8995,16 @@ if (msg.type === 'quest') {
         return;
       }
       if (isAudioType) {
+        let audUrl = msgBody;
+        const foundAud = (customAudioClips || []).find(s => s.label && s.label.toLowerCase().includes(msgBody.trim().toLowerCase()));
+        if (foundAud) {
+          audUrl = foundAud.data || foundAud.url || audUrl;
+        }
         parsedMsgs.push({
           id: 'm_aud_' + Date.now() + '_' + idx,
           type: 'audio',
           charId: char.id,
-          audioUrl: msgBody,
+          audioUrl: audUrl,
           preDelayMs: eventPreDelay,
           delayMs: 800,
           time: getNextStoryTime()
@@ -8752,9 +9055,10 @@ if (msg.type === 'quest') {
       // Check Sticker / Media
       if (isStickerType) {
         const query = stickerKey || msgBody;
-        const found = customStickers.find(s => s.label.toLowerCase().includes(query.toLowerCase())) ||
+        const found = customStickers.find(s => (s.isSticker || s.mediaType === 'sticker') && s.label && s.label.toLowerCase().includes(query.toLowerCase())) ||
                       builtInStickers.find(s => (s.label || '').toLowerCase().includes(query.toLowerCase())) ||
-                      customStickers[0] || builtInStickers[0];
+                      customStickers.find(s => (s.isSticker || s.mediaType === 'sticker')) ||
+                      builtInStickers[0];
 
         let expr = explicitExpr || 'normal';
 
@@ -8763,6 +9067,9 @@ if (msg.type === 'quest') {
           type: 'sticker',
           charId: char.id,
           stickerData: found,
+          customAudioData: found ? found.customAudioData : null,
+          customAudioLabel: found ? found.customAudioLabel : null,
+          sfx: found ? found.sfx : null,
           expr: expr,
           preDelayMs: eventPreDelay,
           delayMs: 550,
@@ -9430,9 +9737,14 @@ if (msg.type === 'quest') {
     }
   });
 
-  // Escape key closes any active modal, menu, or drawer immediately
+  // Escape key closes any active modal, menu, or drawer immediately, or emergency-stops playback
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      if (typeof isCinemaPlaying !== 'undefined' && isCinemaPlaying) {
+        stopCinemaMode();
+        showToast('⏹️ Urgent Stop: Playback halted');
+      }
+      stopCurrentAudio();
       closeAllModals();
       closeDropdownMenu();
       hideSpeedPopover();
@@ -9441,6 +9753,8 @@ if (msg.type === 'quest') {
       if (drawer) drawer.classList.remove('open');
       const vModal = document.getElementById('vaultPickModal');
       if (vModal) vModal.classList.remove('open');
+      const imgModal = document.getElementById('imageLightboxModal');
+      if (imgModal) imgModal.classList.remove('open');
     }
   });
 
@@ -9464,4 +9778,9 @@ if (msg.type === 'quest') {
   window.saveGroupSettings = saveGroupSettings;
   window.openGroupModal = openGroupModal;
   window.closeGroupModal = closeGroupModal;
+  window.triggerCustomUploadForCategory = triggerCustomUploadForCategory;
+  window.toggleMediaItemStickerType = toggleMediaItemStickerType;
+  window.playStickerOrImageSound = playStickerOrImageSound;
+  window.openFullscreenImage = openFullscreenImage;
+  window.closeFullscreenImage = closeFullscreenImage;
 

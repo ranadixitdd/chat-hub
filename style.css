@@ -5802,6 +5802,24 @@
     box-sizing: border-box;
   }
 
+  /* === WHATSAPP-STYLE HIGH-RES IMAGE / PHOTO MESSAGE BUBBLE === */
+  .image-message-bubble {
+    padding: 4px !important;
+    max-width: min(320px, 88%) !important;
+    width: 100%;
+    border-radius: 16px !important;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .image-media-card {
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000000;
+  }
+
   .whatsapp-video-container {
     position: relative;
     width: 100%;
