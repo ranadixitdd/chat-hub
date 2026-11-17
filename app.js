@@ -8101,187 +8101,62 @@ if (msg.type === 'quest') {
     }
   }
 
-  function generateStudioAssetMarkdown() {
-    let md = '';
-    const charNames = (Array.isArray(characters) && characters.length > 0)
-      ? characters.map(c => c.name)
-      : ['Nobita', 'Doraemon', 'Shizuka'];
+  /* =====================================================================
+     AI SCREENPLAY DIRECTOR & MASTER PROMPT SYSTEM
+     ===================================================================== */
+  let activePromptDirectorGenre = 'comedy';
+  let activePromptDirectorLength = 'short';
 
-    md += `# 🎬 CHAT HUB — MASTER SCREENPLAY PROMPT & LIVE ASSET INVENTORY\n`;
-    md += `You are an expert anime, manhwa, and vertical comic chat screenwriter for "Chat Hub". Your task is to write a high-stakes, hilarious, or dramatic chat episode using ONLY the exact studio assets configured below.\n\n`;
-
-    // 1. Strict Cast Enforcement
-    md += `=== ⛔ STRICT CAST CONSTRAINT (ZERO UNLISTED CHARACTERS) ===\n`;
-    md += `The ONLY allowed character speakers in this story are:\n`;
-    md += `👉 [ ${charNames.join(', ')} ]\n\n`;
-    md += `MANDATORY CAST RULES:\n`;
-    md += `1. DO NOT INVENT ANY NEW CHARACTERS, narrators, sidekicks, parents, teachers, or guests (e.g. NO Mom, Dad, Gian, Suneo, Teacher, Stranger, Host, etc. unless they appear in the allowed list above).\n`;
-    md += `2. If your story needs narration or an environmental announcement, DO NOT create a character name. Use [SYSTEM: narration text].\n`;
-    md += `3. Every single dialogue line MUST start with one of the exact character names above.\n\n`;
-
-    // 2. Strict Screenplay Syntax
-    md += `=== 📝 STRICT SCREENPLAY SYNTAX (USE EXACTLY THIS FORMAT) ===\n`;
-    md += `Every line in your script MUST follow one of these exact syntaxes:\n`;
-    md += `• Dialogue: [Character:emotion]: dialogue text\n`;
-    md += `• Dialogue + SFX: [Character:emotion:sfx_id]: dialogue text\n`;
-    md += `• Photo / Image Bubble: [Character:IMAGE]: photo_label\n`;
-    md += `• Reaction Sticker: [Character:STICKER]: sticker_label\n`;
-    md += `• Video Clip Bubble: [Character:VIDEO]: video_label\n`;
-    md += `• Background Audio / Song: [Character:AUDIO]: song_label\n`;
-    md += `• Realistic Delay: /delay 1.5sec\n`;
-    md += `• Suspense Pause: [PAUSE: 2s]\n`;
-    md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
-    md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
-    md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
-    md += `• App Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
-    md += `• Interactive Choice Card (near the climax):\n`;
-    md += `  [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
-
-    // 2b. Mandatory Pacing & Reading Delays
-    md += `=== ⏳ MANDATORY READING DELAYS BEFORE APP & SCENE SWITCHES ===\n`;
-    md += `CRITICAL PACING RULE: Before switching apps ([SCENE: chatgpt], [SCENE: gemini], [SCENE: whatsapp]) or switching WhatsApp chat modes ([CHAT: private: CharacterName], [CHAT: group], [CHAT: global]):\n`;
-    md += `You MUST ALWAYS insert a reading delay (/delay 2sec or /delay 2.5sec) right after the preceding dialogue line so viewers have time to read the message on screen before the phone switches!\n`;
-    md += `Correct Pacing Example:\n`;
-    md += `  [Nobita:angry]: Doraemon you have to do something or Gian will destroy my room!!\n`;
-    md += `  /delay 2.2sec\n`;
-    md += `  [SCENE: chatgpt]\n`;
-    md += `  [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!\n\n`;
-
-    // 2c. POV & Chat Alignment Rules
-    md += `=== 📱 POV (PHONE OWNER) & CHAT ALIGNMENT RULES ===\n`;
-    md += `Chat Hub renders chat screens strictly from the POV perspective of the phone owner:\n`;
-    md += `1. POV Main Character (e.g. Nobita / Right Side):\n`;
-    md += `   • The story is viewed through the phone owner's screen. Their messages appear on the RIGHT side.\n`;
-    md += `   • Right-side POV characters send messages naturally without an incoming typing bubble (you never watch yourself type an incoming bubble on your own phone).\n`;
-    md += `2. WhatsApp Chat Modes & Left/Right Screen Alignment:\n`;
-    md += `   • [CHAT: private: CharacterName] (e.g. [CHAT: private: Shizuka]):\n`;
-    md += `     Switches WhatsApp into a 1-on-1 private DM with that person.\n`;
-    md += `     That partner's name is displayed in the top header and their messages appear on the LEFT side.\n`;
-    md += `     The POV user's replies appear on the RIGHT side.\n`;
-    md += `   • [CHAT: group]:\n`;
-    md += `     Switches WhatsApp into the squad group chat.\n`;
-    md += `     The POV character is on the RIGHT side; all other squad members appear on the LEFT side with distinct avatar colors and names.\n`;
-    md += `   • [CHAT: global]:\n`;
-    md += `     Switches WhatsApp into the global public feed / community channel.\n`;
-    md += `     The POV character is on the RIGHT side; other community participants appear on the LEFT side.\n\n`;
-
-    // 3. Strict Negative Output Mandates
-    md += `=== ⛔ MANDATORY OUTPUT FORMAT RULES ===\n`;
-    md += `1. Output ONLY the raw script lines ready to copy-paste directly into Chat Hub.\n`;
-    md += `2. DO NOT include any conversational intro (NO "Here is your script:", NO "Sure!").\n`;
-    md += `3. DO NOT include any outro or notes (NO "Hope you like it!").\n`;
-    md += `4. DO NOT wrap the output in markdown code fences (DO NOT use \`\`\` or \`\`\`markdown).\n`;
-    md += `5. DO NOT use bullet points (- or *) or line numbering (1., 2.).\n`;
-    md += `6. Start Line 1 immediately with [SYSTEM: Episode Title].\n`;
-    md += `7. STRICT LINE BREAKS: Every dialogue line, delay (/delay), or system banner MUST be on its own separate line (press Enter after every line). Do NOT group multiple tags onto the same line.\n\n`;
-
-    // 4. Cast & Expressions
-    md += `=== 🎭 CONFIGURED CHARACTERS & EMOTION TAGS ===\n`;
-    if (Array.isArray(characters) && characters.length > 0) {
-      characters.forEach(c => {
-        const sideDesc = (c.side === 'right') ? 'POV User (Right Side)' : 'Partner / Squad (Left Side)';
-        const exprKeys = Object.keys(c.expressions || {});
-        const allTags = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
-        md += `• ${c.name} [${sideDesc} | Color: ${c.color || '#3b82f6'}]:\n`;
-        md += `  Available facial tags: ${allTags.map(t => `[${c.name}:${t}]`).join(', ')}\n`;
-        md += `  Multi-tag example: [${c.name}:${allTags[1] || 'shock'}:vineboom]: NANI?!\n\n`;
-      });
+  const genreBlueprintPresets = {
+    comedy: {
+      name: 'Anime Comedy Chaos & Gian\'s Rage',
+      vibe: 'Over-the-top anime slapstick comedy, panic overreactions, Doraemon gadget backfires, Gian shouting in ALL CAPS, punch/vineboom SFX, and rapid-fire squad banter.',
+      defaultTopic: 'Nobita accidentally ruins Gian\'s ultra-rare baseball card and begs Doraemon for a gadget, leading to total chaos.',
+      openingHook: 'Open immediately with Nobita crying in panic in the group chat while Gian issues an explosive all-caps threat.',
+      twist: 'Doraemon\'s gadget glitches or backfires, forcing Nobita into an emergency sprint choice.'
+    },
+    romance: {
+      name: 'Viral Rom-Com & Late-Night Private DM',
+      vibe: 'Relatable teenage romantic comedy, awkward midnight texting (12:47 AM), cute teasing banter, blushing expressions, heart emojis, suspense pauses, and a secret 1-on-1 private confession.',
+      defaultTopic: 'Nobita texts Shizuka late at night in private DM, trying to ask an embarrassing question before getting teased.',
+      openingHook: 'Open at 12:47 AM with Nobita nervously initiating a late-night private chat with Shizuka.',
+      twist: 'Shizuka catches Nobita off-guard with a romantic confession or teasing question, freezing his brain.'
+    },
+    horror: {
+      name: '3 AM Creepy Mystery & Analog Suspense',
+      vibe: 'Analog horror / 3 AM emergency broadcast, eerie silence, locked doors, countdown timers, sudden unread alerts, photo attachments, and an intense spine-chilling cliffhanger.',
+      defaultTopic: 'Nobita wakes up at 2:47 AM to strange footsteps inside the ceiling and frantically messages the squad.',
+      openingHook: 'Open with a [SYSTEM: 🚨 2:47 AM — EMERGENCY BROADCAST] followed by Nobita whispering in terror.',
+      twist: 'A photo is received or footsteps reach right outside the bedroom door, leading to a life-or-death decision.'
+    },
+    quest: {
+      name: 'Solo Leveling & System Quest Awakening',
+      vibe: 'Manhwa Solo Leveling parody, floating blue quest notifications, penalty countdowns, hunter awakening comedy, and sci-fi chime alerts.',
+      defaultTopic: 'A mysterious Solo Leveling System Quest appears on Nobita\'s phone, forcing him to complete an impossible task.',
+      openingHook: 'Open with a sudden [QUEST: ⚠️ SURVIVAL QUEST: Evade punishment for 5 minutes] appearing on screen.',
+      twist: 'Nobita consults ChatGPT for a tactical evasion strategy to beat the system quest.'
+    },
+    multiverse: {
+      name: 'Multiverse AI Investigation (WhatsApp ➔ ChatGPT ➔ Gemini)',
+      vibe: 'Cross-app investigative comedy. Nobita catches a squad member in a lie and rapidly switches across WhatsApp, ChatGPT, and Gemini to uncover the truth.',
+      defaultTopic: 'Doraemon claims his gadget is broken, but Nobita uses ChatGPT and Gemini to cross-examine and expose the secret motive.',
+      openingHook: 'Open with a suspicious contradiction in the squad group chat that doesn\'t add up.',
+      twist: 'ChatGPT and Gemini deliver contrasting tactical advice, exposing a classified Dorayaki conspiracy.'
+    },
+    hook: {
+      name: 'Viral 3-Second Hook High-Retention Short',
+      vibe: 'Maximum curiosity gap in the first 2 seconds, high-velocity pacing, high-stakes conflict, and an unbearable cliffhanger that forces viewers to like and watch Part 2.',
+      defaultTopic: 'An urgent emergency alert interrupts a normal conversation, triggering a 15-second survival dilemma.',
+      openingHook: 'Open on Line 1 with an irresistible shock hook (e.g. "Doraemon... tell me you see what is standing outside our second-floor window right now").',
+      twist: 'A sudden choice card right before an explosive cliffhanger ending.'
     }
+  };
 
-    // 5. Sound Effects
-    md += `=== 🔊 AVAILABLE SOUND EFFECTS (SFX) ===\n`;
-    md += `Use these inside dialogues on impact moments, shock twists, or punchlines:\n`;
-    if (Array.isArray(builtInSounds) && builtInSounds.length > 0) {
-      builtInSounds.forEach(s => {
-        md += `• ${s.id.padEnd(10)} -> ${s.label} (Syntax: [Char:sfx:${s.id}] or [Char:${s.id}])\n`;
-      });
-    } else {
-      md += `• vineboom, punch, boom, shock, sword, sting, scifi, boing, sad, sparkle, pop\n`;
-    }
-    md += `\n`;
-
-    // 6. Photos, Stickers & Videos
-    const customPhotoLabels = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio).map(s => s.label).filter(Boolean);
-    const customStickerLabels = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
-    const customVideoLabels = (customStickers || []).filter(s => s.isVideo || s.mediaType === 'video').map(s => s.label).filter(Boolean);
-
-    md += `=== 📷 CONFIGURED PHOTOS & IMAGES ===\n`;
-    md += `Syntax to send a photo: [CharacterName:IMAGE]: photo_label\n`;
-    if (customPhotoLabels.length > 0) {
-      md += `• Available Photos: ${customPhotoLabels.join(', ')}\n`;
-    } else {
-      md += `• Photos: Any uploaded image label or image URL\n`;
-    }
-    md += `\n`;
-
-    md += `=== 🖼️ CONFIGURED REACTION STICKERS ===\n`;
-    md += `Syntax to trigger a sticker: [CharacterName:STICKER]: sticker_label\n`;
-    if (customStickerLabels.length > 0) {
-      md += `• Custom Stickers: ${customStickerLabels.join(', ')}\n`;
-    }
-    if (Array.isArray(builtInStickers) && builtInStickers.length > 0) {
-      md += `• Built-in Comic Stickers: ${builtInStickers.map(s => s.label || s.id).join(', ')}\n`;
-    }
-    md += `\n`;
-
-    if (customVideoLabels.length > 0) {
-      md += `=== 🎬 CONFIGURED VIDEO CLIPS ===\n`;
-      md += `Syntax to send a video clip: [CharacterName:VIDEO]: video_label\n`;
-      md += `• Available Videos: ${customVideoLabels.join(', ')}\n\n`;
-    }
-
-    // 7. Songs & Background Audio
-    if (Array.isArray(customAudioClips) && customAudioClips.length > 0) {
-      md += `=== 🎵 BACKGROUND SONGS & AUDIO CLIPS ===\n`;
-      md += `Syntax to play audio in story: [CharacterName:AUDIO]: song_name\n`;
-      md += `Available songs: ${customAudioClips.map(s => s.label).join(', ')}\n\n`;
-    }
-
-    // 8. Quality Example
-    md += `=== 📖 SCREENPLAY EXAMPLE (FOLLOW THIS EXACT STYLE) ===\n`;
-    const povChar = (characters.find(c => c.side === 'right') || {}).name || charNames[0] || 'Nobita';
-    const otherChars = charNames.filter(n => n !== povChar);
-    const partnerChar = otherChars[0] || 'Doraemon';
-    const friendChar = otherChars[1] || 'Shizuka';
-    md += `[SYSTEM: EPISODE 1: THE MULTIVERSE AI CRISIS]\n`;
-    md += `[CHAT: group]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:cry]: ${partnerChar}!! Help me! A major crisis just occurred!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${partnerChar}:angry]: Again?! What did you do this time?!\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[${povChar}:shock:vineboom]: Look at this system quest window on my screen!\n`;
-    md += `[QUEST: URGENT QUEST: Resolve the secret mission before time expires!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[SCENE: chatgpt]\n`;
-    md += `[${povChar}]: ChatGPT, calculate a tactical escape strategy immediately!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[ChatGPT]: Tactical Advice: 1. Stay calm. 2. Contact your allies. 3. Engage maximum sprint!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[SCENE: whatsapp]\n`;
-    md += `[CHAT: private: ${friendChar}]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:love:sparkle]: ${friendChar}... If I don't survive this mission, remember me!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${friendChar}:love]: Silly! Don't panic, you can hide at my house! ❤️\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[CHAT: group]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[CHOICE: What should we do? | 💨 Nigerundayo Sprint -> ${povChar}: 💨 NIGERUNDAYO!! | 🍪 Dorayaki Shield -> ${partnerChar}: 🤬 DON'T TOUCH MY DORAYAKI!!]\n`;
-    md += `/delay 2sec\n`;
-    md += `[CHAT: global]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[SYSTEM: 🎬 MISSION COMPLETE — TO BE CONTINUED IN EPISODE 2]\n`;
-
-    return md;
-  }
-
-  function copyStudioAssetInventory() {
-    const md = generateStudioAssetMarkdown();
-    const fallbackCopy = (text) => {
+  function copyTextToClipboard(text, toastMsg = '📋 Copied to Clipboard!') {
+    const fallbackCopy = (t) => {
       try {
         const ta = document.createElement('textarea');
-        ta.value = text;
+        ta.value = t;
         ta.style.position = 'fixed';
         ta.style.opacity = '0';
         document.body.appendChild(ta);
@@ -8289,23 +8164,284 @@ if (msg.type === 'quest') {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        showToast('📋 Studio Assets Copied! Ready to paste into ChatGPT!');
+        showToast(toastMsg);
       } catch (err) {
         showToast('⚠️ Could not auto-copy. Please copy manually.');
       }
     };
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(md).then(() => {
-        showToast('📋 Studio Assets Copied! Ready to paste into ChatGPT!');
-      }).catch(() => fallbackCopy(md));
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(toastMsg);
+      }).catch(() => fallbackCopy(text));
     } else {
-      fallbackCopy(md);
+      fallbackCopy(text);
     }
   }
 
+  function generateStudioAssetMarkdown(options = {}) {
+    const genreKey = options.genre || activePromptDirectorGenre || 'comedy';
+    const genreInfo = genreBlueprintPresets[genreKey] || genreBlueprintPresets.comedy;
+    const customTopic = (options.topic || '').trim();
+    const episodeTopic = customTopic || genreInfo.defaultTopic;
+    const lengthKey = options.length || activePromptDirectorLength || 'short';
+    const isShort = (lengthKey === 'short');
+    const targetLineCount = isShort ? '16 to 22 lines (~35-45 seconds runtime)' : '25 to 35 lines (~60-90 seconds runtime)';
+
+    const allCharNames = (Array.isArray(characters) && characters.length > 0)
+      ? characters.map(c => c.name)
+      : ['Nobita', 'Doraemon', 'Shizuka'];
+
+    // Separate human WhatsApp characters from AI phone assistant apps
+    const aiAppNames = ['ChatGPT', 'Gemini', 'Claude', 'Copilot'];
+    const whatsappCast = allCharNames.filter(n => !aiAppNames.includes(n));
+    const povChar = (characters.find(c => c.side === 'right') || {}).name || whatsappCast[0] || 'Nobita';
+    const squadPartners = whatsappCast.filter(n => n !== povChar);
+
+    let md = '';
+    md += `# 🎬 CHAT HUB — MASTER SCREENPLAY PROMPT FOR AI SCREENWRITERS\n`;
+    md += `You are an elite anime, manhwa, and viral vertical chat story screenwriter for "Chat Hub" (YouTube Shorts, TikTok, and Instagram Reels). Your mission is to write an addictive, funny, or suspenseful vertical chat episode based strictly on the director brief and configured assets below.\n\n`;
+
+    // 1. Mission Brief
+    md += `=== 🎯 EPISODE MISSION BRIEF ===\n`;
+    md += `• GENRE & TONE: ${genreInfo.name}\n`;
+    md += `• STORY CONFLICT: ${episodeTopic}\n`;
+    md += `• VIBE & STYLE: ${genreInfo.vibe}\n`;
+    md += `• TARGET PACING: ${targetLineCount}\n`;
+    md += `• RECOMMENDED HOOK: ${genreInfo.openingHook}\n`;
+    md += `• RECOMMENDED TWIST: ${genreInfo.twist}\n\n`;
+
+    // 2. Strict Cast & Perspective Rules
+    md += `=== 📱 PHONE POV & CAST ENFORCEMENT ===\n`;
+    md += `Chat Hub is filmed strictly from the POV perspective of ONE phone owner:\n`;
+    md += `1. POV Main Character (RIGHT SIDE): ${povChar}\n`;
+    md += `   • All of ${povChar}'s sent messages appear on the RIGHT side.\n`;
+    md += `   • ${povChar} sends messages naturally without seeing an incoming typing indicator.\n`;
+    md += `2. WhatsApp Squad Members (LEFT SIDE): [ ${squadPartners.join(', ')} ]\n`;
+    md += `   • Their incoming messages appear on the LEFT side with distinct avatar colors.\n`;
+    md += `   • When they message, an incoming typing indicator animates before their message arrives.\n`;
+    md += `3. ⛔ STRICT CAST CONSTRAINT: You are ONLY allowed to use characters from: [ ${whatsappCast.join(', ')} ]. DO NOT invent ANY unlisted side characters, parents, teachers, narrators, or strangers!\n`;
+    md += `4. 🤖 AI ASSISTANT APPS (ChatGPT & Gemini):\n`;
+    md += `   • ChatGPT and Gemini are AI APPS on the phone, NOT WhatsApp group chatters!\n`;
+    md += `   • DO NOT put ChatGPT or Gemini inside WhatsApp group chats or private DMs.\n`;
+    md += `   • To use ChatGPT or Gemini: Switch the app screen via [SCENE: chatgpt] or [SCENE: gemini]. ${povChar} asks a question, the AI replies ([ChatGPT]: text), and then ${povChar} switches back to WhatsApp via [SCENE: whatsapp].\n\n`;
+
+    // 3. Screenplay Syntax
+    md += `=== 📝 STRICT SCREENPLAY SYNTAX (EXACT FORMAT) ===\n`;
+    md += `Every line in your script MUST match one of these exact syntaxes:\n`;
+    md += `• Character Dialogue: [Character:emotion]: dialogue text\n`;
+    md += `• Dialogue + SFX Burst: [Character:emotion:sfx_id]: dialogue text\n`;
+    md += `• Photo Bubble: [Character:IMAGE]: photo_label\n`;
+    md += `• Reaction Sticker: [Character:STICKER]: sticker_label\n`;
+    md += `• Video Clip Bubble: [Character:VIDEO]: video_label\n`;
+    md += `• Background Audio / Song: [Character:AUDIO]: song_label\n`;
+    md += `• Realistic Reading Delay: /delay 1.5sec\n`;
+    md += `• Suspense Pause: [PAUSE: 2s]\n`;
+    md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
+    md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
+    md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
+    md += `• App Screen Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
+    md += `• Interactive Choice Dilemma: [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
+
+    // 4. Critical Pacing & Reading Delays
+    md += `=== ⏳ MANDATORY READING DELAYS BEFORE APP & SCENE SWITCHES ===\n`;
+    md += `CRITICAL PACING RULE: Before switching apps ([SCENE: chatgpt], [SCENE: gemini], [SCENE: whatsapp]) or switching WhatsApp chat modes ([CHAT: private: CharacterName], [CHAT: group], [CHAT: global]):\n`;
+    md += `You MUST ALWAYS insert a reading delay (/delay 2sec or /delay 2.5sec) right after the preceding dialogue line so viewers have time to read the message before the phone switches!\n`;
+    md += `Correct Pacing Example:\n`;
+    md += `  [${povChar}:angry]: Doraemon you have to help me before Gian destroys my house!!\n`;
+    md += `  /delay 2.2sec\n`;
+    md += `  [SCENE: chatgpt]\n`;
+    md += `  [${povChar}]: ChatGPT, calculate a tactical escape strategy against a baseball tyrant!\n\n`;
+
+    // 5. The Viral 4-Act Retention Formula
+    md += `=== 📈 THE VIRAL 4-ACT RETENTION FORMULA (HIGH ENGAGEMENT) ===\n`;
+    md += `Structure your episode according to these 4 acts:\n`;
+    md += `• ACT 1 — THE 3-SECOND HOOK (Lines 1-4):\n`;
+    md += `  Open with immediate stakes, a panic confession, a ruined object, a 1:47 AM timestamp, or a System Quest alert.\n`;
+    md += `  ❌ NEVER start with boring greetings ("Hey", "How are you", "Are you asleep?").\n`;
+    md += `  ✅ Start directly inside the emergency!\n`;
+    md += `• ACT 2 — BANTER, ESCALATION & MEMES (Lines 5-12):\n`;
+    md += `  Rapid-fire dialogue. Use expressive facial tags on almost every line. Insert comedic SFX (:vineboom:, :punch:, :boing:).\n`;
+    md += `  Include at least one reaction sticker ([${povChar}:STICKER]: DEAD or ROFL).\n`;
+    md += `• ACT 3 — CROSS-APP CLIMAX OR SECRET DM (Lines 13-18):\n`;
+    md += `  Switch to a 1-on-1 private chat ([CHAT: private: Shizuka]) for a secret conversation, OR switch to ChatGPT ([SCENE: chatgpt]) for a ridiculous escape plan.\n`;
+    md += `  Insert an interactive dilemma choice ([CHOICE: Option A | Option B]).\n`;
+    md += `• ACT 4 — THE CLIFFHANGER PUNCHLINE (Lines 19-24):\n`;
+    md += `  End on an unexpected blunder, funny sticker reaction, and [SYSTEM: TO BE CONTINUED].\n\n`;
+
+    // 6. Character Archetypes & Personality Bible
+    md += `=== 🗣️ CHARACTER PERSONALITY & VOICE BIBLE ===\n`;
+    md += `Make dialogue sound lively, natural, and true to character:\n`;
+    md += `• ${povChar} (POV User / Right Side): Dramatic, clumsy, anxious, lazy, terrified of Gian, madly in love with Shizuka. Frequently uses crying faces [${povChar}:cry], panic shocks [${povChar}:shock:vineboom], and comedic overreactions.\n`;
+    if (squadPartners.includes('Doraemon')) {
+      md += `• Doraemon: Cynical 22nd-century robotic cat, addicted to Dorayaki. Lectures ${povChar} when he does something dumb. Gets flustered when gadgets fail or backfire [Doraemon:angry] [Doraemon:laugh:boing].\n`;
+    }
+    if (squadPartners.includes('Shizuka')) {
+      md += `• Shizuka: Kind, polite, and sweet, but playfully teases ${povChar}. Sends cute heart emojis (❤️) and keeps secrets.\n`;
+    }
+    if (squadPartners.includes('Gian')) {
+      md += `• Gian: Aggressive neighborhood bully. TYPES IN ALL CAPS when furious! Threatens physical destruction [Gian:angry:punch] but is secretly emotional or superstitious.\n`;
+    }
+    md += `• ChatGPT & Gemini: Calm, ultra-analytical, witty AI assistants. They provide hilarious tactical advice or calculations.\n\n`;
+
+    // 7. Configured Studio Assets (Faces, SFX, Stickers, Photos)
+    md += `=== 🎨 CONFIGURED STUDIO ASSETS ===\n`;
+    md += `• Available Characters & Face Tags:\n`;
+    whatsappCast.forEach(name => {
+      const c = characters.find(char => char.name.toLowerCase() === name.toLowerCase()) || {};
+      const exprKeys = Object.keys(c.expressions || {});
+      const allTags = Array.from(new Set(['normal', 'cry', 'shock', 'angry', 'love', 'laugh', ...exprKeys]));
+      md += `  - ${name}: ${allTags.map(t => `[${name}:${t}]`).join(', ')}\n`;
+    });
+
+    md += `• Available Sound Effects (SFX):\n`;
+    if (Array.isArray(builtInSounds) && builtInSounds.length > 0) {
+      md += `  ` + builtInSounds.map(s => `:${s.id}: (${s.label})`).join(', ') + `\n`;
+    } else {
+      md += `  :vineboom:, :punch:, :boom:, :shock:, :sword:, :sting:, :scifi:, :boing:, :sad:, :sparkle:, :pop:\n`;
+    }
+
+    const customStickerLabels = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
+    const customPhotoLabels = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio).map(s => s.label).filter(Boolean);
+
+    if (customPhotoLabels.length > 0) {
+      md += `• Uploaded Photos ([Character:IMAGE]: label): ${customPhotoLabels.join(', ')}\n`;
+    }
+    md += `• Reaction Stickers ([Character:STICKER]: label): `;
+    if (customStickerLabels.length > 0) md += `${customStickerLabels.join(', ')}, `;
+    md += `ROFL, WAAH, RAGE, SHOCK, LOVE, SALUTE, DEAD, PARTY, CLOWN, CHAD, FIRE, COOL, CRINGE, HYPE, DEVIL, BOMB\n\n`;
+
+    // 8. Strict Negative Output Mandates (Anti-Mess Rules)
+    md += `=== ⛔ STRICT ANTI-MESS FORMATTING CONSTRAINTS ===\n`;
+    md += `1. OUTPUT ONLY THE RAW SCRIPT: Do NOT include ANY conversational intro (NO "Here is your script:", NO "Sure!").\n`;
+    md += `2. NO OUTRO OR EXPLANATIONS: Do NOT include any closing notes (NO "Hope you like it!").\n`;
+    md += `3. NO CODE FENCES: Do NOT wrap the script inside markdown code blocks (DO NOT use \`\`\` or \`\`\`markdown). Output clean plain text directly.\n`;
+    md += `4. NO BULLET POINTS OR NUMBERS: Never use 1., 2., -, or * in front of script lines.\n`;
+    md += `5. STRICT ONE COMMAND PER LINE: Every dialogue line, delay (/delay), pause ([PAUSE]), or banner ([SYSTEM]) MUST be on its own line (press Enter after every line). NEVER combine a delay with dialogue on the same line!\n`;
+    md += `6. EXACT SYNTAX ONLY: Always place a colon after the closing bracket, e.g. [Character:emotion]: dialogue text.\n\n`;
+
+    // 9. Concrete Golden Script Example
+    md += `=== 📖 GOLDEN SCREENPLAY EXAMPLE (FOLLOW THIS EXACT PATTERN) ===\n`;
+    const partner1 = squadPartners[0] || 'Doraemon';
+    const partner2 = squadPartners[1] || 'Shizuka';
+    md += `[SYSTEM: 🎬 EPISODE 1: THE MIDNIGHT SYSTEM CRISIS]\n`;
+    md += `[CHAT: group]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[${povChar}:cry]: ${partner1}!! Emergency! Gian is standing outside my front door with baseball bats!\n`;
+    md += `/delay 1.8sec\n`;
+    md += `[${partner1}:angry]: Again?! What did you do to infuriate him this time?!\n`;
+    md += `/delay 1.5sec\n`;
+    md += `[${povChar}:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!\n`;
+    md += `/delay 1.5sec\n`;
+    md += `[PAUSE: 2s]\n`;
+    md += `[QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]\n`;
+    md += `/delay 2sec\n`;
+    md += `[${partner1}:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!\n`;
+    md += `/delay 2.5sec\n`;
+    md += `[SCENE: chatgpt]\n`;
+    md += `[${povChar}]: ChatGPT, calculate a tactical escape strategy against an angry baseball kid!\n`;
+    md += `/delay 2.5sec\n`;
+    md += `[ChatGPT]: Tactical Advice: 1. Distract with a shiny baseball. 2. Offer emergency snacks. 3. Engage maximum sprint!\n`;
+    md += `/delay 2.5sec\n`;
+    md += `[SCENE: whatsapp]\n`;
+    md += `[CHAT: private: ${partner2}]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[${povChar}:love:sparkle]: ${partner2}... If I don't survive this crisis, remember me!\n`;
+    md += `/delay 1.8sec\n`;
+    md += `[${partner2}:love]: Silly! Don't panic, you can hide at my house! ❤️\n`;
+    md += `/delay 2.2sec\n`;
+    md += `[CHAT: group]\n`;
+    md += `/delay 1.2sec\n`;
+    md += `[CHOICE: How should ${povChar} resolve this crisis? | 💨 Use Nigerundayo Sprint Speed -> ${povChar}: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice ${partner1}'s Dorayaki -> ${partner1}: 🤬 DON'T YOU DARE TOUCH MY DORAYAKI!!]\n`;
+    md += `/delay 2sec\n`;
+    md += `[${povChar}:STICKER]: DEAD\n`;
+    md += `/delay 2sec\n`;
+    md += `[SYSTEM: 🎬 TO BE CONTINUED IN EPISODE 2]\n`;
+
+    return md;
+  }
+
+  function openAiPromptDirectorModal(defaultGenre = null) {
+    if (defaultGenre) activePromptDirectorGenre = defaultGenre;
+    const modal = document.getElementById('aiPromptDirectorModal');
+    if (!modal) return;
+    pushModalHistory('scriptModal');
+    selectAiPromptGenre(activePromptDirectorGenre);
+    selectAiPromptLength(activePromptDirectorLength);
+    updateAiPromptPreview();
+    modal.classList.add('open');
+  }
+
+  function closeAiPromptDirectorModal() {
+    const modal = document.getElementById('aiPromptDirectorModal');
+    if (modal) modal.classList.remove('open');
+    dismissLingeringModals();
+  }
+
+  function selectAiPromptGenre(genreKey) {
+    activePromptDirectorGenre = genreKey;
+    document.querySelectorAll('.genre-preset-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.id === `genrePill_${genreKey}`);
+    });
+    updateAiPromptPreview();
+  }
+
+  function selectAiPromptLength(lenKey) {
+    activePromptDirectorLength = lenKey;
+    document.querySelectorAll('.length-preset-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.id === `lenPill_${lenKey}`);
+    });
+    updateAiPromptPreview();
+  }
+
+  function updateAiPromptPreview() {
+    const topicInput = document.getElementById('aiPromptCustomTopic');
+    const customTopic = topicInput ? topicInput.value.trim() : '';
+    const previewArea = document.getElementById('aiPromptPreviewArea');
+    if (!previewArea) return;
+    const md = generateStudioAssetMarkdown({
+      genre: activePromptDirectorGenre,
+      topic: customTopic,
+      length: activePromptDirectorLength
+    });
+    previewArea.value = md;
+  }
+
+  function copyDirectorAiPrompt() {
+    const previewArea = document.getElementById('aiPromptPreviewArea');
+    const topicInput = document.getElementById('aiPromptCustomTopic');
+    const text = (previewArea && previewArea.value) ? previewArea.value : generateStudioAssetMarkdown({
+      genre: activePromptDirectorGenre,
+      topic: topicInput ? topicInput.value.trim() : '',
+      length: activePromptDirectorLength
+    });
+
+    copyTextToClipboard(text, '📋 Master AI Prompt Copied! Ready to paste into ChatGPT, Claude or Gemini!');
+    closeAiPromptDirectorModal();
+  }
+
+  function copyRawStudioAssetList() {
+    const charNames = (Array.isArray(characters) && characters.length > 0)
+      ? characters.map(c => c.name)
+      : ['Nobita', 'Doraemon', 'Shizuka'];
+    const customStickerLabels = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
+    const customPhotoLabels = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio).map(s => s.label).filter(Boolean);
+    const customAudioLabels = (customAudioClips || []).map(s => s.label).filter(Boolean);
+
+    let list = `# CHAT HUB RAW ASSET LIST\n`;
+    list += `Characters: ${charNames.join(', ')}\n`;
+    list += `Photos: ${customPhotoLabels.join(', ') || 'None'}\n`;
+    list += `Custom Stickers: ${customStickerLabels.join(', ') || 'None'}\n`;
+    list += `Songs / Audio: ${customAudioLabels.join(', ') || 'None'}\n`;
+    copyTextToClipboard(list, '📋 Raw Studio Assets Copied!');
+  }
+
+  function copyStudioAssetInventory() {
+    openAiPromptDirectorModal();
+  }
+
   function copyChatGptTemplate() {
-    copyStudioAssetInventory();
+    openAiPromptDirectorModal();
   }
 
   function loadDemoScriptIntoModal(sampleIdx = 1) {
@@ -8543,6 +8679,13 @@ if (msg.type === 'quest') {
   window.handleAssetExprFileUpload = handleAssetExprFileUpload;
   window.loadDemoScriptIntoModal = loadDemoScriptIntoModal;
   window.copyChatGptTemplate = copyChatGptTemplate;
+  window.openAiPromptDirectorModal = openAiPromptDirectorModal;
+  window.closeAiPromptDirectorModal = closeAiPromptDirectorModal;
+  window.selectAiPromptGenre = selectAiPromptGenre;
+  window.selectAiPromptLength = selectAiPromptLength;
+  window.updateAiPromptPreview = updateAiPromptPreview;
+  window.copyDirectorAiPrompt = copyDirectorAiPrompt;
+  window.copyRawStudioAssetList = copyRawStudioAssetList;
   window.downloadScriptJsonBox = downloadScriptJsonBox;
   window.toggleDropdownMenu = toggleDropdownMenu;
 
