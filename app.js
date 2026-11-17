@@ -2660,7 +2660,6 @@ if (msg.type === 'quest') {
       bubbleContentHtml = `
         <div class="sticker-card" onclick="handleStickerMessageClick('${msg.id}', event)" title="Click to play sound or edit">
           ${innerArt}
-          ${hasSound ? `<div class="sticker-sound-pill-tag" style="position:absolute; bottom:2px; right:4px; background:rgba(15,23,42,0.88); color:#facc15; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:8px; border:1px solid rgba(250,204,21,0.4); display:flex; align-items:center; gap:3px;"><span>${(msg.customAudioData || st.customAudioData) ? '🎵' : '🔊'}</span><span>${escapeHtml(soundLabel || 'Sound')}</span></div>` : ''}
           ${st.label ? `<span class="sticker-caption">${escapeHtml(st.label)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
@@ -2669,14 +2668,11 @@ if (msg.type === 'quest') {
       `;
     } else if (msg.type === 'image') {
       const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
-      const hasSound = msg.customAudioData || msg.sfx;
-      const soundLabel = msg.customAudioLabel || msg.sfx;
       bubbleContentHtml = `
         <div class="speech-bubble image-message-bubble" onclick="handleImageMessageClick('${msg.id}', event)" title="Click to view photo or play sound">
           ${replyBoxHtml}
           <div class="image-media-card" style="position:relative; border-radius:10px; overflow:hidden; cursor:pointer;">
             <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Photo')}" style="max-width:240px; max-height:280px; width:100%; height:auto; object-fit:cover; display:block; border-radius:10px;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '📷');">
-            ${hasSound ? `<div class="media-sound-badge" style="position:absolute; top:8px; right:8px; background:rgba(15,23,42,0.85); color:#38bdf8; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; border:1px solid rgba(56,189,248,0.4); display:flex; align-items:center; gap:3px; backdrop-filter:blur(4px);"><span>${msg.customAudioData ? '🎵' : '🔊'}</span><span>${escapeHtml(soundLabel || 'Sound')}</span></div>` : ''}
           </div>
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<div class="bubble-caption" style="padding:6px 4px 2px 4px; font-size:13.5px; line-height:1.35; color:inherit; word-break:break-word;">${escapeHtml(msg.caption || msg.text)}</div>` : ''}
           <div class="bubble-meta" style="padding:0 4px 2px 4px; width:100%; justify-content:flex-end; float:none; margin-top:2px;">
@@ -8833,15 +8829,30 @@ if (msg.type === 'quest') {
   window.loadDemoScriptIntoModal = loadDemoScriptIntoModal;
   window.copyChatGptTemplate = copyChatGptTemplate;
   window.copyMasterAiPrompt = copyMasterAiPrompt;
-  window.openAiPromptDirectorModal = openAiPromptDirectorModal;
-  window.closeAiPromptDirectorModal = closeAiPromptDirectorModal;
-  window.selectAiPromptGenre = selectAiPromptGenre;
-  window.selectAiPromptLength = selectAiPromptLength;
-  window.updateAiPromptPreview = updateAiPromptPreview;
-  window.copyDirectorAiPrompt = copyDirectorAiPrompt;
   window.copyRawStudioAssetList = copyRawStudioAssetList;
   window.downloadScriptJsonBox = downloadScriptJsonBox;
   window.toggleDropdownMenu = toggleDropdownMenu;
+
+  // Explicit window bindings for studio & modal management
+  window.openScriptModal = openScriptModal;
+  window.closeScriptModal = closeScriptModal;
+  window.openCastModal = openCastModal;
+  window.closeCastModal = closeCastModal;
+  window.openSpecialEventModal = openSpecialEventModal;
+  window.closeSpecialEventModal = closeSpecialEventModal;
+  window.openGlobalSettingsModal = openGlobalSettingsModal;
+  window.closeGlobalSettingsModal = closeGlobalSettingsModal;
+  window.openStoriesModal = openStoriesModal;
+  window.closeStoriesModal = closeStoriesModal;
+  window.openCinemaSpeedModal = openCinemaSpeedModal;
+  window.closeCinemaSpeedModal = closeCinemaSpeedModal;
+  window.closeCustomPromptModal = closeCustomPromptModal;
+  window.closeDeleteConfirmModal = closeDeleteConfirmModal;
+  window.closeModelPicker = closeModelPicker;
+  window.closeExprEditModal = closeExprEditModal;
+  window.closeCropperModal = closeCropperModal;
+  window.closeMessageEditModal = closeMessageEditModal;
+  window.closeDropdownMenu = closeDropdownMenu;
 
   // Converts in-memory messages array to script dialogue text format
   function convertChatMessagesToScriptText(msgList) {
@@ -9990,10 +10001,12 @@ if (msg.type === 'quest') {
   document.addEventListener('click', (e) => {
     // 1. If clicked on modal backdrop (outside the modal window)
     if (e.target.classList.contains('modal-backdrop')) {
-      e.target.classList.remove('open');
-      dismissLingeringModals();
-      if (document.querySelectorAll('.modal-backdrop.open').length === 0) {
-        modalHistoryStack = [];
+      if (e.target.id === 'imageLightboxModal') {
+        closeFullscreenImage();
+      } else if (e.target.id === 'videoLightboxModal') {
+        closeFullscreenVideo();
+      } else {
+        navigateModalBack();
       }
     }
 
@@ -10052,6 +10065,8 @@ if (msg.type === 'quest') {
       if (vModal) vModal.classList.remove('open');
       const imgModal = document.getElementById('imageLightboxModal');
       if (imgModal) imgModal.classList.remove('open');
+      const vidModal = document.getElementById('videoLightboxModal');
+      if (vidModal) vidModal.classList.remove('open');
     }
   });
 
