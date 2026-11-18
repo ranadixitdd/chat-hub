@@ -3,18 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Anime Stage & Duel Prototype — Manhwa Chat Hub</title>
+<title>Anime Stage & Duel Prototype — Transparent Cutout Characters</title>
 <style>
   :root {
-    --bg-dark: #090d16;
-    --card-bg: #ffffff;
-    --card-border: #2c2518;
     --gold-accent: #f59e0b;
     --gold-border: #d97706;
-    --blue-accent: #38bdf8;
-    --text-dark: #1e1b18;
-    --font-comic: 'Impact', 'Segoe UI Black', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-dialogue: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+    --gold-dark: #b45309;
+    --bubble-border: #231912;
+    --bubble-bg: #ffffff;
+    --text-color: #171310;
   }
 
   * {
@@ -25,18 +22,19 @@
   }
 
   body {
-    background: #030712;
+    background: #020617;
     color: #f8fafc;
-    font-family: var(--font-dialogue);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     padding: 10px;
+    overflow-x: hidden;
   }
 
-  /* TOP PROTOTYPE CONTROL BAR */
+  /* TOP PROTOTYPE BAR */
   .demo-nav-bar {
     width: 100%;
     max-width: 440px;
@@ -48,7 +46,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    z-index: 100;
   }
 
   .demo-nav-header {
@@ -62,43 +61,11 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
     border: 1px solid #f59e0b;
     padding: 3px 8px;
     border-radius: 6px;
-  }
-
-  .demo-toggle-group {
-    display: flex;
-    gap: 6px;
-    background: #090d16;
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid #1e293b;
-  }
-
-  .demo-toggle-btn {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #94a3b8;
-    font-size: 12px;
-    font-weight: 800;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .demo-toggle-btn.active {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: #0f172a;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
   }
 
   .demo-actions-row {
@@ -111,16 +78,16 @@
     background: #1e293b;
     border: 1px solid #334155;
     color: #f8fafc;
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 8px 10px;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
   }
 
   .demo-btn:hover {
@@ -128,741 +95,691 @@
   }
 
   .demo-btn.play-btn {
-    background: #0284c7;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     border-color: #38bdf8;
     color: #fff;
   }
 
-  /* MOBILE PHONE CANVAS WRAPPER (9:16 VERTICAL STAGE) */
+  /* MOBILE PHONE CANVAS (9:16 VERTICAL STAGE) */
   .stage-phone-frame {
     width: 100%;
-    max-width: 410px;
-    height: 720px;
-    max-height: 82vh;
-    border-radius: 28px;
-    border: 3px solid #1e293b;
-    background: #000;
+    max-width: 420px;
+    height: 740px;
+    max-height: 84vh;
+    border-radius: 32px;
+    border: 4px solid #1e293b;
+    background: #090d16;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 65px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
+    user-select: none;
   }
 
-  /* BATTLEFIELD / FANTASY STAGE BACKGROUND */
-  .stage-bg-layer {
+  /* CINEMATIC BATTLEFIELD ENVIRONMENT BACKGROUND */
+  .stage-bg {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(2, 6, 23, 0.85) 100%),
-                radial-gradient(circle at 50% 30%, #1e3a8a 0%, #090d16 80%);
+    background-image: 
+      linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, rgba(2, 6, 23, 0.75) 100%),
+      radial-gradient(ellipse at 50% 20%, rgba(56, 189, 248, 0.25) 0%, transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='700' viewBox='0 0 400 700'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%231e3a8a'/%3E%3Cstop offset='45%25' stop-color='%2338bdf8'/%3E%3Cstop offset='75%25' stop-color='%2364748b'/%3E%3Cstop offset='100%25' stop-color='%230f172a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='700' fill='url(%23sky)'/%3E%3Cpath d='M0 480 L60 410 L140 470 L210 390 L290 460 L400 370 L400 700 L0 700 Z' fill='%231e293b' opacity='0.7'/%3E%3Cpath d='M0 540 L80 470 L170 530 L260 460 L350 520 L400 480 L400 700 L0 700 Z' fill='%23090d16'/%3E%3C/svg%3E");
     background-size: cover;
     background-position: center;
     z-index: 1;
   }
 
-  /* STAGE HEADER */
-  .stage-top-header {
+  /* TOP STAGE HUD BAR */
+  .stage-hud {
     position: relative;
-    z-index: 10;
-    padding: 12px 16px;
+    z-index: 20;
+    padding: 14px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
   }
 
-  .stage-title {
-    font-size: 13px;
+  .stage-badge-hud {
+    font-size: 11px;
     font-weight: 900;
-    color: #f8fafc;
+    color: #facc15;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  .stage-turn-counter {
-    font-size: 11px;
+  .stage-turn-pill {
+    font-size: 10.5px;
     font-weight: 800;
     color: #38bdf8;
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(15, 23, 42, 0.85);
     border: 1px solid #334155;
-    padding: 3px 8px;
+    padding: 3px 10px;
     border-radius: 12px;
   }
 
   /* =====================================================================
-     STYLE A: RPG CUTSCENE / VISUAL NOVEL STAGE (LIVING STAGGERED CHARACTERS)
+     THE LIVING CUTOUT STAGE: NO BOXES, NO SQUARES, FLOATING SPRITES
      ===================================================================== */
-  .rpg-stage-container {
+  .stage-arena {
     position: relative;
     flex: 1;
-    z-index: 5;
+    z-index: 10;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px 14px 20px 14px;
+    padding: 10px 14px 24px 14px;
     overflow: hidden;
   }
 
-  /* TOP SECTION: SPEAKER 1 (LEFT CHARACTER + RIGHT BUBBLE) */
-  .rpg-speaker-row-top {
+  /* --- TOP ROW: LEFT CUTOUT CHARACTER + FLOATING RIGHT BUBBLE --- */
+  .stage-dialogue-row-top {
+    position: relative;
+    width: 100%;
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    width: 100%;
-    min-height: 200px;
+    min-height: 250px;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* BOTTOM SECTION: SPEAKER 2 (LEFT BUBBLE + RIGHT CHARACTER) */
-  .rpg-speaker-row-bottom {
+  /* --- BOTTOM ROW: FLOATING LEFT BUBBLE + RIGHT CUTOUT CHARACTER --- */
+  .stage-dialogue-row-bottom {
+    position: relative;
+    width: 100%;
     display: flex;
     align-items: flex-end;
     gap: 12px;
-    width: 100%;
-    min-height: 220px;
+    min-height: 270px;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* LARGE CHARACTER SPRITE AVATARS */
-  .rpg-char-actor {
-    flex: 0 0 110px;
-    width: 110px;
-    height: 140px;
+  /* TRANSPARENT CUTOUT CHARACTER CONTAINER (ZERO SQUARES / ZERO BORDERS) */
+  .cutout-character-actor {
+    flex: 0 0 150px;
+    width: 150px;
+    height: 220px;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease, opacity 0.3s ease;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.85)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+    animation: characterBreathe 3.2s infinite ease-in-out alternate;
   }
 
-  .rpg-speaker-row-bottom .rpg-char-actor {
-    order: 2; /* Sits on the right */
+  .stage-dialogue-row-bottom .cutout-character-actor {
+    order: 2; /* Sits on right side */
+    animation-delay: -1.6s;
   }
 
-  .rpg-char-portrait-box {
-    width: 100px;
-    height: 115px;
-    border-radius: 18px;
-    overflow: hidden;
-    position: relative;
-    background: #0f172a;
-    border: 3px solid #334155;
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.8);
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  @keyframes characterBreathe {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-6px) scale(1.015); }
   }
 
-  .rpg-char-portrait-box img,
-  .rpg-char-portrait-box svg {
+  /* CHARACTER SPRITE GRAPHIC (FULL BODY / TORSO CUTOUT) */
+  .cutout-sprite-graphic {
     width: 100%;
     height: 100%;
-    object-fit: cover;
     display: block;
+    overflow: visible;
   }
 
-  .rpg-char-nametag {
-    position: absolute;
-    bottom: -6px;
-    background: #0f172a;
-    color: #f8fafc;
-    border: 1.5px solid #334155;
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  /* ACTIVE SPEAKER LIVING EFFECT: SCALES UP & RADIATES AURA */
+  .stage-dialogue-row-top.active .cutout-character-actor {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.08) !important;
+    filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.75)) drop-shadow(0 18px 30px rgba(0, 0, 0, 0.95));
   }
 
-  /* ACTIVE TALKING STATE (AURA GLOW & BOUNCE) */
-  .rpg-speaker-row-top.active .rpg-char-portrait-box {
-    border-color: #f59e0b;
-    box-shadow: 0 0 25px rgba(245, 158, 11, 0.65), 0 12px 30px rgba(0, 0, 0, 0.9);
-    transform: translateY(-4px) scale(1.06);
-    animation: speakingPulse 1.8s infinite alternate ease-in-out;
+  .stage-dialogue-row-bottom.active .cutout-character-actor {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.08) !important;
+    filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.75)) drop-shadow(0 18px 30px rgba(0, 0, 0, 0.95));
   }
 
-  .rpg-speaker-row-bottom.active .rpg-char-portrait-box {
-    border-color: #38bdf8;
-    box-shadow: 0 0 25px rgba(56, 189, 248, 0.65), 0 12px 30px rgba(0, 0, 0, 0.9);
-    transform: translateY(-4px) scale(1.06);
-    animation: speakingPulse 1.8s infinite alternate ease-in-out;
-  }
-
-  .rpg-speaker-row-top:not(.active) .rpg-char-actor,
-  .rpg-speaker-row-bottom:not(.active) .rpg-char-actor {
-    opacity: 0.62;
+  /* INACTIVE LISTENER DIMMED EFFECT */
+  .stage-dialogue-row-top:not(.active) .cutout-character-actor,
+  .stage-dialogue-row-bottom:not(.active) .cutout-character-actor {
+    opacity: 0.65;
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.8)) brightness(0.78);
     transform: scale(0.96);
-    filter: brightness(0.85);
   }
 
-  @keyframes speakingPulse {
-    from { transform: translateY(-4px) scale(1.04); }
-    to { transform: translateY(-7px) scale(1.08); }
-  }
-
-  /* FANCY CLASH & MANHWA STYLE DIALOGUE BUBBLE */
-  .rpg-dialogue-bubble {
+  /* =====================================================================
+     COMIC SPEECH BUBBLES WITH GOLDEN ORNAMENTS (EXACTLY LIKE USER IMAGE)
+     ===================================================================== */
+  .comic-dialogue-bubble {
     flex: 1 1 auto;
     min-width: 0;
     background: #ffffff;
-    border: 3.5px solid #201a15;
-    border-radius: 20px;
-    padding: 14px 16px;
+    border: 3.5px solid #231912;
+    border-radius: 22px;
+    padding: 16px 18px 16px 20px;
     position: relative;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), inset 0 2px 0 rgba(255, 255, 255, 0.8);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), inset 0 2px 0 rgba(255, 255, 255, 0.9);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     transform-origin: left top;
-    animation: bubblePop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: bubbleEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .rpg-speaker-row-bottom .rpg-dialogue-bubble {
+  .stage-dialogue-row-bottom .comic-dialogue-bubble {
     order: 1; /* Sits on left */
     transform-origin: right bottom;
   }
 
-  @keyframes bubblePop {
-    0% { opacity: 0; transform: scale(0.88); }
-    100% { opacity: 1; transform: scale(1); }
+  @keyframes bubbleEnter {
+    0% { opacity: 0; transform: scale(0.9) translateY(6px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  /* GOLDEN ORNAMENTAL CORNER ACCENTS (LIKE REFERENCE IMAGE) */
-  .rpg-dialogue-bubble::before,
-  .rpg-dialogue-bubble::after {
-    content: '';
+  /* GOLDEN ORNAMENTAL CORNERS (4-CORNER COMIC FILIGREE) */
+  .corner-ornament {
     position: absolute;
-    width: 14px;
-    height: 14px;
-    border-color: #d97706;
+    width: 18px;
+    height: 18px;
     pointer-events: none;
   }
 
-  .rpg-dialogue-bubble::before {
-    top: 5px;
-    left: 5px;
-    border-top: 2.5px solid #d97706;
-    border-left: 2.5px solid #d97706;
-    border-top-left-radius: 12px;
+  .corner-ornament.top-left {
+    top: 6px;
+    left: 6px;
+  }
+  .corner-ornament.top-right {
+    top: 6px;
+    right: 6px;
+  }
+  .corner-ornament.bottom-left {
+    bottom: 6px;
+    left: 6px;
+  }
+  .corner-ornament.bottom-right {
+    bottom: 6px;
+    right: 6px;
   }
 
-  .rpg-dialogue-bubble::after {
-    bottom: 5px;
-    right: 5px;
-    border-bottom: 2.5px solid #d97706;
-    border-right: 2.5px solid #d97706;
-    border-bottom-right-radius: 12px;
-  }
-
-  /* COMIC SPEECH POINTER TAIL */
-  .rpg-dialogue-tail {
+  /* COMIC SPEECH POINTER TAIL (POINTS RIGHT AT CHARACTER'S FACE) */
+  .comic-tail {
     position: absolute;
     width: 0;
     height: 0;
     border-style: solid;
   }
 
-  /* Tail pointing to Left Character */
-  .rpg-speaker-row-top .rpg-dialogue-tail {
-    left: -15px;
-    top: 24px;
-    border-width: 10px 16px 10px 0;
-    border-color: transparent #201a15 transparent transparent;
+  /* Top Row Tail: Points LEFT towards character */
+  .stage-dialogue-row-top .comic-tail {
+    left: -18px;
+    top: 36px;
+    border-width: 12px 20px 12px 0;
+    border-color: transparent #231912 transparent transparent;
   }
-  .rpg-speaker-row-top .rpg-dialogue-tail::after {
+  .stage-dialogue-row-top .comic-tail::after {
     content: '';
     position: absolute;
-    left: 4px;
-    top: -8px;
-    border-width: 8px 13px 8px 0;
+    left: 5px;
+    top: -9px;
+    border-width: 9px 16px 9px 0;
     border-color: transparent #ffffff transparent transparent;
   }
 
-  /* Tail pointing to Right Character */
-  .rpg-speaker-row-bottom .rpg-dialogue-tail {
-    right: -15px;
-    bottom: 24px;
-    border-width: 10px 0 10px 16px;
-    border-color: transparent transparent transparent #201a15;
+  /* Bottom Row Tail: Points RIGHT towards character */
+  .stage-dialogue-row-bottom .comic-tail {
+    right: -18px;
+    bottom: 40px;
+    border-width: 12px 0 12px 20px;
+    border-color: transparent transparent transparent #231912;
   }
-  .rpg-speaker-row-bottom .rpg-dialogue-tail::after {
+  .stage-dialogue-row-bottom .comic-tail::after {
     content: '';
     position: absolute;
-    right: 4px;
-    top: -8px;
-    border-width: 8px 0 8px 13px;
+    right: 5px;
+    top: -9px;
+    border-width: 9px 0 9px 16px;
     border-color: transparent transparent transparent #ffffff;
   }
 
-  .rpg-bubble-text {
-    font-size: 15px;
-    font-weight: 800;
-    line-height: 1.42;
-    color: #1a1714;
-    word-break: break-word;
-  }
-
-  .rpg-bubble-emotion-tag {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    background: #0f172a;
-    color: #f59e0b;
-    padding: 1px 6px;
-    border-radius: 4px;
-    margin-bottom: 4px;
-  }
-
-  /* INACTIVE BUBBLE MUTED STATE */
-  .rpg-speaker-row-top:not(.active) .rpg-dialogue-bubble,
-  .rpg-speaker-row-bottom:not(.active) .rpg-dialogue-bubble {
-    opacity: 0.55;
-    filter: grayscale(0.2);
-  }
-
-  /* =====================================================================
-     STYLE B: VERTICAL COMIC PANEL STREAM (SCROLLING WEBTOON DUEL)
-     ===================================================================== */
-  .comic-stream-container {
-    flex: 1;
-    z-index: 5;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 14px 12px 24px 12px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .comic-panel-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    width: 100%;
-    animation: panelSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes panelSlideUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .comic-panel-card.right-speaker {
-    flex-direction: row-reverse;
-  }
-
-  .comic-panel-avatar {
-    flex: 0 0 68px;
-    width: 68px;
-    height: 80px;
-    border-radius: 14px;
-    overflow: hidden;
-    position: relative;
-    background: #0f172a;
-    border: 2.5px solid #f59e0b;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
-  }
-
-  .comic-panel-card.right-speaker .comic-panel-avatar {
-    border-color: #38bdf8;
-  }
-
-  .comic-panel-avatar img,
-  .comic-panel-avatar svg {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .comic-panel-avatar-label {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(15, 23, 42, 0.9);
-    font-size: 9.5px;
-    font-weight: 800;
-    text-align: center;
-    color: #f8fafc;
-    padding: 1px 0;
-    text-transform: uppercase;
-  }
-
-  .comic-panel-bubble {
-    flex: 1;
-    min-width: 0;
-    background: #ffffff;
-    border: 3px solid #201a15;
-    border-radius: 16px;
-    padding: 10px 14px;
-    position: relative;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-  }
-
-  .comic-panel-bubble .rpg-bubble-text {
-    font-size: 14px;
-    line-height: 1.38;
-  }
-
-  /* COMIC PANEL CORNERS */
-  .comic-panel-bubble::before {
-    content: '';
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 10px;
-    height: 10px;
-    border-top: 2px solid #d97706;
-    border-left: 2px solid #d97706;
-    border-top-left-radius: 8px;
-  }
-
-  /* HOLOGRAPHIC QUEST ALERT IN STAGE */
-  .stage-quest-card {
-    background: rgba(10, 25, 47, 0.94);
-    border: 2px solid #00f0ff;
-    border-radius: 14px;
-    padding: 10px 14px;
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15);
-    text-align: center;
-    animation: questGlow 2s infinite alternate ease-in-out;
-  }
-
-  @keyframes questGlow {
-    from { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
-    to { box-shadow: 0 0 30px rgba(0, 240, 255, 0.7); }
-  }
-
-  .stage-quest-title {
-    font-size: 11px;
-    font-weight: 900;
-    color: #00f0ff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .stage-quest-desc {
-    font-size: 12.5px;
-    font-weight: 800;
-    color: #f8fafc;
-    margin-top: 4px;
-  }
-
-  /* STAGE BOTTOM CONTROLS */
-  .stage-bottom-bar {
-    position: relative;
-    z-index: 10;
-    padding: 10px 14px;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.92) 0%, transparent 100%);
+  .bubble-speaker-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    margin-bottom: 6px;
   }
 
-  .stage-tap-hint {
+  .bubble-speaker-name {
     font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #b45309;
+  }
+
+  .bubble-emotion-chip {
+    font-size: 10px;
+    font-weight: 800;
+    background: #0f172a;
+    color: #f59e0b;
+    padding: 1px 7px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+
+  .bubble-dialogue-content {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.42;
+    color: #1a1512;
+    letter-spacing: -0.2px;
+    word-break: break-word;
+  }
+
+  /* HIGHLIGHTED WORD STYLING (LIKE 'waiting' IN REFERENCE IMAGE) */
+  .bubble-dialogue-content mark {
+    background: #fca5a5;
+    color: #991b1b;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 900;
+  }
+
+  /* INACTIVE BUBBLE MUTED */
+  .stage-dialogue-row-top:not(.active) .comic-dialogue-bubble,
+  .stage-dialogue-row-bottom:not(.active) .comic-dialogue-bubble {
+    opacity: 0.55;
+    filter: grayscale(0.25);
+  }
+
+  /* HOLOGRAPHIC QUEST ALERT POPUP */
+  .stage-system-quest {
+    background: rgba(10, 25, 47, 0.96);
+    border: 2.5px solid #00f0ff;
+    border-radius: 16px;
+    padding: 12px 18px;
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.55), inset 0 0 20px rgba(0, 240, 255, 0.2);
+    text-align: center;
+    animation: questAura 1.8s infinite alternate ease-in-out;
+  }
+
+  @keyframes questAura {
+    from { transform: scale(0.98); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); }
+    to { transform: scale(1.02); box-shadow: 0 0 40px rgba(0, 240, 255, 0.85); }
+  }
+
+  .quest-badge-tag {
+    font-size: 11px;
+    font-weight: 900;
+    color: #00f0ff;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .quest-body-text {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+
+  /* BOTTOM HELPER BAR */
+  .stage-bottom-bar {
+    position: relative;
+    z-index: 20;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, transparent 100%);
+  }
+
+  .stage-hint {
+    font-size: 11.5px;
     color: #94a3b8;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
   }
 
-  .stage-tap-hint kbd {
+  .stage-hint kbd {
     background: #1e293b;
     border: 1px solid #475569;
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 4px;
     color: #facc15;
-    font-family: inherit;
-    font-size: 10px;
+    font-size: 10.5px;
   }
 </style>
 </head>
 <body>
 
-  <!-- TOP PROTOTYPE BAR -->
+  <!-- CONTROL TOOLBAR -->
   <div class="demo-nav-bar">
     <div class="demo-nav-header">
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:18px;">⚔️</span>
-        <strong style="font-size:14px; color:#f8fafc;">Anime Stage Duel Experiment</strong>
+        <span style="font-size:20px;">⚔️</span>
+        <div>
+          <strong style="font-size:14px; color:#f8fafc;">Cutout Anime Stage Duel</strong>
+          <div style="font-size:10.5px; color:#94a3b8;">Full 2D/3D floating characters (No boxes/squares!)</div>
+        </div>
       </div>
-      <span class="demo-badge">Live Sandbox</span>
+      <span class="demo-badge">V2 Prototype</span>
     </div>
 
-    <!-- TOGGLE SWITCHER BETWEEN STYLE A & STYLE B -->
-    <div class="demo-toggle-group">
-      <button type="button" class="demo-toggle-btn active" id="btnStyleA" onclick="switchPrototypeStyle('A')">
-        <span>🎭 Style A</span>
-        <span style="font-size:10px; opacity:0.8;">(Cutscene Stage)</span>
-      </button>
-      <button type="button" class="demo-toggle-btn" id="btnStyleB" onclick="switchPrototypeStyle('B')">
-        <span>📜 Style B</span>
-        <span style="font-size:10px; opacity:0.8;">(Comic Stream)</span>
-      </button>
-    </div>
-
-    <!-- PLAYBACK & TURN CONTROLS -->
+    <!-- PLAYBACK & TURN BUTTONS -->
     <div class="demo-actions-row">
-      <button type="button" class="demo-btn" onclick="prevTurn()" title="Previous Dialogue">◀ Prev</button>
+      <button type="button" class="demo-btn" onclick="prevTurn()" title="Previous Turn">◀ Prev</button>
       <button type="button" class="demo-btn play-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
-      <button type="button" class="demo-btn" onclick="nextTurn()" title="Next Dialogue">Next ▶</button>
+      <button type="button" class="demo-btn" onclick="nextTurn()" title="Next Turn">Next ▶</button>
       <button type="button" class="demo-btn" onclick="resetStory()" title="Restart">↺ Reset</button>
     </div>
   </div>
 
-  <!-- PHONE CONTAINER FRAME -->
+  <!-- PHONE STAGE FRAME -->
   <div class="stage-phone-frame" id="phoneFrame" onclick="handleStageClick(event)">
-    <div class="stage-bg-layer"></div>
+    <div class="stage-bg"></div>
 
-    <!-- STAGE HEADER -->
-    <div class="stage-top-header">
-      <div class="stage-title">
+    <!-- STAGE HUD -->
+    <div class="stage-hud">
+      <span class="stage-badge-hud">
         <span>⚔️</span>
-        <span>Anime Stage: Boss Confrontation</span>
-      </div>
-      <span class="stage-turn-counter" id="stageTurnCounter">Turn 1 / 6</span>
+        <span>Anime Stage: Solo Leveling Duel</span>
+      </span>
+      <span class="stage-turn-pill" id="turnPill">Turn 1 / 6</span>
     </div>
 
-    <!-- STYLE A CONTAINER (CUTSCENE STAGE) -->
-    <div class="rpg-stage-container" id="containerStyleA">
-      <!-- TOP SPEAKER: CHARACTER 1 (LEFT) -->
-      <div class="rpg-speaker-row-top active" id="rpgRowTop">
-        <div class="rpg-char-actor">
-          <div class="rpg-char-portrait-box" id="topCharBox">
-            <svg viewBox="0 0 100 115" width="100" height="115" xmlns="http://www.w3.org/2000/svg">
-              <!-- Anime Hunter / Hero (Sung Jin-Woo style) -->
-              <rect width="100" height="115" fill="#1e1b4b"/>
-              <circle cx="50" cy="50" r="34" fill="#fed7aa"/>
-              <!-- Hair -->
-              <path d="M20 50 Q16 15 50 12 Q84 15 80 50 Q75 25 50 20 Q25 25 20 50 Z" fill="#0f172a"/>
-              <path d="M30 25 L45 52 L50 24 L55 52 L70 25" fill="#0f172a"/>
-              <!-- Hunter Jacket -->
-              <path d="M10 115 L25 80 L75 80 L90 115 Z" fill="#0284c7"/>
-              <path d="M35 80 L50 115 L65 80 Z" fill="#090d16"/>
-              <!-- Eyes & Expression (Dynamic inside) -->
-              <g id="topCharFaceGroup">
-                <circle cx="38" cy="52" r="4.5" fill="#0284c7"/>
-                <circle cx="62" cy="52" r="4.5" fill="#0284c7"/>
-                <path d="M32 44 L44 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M68 44 L56 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-                <!-- Confident Smile -->
-                <path d="M43 66 Q50 72 57 66" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <!-- THE LIVING STAGE ARENA -->
+    <div class="stage-arena">
+
+      <!-- ============================================================== -->
+      <!-- TOP SPEAKER: CHARACTER 1 (FULL CUTOUT FIGURE ON LEFT)          -->
+      <!-- ============================================================== -->
+      <div class="stage-dialogue-row-top active" id="rowTop">
+        
+        <!-- LEFT CHARACTER: 100% TRANSPARENT CUTOUT SPRITE (ZERO BOX / ZERO BORDER) -->
+        <div class="cutout-character-actor" id="topActor">
+          <svg class="cutout-sprite-graphic" viewBox="0 0 150 220" xmlns="http://www.w3.org/2000/svg">
+            <!-- Anime Hunter / Hero Sprite (Waist-Up Cutout with Raised Arm) -->
+            <g id="heroCutoutBody">
+              <!-- Shadow Cape / Coat -->
+              <path d="M20 220 C20 140, 35 90, 70 85 C105 90, 120 140, 120 220 Z" fill="#0f172a"/>
+              <!-- Torso & Hunter Vest -->
+              <path d="M40 220 L50 120 L95 120 L105 220 Z" fill="#0284c7"/>
+              <path d="M60 120 L72 220 L85 120 Z" fill="#090d16"/>
+              
+              <!-- Left Raised Hand / Fist (Clash Barbarian Pose) -->
+              <path d="M25 150 Q10 110, 18 60 Q28 65, 36 95 L45 130 Z" fill="#fed7aa"/>
+              <!-- Spiked Wristband -->
+              <path d="M12 75 L28 80 L25 90 L8 85 Z" fill="#78350f"/>
+              <polygon points="12,75 16,65 20,77" fill="#cbd5e1"/>
+              <polygon points="20,78 24,68 28,80" fill="#cbd5e1"/>
+              <!-- Raised Fist -->
+              <circle cx="18" cy="56" r="14" fill="#fed7aa"/>
+              <path d="M10 56 Q18 48 26 56" stroke="#ea580c" stroke-width="2" fill="none"/>
+
+              <!-- Neck & Face -->
+              <path d="M64 95 L80 95 L80 115 L64 115 Z" fill="#fcd34d"/>
+              <path d="M52 65 C52 40, 92 40, 92 65 C92 90, 52 90, 52 65 Z" fill="#fed7aa"/>
+
+              <!-- Anime Spiky Hair (Shadow Hunter Cutout) -->
+              <path d="M42 62 Q35 20, 72 15 Q108 20, 102 62 Q92 32, 72 26 Q52 32, 42 62 Z" fill="#0f172a"/>
+              <path d="M50 35 L68 70 L75 32 L82 70 L100 35" fill="#0f172a"/>
+
+              <!-- Dynamic Living Face Expressions -->
+              <g id="heroFaceGroup">
+                <!-- Eyes & Confident Smirk -->
+                <circle cx="64" cy="65" r="4.5" fill="#0284c7"/>
+                <circle cx="84" cy="65" r="4.5" fill="#0284c7"/>
+                <path d="M58 56 L70 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M90 56 L78 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M68 78 Q74 84 82 78" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
               </g>
-            </svg>
+            </g>
+          </svg>
+        </div>
+
+        <!-- FLOATING SPEECH BUBBLE (WITH GOLDEN CORNERS & DIRECT SPEECH TAIL) -->
+        <div class="comic-dialogue-bubble" id="topBubble">
+          <div class="comic-tail"></div>
+          
+          <!-- Golden Corner Filigree (Like Clash Reference Image) -->
+          <svg class="corner-ornament top-left" viewBox="0 0 20 20" fill="none">
+            <path d="M3 17 L3 6 C3 4.3 4.3 3 6 3 L17 3" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="2.5" fill="#f59e0b"/>
+          </svg>
+          <svg class="corner-ornament bottom-right" viewBox="0 0 20 20" fill="none">
+            <path d="M17 3 L17 14 C17 15.7 15.7 17 14 17 L3 17" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="2.5" fill="#f59e0b"/>
+          </svg>
+
+          <div class="bubble-speaker-header">
+            <span class="bubble-speaker-name" id="topNameLabel">Sung Jin-Woo</span>
+            <span class="bubble-emotion-chip" id="topEmotionChip">confident</span>
           </div>
-          <span class="rpg-char-nametag" style="border-color:#f59e0b; color:#fbbf24;">Jin-Woo</span>
+          <div class="bubble-dialogue-content" id="topDialogueText">
+            Can I get two Star Bonus Snacks in a row from this Dungeon gate?
+          </div>
         </div>
 
-        <div class="rpg-dialogue-bubble" id="topBubble">
-          <div class="rpg-dialogue-tail"></div>
-          <div class="rpg-bubble-emotion-tag" id="topEmotionTag">confident</div>
-          <p class="rpg-bubble-text" id="topBubbleText">Did you really think entering this S-Rank Dungeon gate was a good idea?</p>
-        </div>
       </div>
 
-      <!-- MIDDLE HOLOGRAM QUEST ALERT (IF TRIGGERED) -->
-      <div class="stage-quest-card" id="rpgQuestCard" style="display:none;">
-        <div class="stage-quest-title">⚡ URGENT SYSTEM QUEST</div>
-        <div class="stage-quest-desc" id="rpgQuestText">SURVIVAL MISSION: Defeat the Dungeon Monarch within 180 seconds!</div>
+      <!-- ============================================================== -->
+      <!-- MIDDLE: HOLOGRAPHIC SYSTEM QUEST (DROPS IN ON QUEST TURNS)     -->
+      <!-- ============================================================== -->
+      <div class="stage-system-quest" id="systemQuestCard" style="display:none;">
+        <div class="quest-badge-tag">⚡ URGENT SYSTEM QUEST</div>
+        <div class="quest-body-text" id="questBodyText">SURVIVAL MISSION: Evade the Shadow Monarch for 3 minutes without weapons!</div>
       </div>
 
-      <!-- BOTTOM SPEAKER: CHARACTER 2 (RIGHT) -->
-      <div class="rpg-speaker-row-bottom" id="rpgRowBottom">
-        <div class="rpg-dialogue-bubble" id="bottomBubble">
-          <div class="rpg-dialogue-tail"></div>
-          <div class="rpg-bubble-emotion-tag" id="bottomEmotionTag" style="color:#38bdf8;">smug</div>
-          <p class="rpg-bubble-text" id="bottomBubbleText">Ha! A puny E-rank hunter like you cannot even scratch my shadow armor.</p>
+      <!-- ============================================================== -->
+      <!-- BOTTOM SPEAKER: CHARACTER 2 (FULL CUTOUT FIGURE ON RIGHT)      -->
+      <!-- ============================================================== -->
+      <div class="stage-dialogue-row-bottom" id="rowBottom">
+        
+        <!-- FLOATING SPEECH BUBBLE (SITS ON LEFT SIDE) -->
+        <div class="comic-dialogue-bubble" id="bottomBubble">
+          <div class="comic-tail"></div>
+
+          <!-- Golden Corner Filigree -->
+          <svg class="corner-ornament top-left" viewBox="0 0 20 20" fill="none">
+            <path d="M3 17 L3 6 C3 4.3 4.3 3 6 3 L17 3" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="2.5" fill="#f59e0b"/>
+          </svg>
+          <svg class="corner-ornament bottom-right" viewBox="0 0 20 20" fill="none">
+            <path d="M17 3 L17 14 C17 15.7 15.7 17 14 17 L3 17" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="2.5" fill="#f59e0b"/>
+          </svg>
+
+          <div class="bubble-speaker-header">
+            <span class="bubble-speaker-name" id="bottomNameLabel" style="color:#b91c1c;">Barbarian Monarch</span>
+            <span class="bubble-emotion-chip" id="bottomEmotionChip" style="color:#38bdf8;">serious</span>
+          </div>
+          <div class="bubble-dialogue-content" id="bottomDialogueText">
+            No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it's removed from the Snack Pack pool until you've used it.
+          </div>
         </div>
 
-        <div class="rpg-char-actor">
-          <div class="rpg-char-portrait-box" id="bottomCharBox" style="border-color:#38bdf8;">
-            <svg viewBox="0 0 100 115" width="100" height="115" xmlns="http://www.w3.org/2000/svg">
-              <!-- Armored Boss / Monarch (Barbarian King style) -->
-              <rect width="100" height="115" fill="#450a0a"/>
-              <circle cx="50" cy="54" r="36" fill="#fbcfe8"/>
-              <!-- Crown / Iron Helmet -->
-              <path d="M18 42 L25 15 L40 28 L50 10 L60 28 L75 15 L82 42 Z" fill="#f59e0b" stroke="#78350f" stroke-width="2"/>
-              <!-- Heavy Shoulder Armor -->
-              <path d="M5 115 L20 78 L80 78 L95 115 Z" fill="#991b1b"/>
-              <circle cx="20" cy="85" r="10" fill="#f59e0b"/>
-              <circle cx="80" cy="85" r="10" fill="#f59e0b"/>
-              <!-- Eyes & Expression (Dynamic inside) -->
-              <g id="bottomCharFaceGroup">
-                <circle cx="38" cy="56" r="4.5" fill="#dc2626"/>
-                <circle cx="62" cy="56" r="4.5" fill="#dc2626"/>
-                <!-- Fierce Eyebrows -->
-                <path d="M30 48 L46 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
-                <path d="M70 48 L54 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
-                <!-- Fierce Grin -->
-                <path d="M40 70 Q50 80 60 70 Z" fill="#7f1d1d" stroke="#450a0a" stroke-width="2"/>
+        <!-- RIGHT CHARACTER: 100% TRANSPARENT CUTOUT SPRITE (ZERO BOX / ZERO BORDER) -->
+        <div class="cutout-character-actor" id="bottomActor">
+          <svg class="cutout-sprite-graphic" viewBox="0 0 150 220" xmlns="http://www.w3.org/2000/svg">
+            <!-- Armored Barbarian King / Boss Cutout Figure -->
+            <g id="bossCutoutBody">
+              <!-- Armored Body & Red Sash -->
+              <path d="M30 220 L45 130 L115 130 L130 220 Z" fill="#78350f"/>
+              <path d="M40 140 L120 220 L105 220 L25 140 Z" fill="#991b1b"/>
+              <circle cx="70" cy="180" r="14" fill="#f59e0b" stroke="#78350f" stroke-width="2"/>
+
+              <!-- Heavy Steel Shoulder Guard (Right) -->
+              <path d="M100 135 C125 125, 145 145, 140 175 C125 185, 105 165, 100 135 Z" fill="#475569"/>
+              <circle cx="122" cy="155" r="7" fill="#f59e0b"/>
+
+              <!-- Heavy Iron Blade / Sword in Hand -->
+              <path d="M125 120 L145 40 L135 35 L115 115 Z" fill="#94a3b8" stroke="#334155" stroke-width="2"/>
+              <rect x="110" y="115" width="22" height="8" rx="3" fill="#f59e0b"/>
+
+              <!-- Muscular Neck & Face -->
+              <path d="M65 110 L95 110 L95 130 L65 130 Z" fill="#fdba74"/>
+              <path d="M50 75 C50 50, 105 50, 105 75 C105 105, 50 105, 50 75 Z" fill="#fed7aa"/>
+
+              <!-- Golden Royal Crown / Helmet (Like Barbarian King) -->
+              <path d="M48 60 L55 25 L70 42 L80 18 L90 42 L105 25 L112 60 Z" fill="#f59e0b" stroke="#78350f" stroke-width="2.5"/>
+              <rect x="46" y="55" width="68" height="10" rx="3" fill="#b45309"/>
+
+              <!-- Big Yellow Mustache -->
+              <path d="M52 88 Q78 82 104 88 Q95 105 78 98 Q60 105 52 88 Z" fill="#eab308" stroke="#713f12" stroke-width="2"/>
+
+              <!-- Dynamic Living Face Expressions -->
+              <g id="bossFaceGroup">
+                <circle cx="66" cy="74" r="5" fill="#dc2626"/>
+                <circle cx="90" cy="74" r="5" fill="#dc2626"/>
+                <!-- Heavy Angry Eyebrows -->
+                <path d="M56 64 L74 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M100 64 L82 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
               </g>
-            </svg>
-          </div>
-          <span class="rpg-char-nametag" style="border-color:#38bdf8; color:#7dd3fc;">Blood Monarch</span>
+            </g>
+          </svg>
         </div>
+
       </div>
+
     </div>
 
-    <!-- STYLE B CONTAINER (VERTICAL COMIC STREAM) -->
-    <div class="comic-stream-container" id="containerStyleB" style="display:none;">
-      <!-- Populated dynamically by renderComicStream() -->
-    </div>
-
-    <!-- STAGE BOTTOM FOOTER -->
+    <!-- BOTTOM HINT -->
     <div class="stage-bottom-bar">
-      <div class="stage-tap-hint">
-        <span>💡 Tap anywhere or press <kbd>Space</kbd> to advance</span>
-      </div>
-      <div style="font-size:10.5px; color:#facc15; font-weight:800;">
-        Manhwa Chat Hub v3.4 Preview
-      </div>
+      <span class="stage-hint">
+        <span>💡 Tap anywhere or press <kbd>Space</kbd> for next line</span>
+      </span>
+      <span style="font-size:11px; color:#facc15; font-weight:800;">
+        Living Cutout Stage
+      </span>
     </div>
+
   </div>
 
 <script>
-  /* STORY DIALOGUE DATASET WITH EMOTIONS & QUESTS */
-  const storyScript = [
+  /* DIALOGUE DATASET WITH AUTHENTIC SCRIPT LINES & EMOTIONS */
+  const duelStory = [
     {
       turn: 1,
       speaker: 'left',
-      name: 'Jin-Woo',
+      name: 'Sung Jin-Woo',
       emotion: 'confident',
-      text: 'Did you really think entering this S-Rank Dungeon gate was a good idea?',
-      quest: null
+      html: 'Can I get two Star Bonus Snacks in a row from this Dungeon gate?'
     },
     {
       turn: 2,
       speaker: 'right',
-      name: 'Blood Monarch',
-      emotion: 'smug',
-      text: 'Ha! A puny E-rank hunter like you cannot even scratch my shadow armor.',
-      quest: null
+      name: 'Barbarian Monarch',
+      emotion: 'serious',
+      html: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.'
     },
     {
       turn: 3,
       speaker: 'system',
       name: 'SYSTEM',
-      emotion: 'alert',
-      text: null,
-      quest: '⚡ URGENT SYSTEM QUEST: Survive against the Blood Monarch for 3 minutes without retreating!'
+      emotion: 'quest',
+      quest: '⚡ URGENT SYSTEM QUEST: Survive against the Barbarian Monarch for 180 seconds without retreat!'
     },
     {
       turn: 4,
       speaker: 'left',
-      name: 'Jin-Woo',
+      name: 'Sung Jin-Woo',
       emotion: 'shock',
-      text: 'A System Quest popped up?! The penalty for failing this mission is death?!',
-      quest: null
+      html: 'A System Quest appeared?! If I don\'t defeat him in 3 minutes, my HP drops to zero?!'
     },
     {
       turn: 5,
       speaker: 'right',
-      name: 'Blood Monarch',
+      name: 'Barbarian Monarch',
       emotion: 'laugh',
-      text: 'Why do you stare at empty air, boy?! Tremble before true shadow power!',
-      quest: null
+      html: 'BWAHAHA! You tremble before my iron blade, hunter! Prepare to be crushed!'
     },
     {
       turn: 6,
       speaker: 'left',
-      name: 'Jin-Woo',
+      name: 'Sung Jin-Woo',
       emotion: 'arise',
-      text: '...Empty air? No. I am not trembling. I am simply commanding: ARISE.',
-      quest: null
+      html: '...Tremble? No. You are just another shadow soldier for my army. <mark>ARISE.</mark>'
     }
   ];
 
-  let currentStepIndex = 0;
-  let activePrototypeStyle = 'A';
-  let isAutoPlaying = false;
-  let autoPlayTimer = null;
+  let currentTurn = 0;
+  let isAutoPlay = false;
+  let autoTimer = null;
 
-  /* EXPRESSION FACE SVG BUILDERS */
-  function getLeftFaceSvg(emotion) {
+  /* DYNAMIC EMOTION SWAPPING ON 100% CUTOUT ACTORS */
+  function getHeroFace(emotion) {
     if (emotion === 'shock') {
       return `
-        <circle cx="38" cy="52" r="6" fill="#fff" stroke="#0284c7" stroke-width="2"/>
-        <circle cx="62" cy="52" r="6" fill="#fff" stroke="#0284c7" stroke-width="2"/>
-        <circle cx="38" cy="52" r="2.5" fill="#090d16"/>
-        <circle cx="62" cy="52" r="2.5" fill="#090d16"/>
-        <path d="M30 42 Q38 38 46 44" stroke="#0f172a" stroke-width="2.5" fill="none"/>
-        <path d="M70 42 Q62 38 54 44" stroke="#0f172a" stroke-width="2.5" fill="none"/>
-        <ellipse cx="50" cy="70" rx="6" ry="9" fill="#0f172a"/>
-        <!-- Anime Sweat Drop -->
-        <path d="M72 38 C72 35, 75 32, 75 30 C75 32, 78 35, 78 38 C78 40, 75 42, 75 42 C75 42, 72 40, 72 38 Z" fill="#38bdf8"/>
+        <!-- Wide Shocked Eyes with Pupils -->
+        <circle cx="64" cy="65" r="7" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
+        <circle cx="84" cy="65" r="7" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
+        <circle cx="64" cy="65" r="3" fill="#0f172a"/>
+        <circle cx="84" cy="65" r="3" fill="#0f172a"/>
+        <!-- Nervous Eyebrows -->
+        <path d="M56 52 Q64 48 72 56" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+        <path d="M92 52 Q84 48 76 56" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+        <!-- Gasping Mouth -->
+        <ellipse cx="74" cy="80" rx="6" ry="8" fill="#0f172a"/>
+        <!-- Anime Sweat Drops Floating on Side -->
+        <path d="M94 48 C94 44, 98 40, 98 38 C98 40, 102 44, 102 48 C102 51, 98 53, 98 53 C98 53, 94 51, 94 48 Z" fill="#38bdf8"/>
       `;
     } else if (emotion === 'arise') {
       return `
-        <circle cx="38" cy="52" r="5" fill="#38bdf8"/>
-        <circle cx="62" cy="52" r="5" fill="#38bdf8"/>
-        <!-- Glowing Eyes Beams -->
-        <line x1="38" y1="52" x2="20" y2="52" stroke="#38bdf8" stroke-width="3"/>
-        <line x1="62" y1="52" x2="80" y2="52" stroke="#38bdf8" stroke-width="3"/>
-        <path d="M30 44 L44 48" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        <path d="M70 44 L56 48" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        <!-- Dark Smirk -->
-        <path d="M42 66 Q52 74 58 64" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <!-- Glowing Shadow Monarch Eyes (Light Rays) -->
+        <circle cx="64" cy="65" r="6" fill="#38bdf8"/>
+        <circle cx="84" cy="65" r="6" fill="#38bdf8"/>
+        <line x1="64" y1="65" x2="40" y2="65" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="84" y1="65" x2="108" y2="65" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- Sharp Menacing Brows -->
+        <path d="M56 55 L70 60" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+        <path d="M92 55 L78 60" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+        <!-- Dangerous Smirk -->
+        <path d="M66 77 Q75 85 84 75" stroke="#38bdf8" stroke-width="3" fill="none" stroke-linecap="round"/>
       `;
     }
     // Confident / Normal
     return `
-      <circle cx="38" cy="52" r="4.5" fill="#0284c7"/>
-      <circle cx="62" cy="52" r="4.5" fill="#0284c7"/>
-      <path d="M32 44 L44 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M68 44 L56 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M43 66 Q50 72 57 66" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="64" cy="65" r="4.5" fill="#0284c7"/>
+      <circle cx="84" cy="65" r="4.5" fill="#0284c7"/>
+      <path d="M58 56 L70 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M90 56 L78 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M68 78 Q74 84 82 78" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
     `;
   }
 
-  function getRightFaceSvg(emotion) {
+  function getBossFace(emotion) {
     if (emotion === 'laugh') {
       return `
-        <!-- Closed Laughing Eyes -->
-        <path d="M32 54 Q38 46 44 54" stroke="#dc2626" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M56 54 Q62 46 68 54" stroke="#dc2626" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M30 46 L46 50" stroke="#450a0a" stroke-width="3"/>
-        <path d="M70 46 L54 50" stroke="#450a0a" stroke-width="3"/>
-        <!-- Wide Laugh Mouth -->
-        <path d="M38 68 Q50 84 62 68 Z" fill="#991b1b" stroke="#450a0a" stroke-width="2"/>
+        <!-- Happy Laughing Arcs -->
+        <path d="M58 72 Q66 62 74 72" stroke="#dc2626" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M82 72 Q90 62 98 72" stroke="#dc2626" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M54 62 L74 68" stroke="#450a0a" stroke-width="3.5"/>
+        <path d="M102 62 L82 68" stroke="#450a0a" stroke-width="3.5"/>
       `;
     }
-    // Smug / Fierce
+    // Serious / Fierce
     return `
-      <circle cx="38" cy="56" r="4.5" fill="#dc2626"/>
-      <circle cx="62" cy="56" r="4.5" fill="#dc2626"/>
-      <path d="M30 48 L46 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
-      <path d="M70 48 L54 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
-      <path d="M40 70 Q50 80 60 70 Z" fill="#7f1d1d" stroke="#450a0a" stroke-width="2"/>
+      <circle cx="66" cy="74" r="5" fill="#dc2626"/>
+      <circle cx="90" cy="74" r="5" fill="#dc2626"/>
+      <path d="M56 64 L74 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M100 64 L82 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
     `;
   }
 
-  /* UPDATE DISPLAY */
-  function renderCurrentStep() {
-    const item = storyScript[currentStepIndex];
-    document.getElementById('stageTurnCounter').textContent = `Turn ${currentStepIndex + 1} / ${storyScript.length}`;
+  /* RENDER CURRENT DIALOGUE TURN */
+  function renderTurn() {
+    const item = duelStory[currentTurn];
+    document.getElementById('turnPill').textContent = `Turn ${currentTurn + 1} / ${duelStory.length}`;
 
-    if (activePrototypeStyle === 'A') {
-      renderStyleA(item);
-    } else {
-      renderStyleB(item);
-    }
-  }
-
-  /* RENDER STYLE A (RPG CUTSCENE STAGE) */
-  function renderStyleA(item) {
-    const topRow = document.getElementById('rpgRowTop');
-    const bottomRow = document.getElementById('rpgRowBottom');
-    const questCard = document.getElementById('rpgQuestCard');
+    const topRow = document.getElementById('rowTop');
+    const bottomRow = document.getElementById('rowBottom');
+    const questCard = document.getElementById('systemQuestCard');
 
     if (item.speaker === 'system' && item.quest) {
-      // System Quest Popup Mode
       questCard.style.display = 'block';
-      document.getElementById('rpgQuestText').textContent = item.quest;
+      document.getElementById('questBodyText').textContent = item.quest;
       topRow.classList.remove('active');
       bottomRow.classList.remove('active');
       return;
@@ -874,95 +791,40 @@
       topRow.classList.add('active');
       bottomRow.classList.remove('active');
 
-      document.getElementById('topEmotionTag').textContent = item.emotion;
-      document.getElementById('topBubbleText').textContent = item.text;
-      document.getElementById('topCharFaceGroup').innerHTML = getLeftFaceSvg(item.emotion);
+      document.getElementById('topNameLabel').textContent = item.name;
+      document.getElementById('topEmotionChip').textContent = item.emotion;
+      document.getElementById('topDialogueText').innerHTML = item.html;
+      document.getElementById('heroFaceGroup').innerHTML = getHeroFace(item.emotion);
     } else if (item.speaker === 'right') {
       bottomRow.classList.add('active');
       topRow.classList.remove('active');
 
-      document.getElementById('bottomEmotionTag').textContent = item.emotion;
-      document.getElementById('bottomBubbleText').textContent = item.text;
-      document.getElementById('bottomCharFaceGroup').innerHTML = getRightFaceSvg(item.emotion);
+      document.getElementById('bottomNameLabel').textContent = item.name;
+      document.getElementById('bottomEmotionChip').textContent = item.emotion;
+      document.getElementById('bottomDialogueText').innerHTML = item.html;
+      document.getElementById('bossFaceGroup').innerHTML = getBossFace(item.emotion);
     }
   }
 
-  /* RENDER STYLE B (VERTICAL COMIC STREAM) */
-  function renderStyleB() {
-    const container = document.getElementById('containerStyleB');
-    container.innerHTML = '';
-
-    // Render all dialogs up to currentStepIndex in a scrollable comic panel feed
-    for (let i = 0; i <= currentStepIndex; i++) {
-      const item = storyScript[i];
-
-      if (item.speaker === 'system' && item.quest) {
-        const questEl = document.createElement('div');
-        questEl.className = 'stage-quest-card';
-        questEl.innerHTML = `
-          <div class="stage-quest-title">⚡ URGENT SYSTEM QUEST</div>
-          <div class="stage-quest-desc">${item.quest}</div>
-        `;
-        container.appendChild(questEl);
-        continue;
-      }
-
-      const isRight = item.speaker === 'right';
-      const card = document.createElement('div');
-      card.className = `comic-panel-card ${isRight ? 'right-speaker' : ''}`;
-
-      const avatarSvg = isRight
-        ? `<svg viewBox="0 0 100 115" width="100%" height="100%"><rect width="100" height="115" fill="#450a0a"/><circle cx="50" cy="54" r="36" fill="#fbcfe8"/><path d="M18 42 L25 15 L40 28 L50 10 L60 28 L75 15 L82 42 Z" fill="#f59e0b"/><path d="M5 115 L20 78 L80 78 L95 115 Z" fill="#991b1b"/>${getRightFaceSvg(item.emotion)}</svg>`
-        : `<svg viewBox="0 0 100 115" width="100%" height="100%"><rect width="100" height="115" fill="#1e1b4b"/><circle cx="50" cy="50" r="34" fill="#fed7aa"/><path d="M20 50 Q16 15 50 12 Q84 15 80 50 Z" fill="#0f172a"/><path d="M10 115 L25 80 L75 80 L90 115 Z" fill="#0284c7"/>${getLeftFaceSvg(item.emotion)}</svg>`;
-
-      card.innerHTML = `
-        <div class="comic-panel-avatar">
-          ${avatarSvg}
-          <div class="comic-panel-avatar-label">${item.name}</div>
-        </div>
-        <div class="comic-panel-bubble">
-          <div class="rpg-bubble-emotion-tag" style="color:${isRight ? '#38bdf8' : '#f59e0b'};">${item.emotion}</div>
-          <p class="rpg-bubble-text">${item.text}</p>
-        </div>
-      `;
-      container.appendChild(card);
-    }
-
-    container.scrollTop = container.scrollHeight;
-  }
-
-  /* TOGGLE BETWEEN STYLE A & STYLE B */
-  function switchPrototypeStyle(style) {
-    activePrototypeStyle = style;
-    document.getElementById('btnStyleA').classList.toggle('active', style === 'A');
-    document.getElementById('btnStyleB').classList.toggle('active', style === 'B');
-
-    document.getElementById('containerStyleA').style.display = (style === 'A') ? 'flex' : 'none';
-    document.getElementById('containerStyleB').style.display = (style === 'B') ? 'flex' : 'none';
-
-    renderCurrentStep();
-  }
-
-  /* TURN NAVIGATION */
   function nextTurn() {
-    if (currentStepIndex < storyScript.length - 1) {
-      currentStepIndex++;
-      renderCurrentStep();
+    if (currentTurn < duelStory.length - 1) {
+      currentTurn++;
+      renderTurn();
     } else {
-      if (isAutoPlaying) toggleAutoPlay();
+      if (isAutoPlay) toggleAutoPlay();
     }
   }
 
   function prevTurn() {
-    if (currentStepIndex > 0) {
-      currentStepIndex--;
-      renderCurrentStep();
+    if (currentTurn > 0) {
+      currentTurn--;
+      renderTurn();
     }
   }
 
   function resetStory() {
-    currentStepIndex = 0;
-    renderCurrentStep();
+    currentTurn = 0;
+    renderTurn();
   }
 
   function handleStageClick(e) {
@@ -971,32 +833,31 @@
   }
 
   function toggleAutoPlay() {
-    isAutoPlaying = !isAutoPlaying;
+    isAutoPlay = !isAutoPlay;
     const btn = document.getElementById('autoPlayBtn');
-    if (isAutoPlaying) {
+    if (isAutoPlay) {
       btn.textContent = '⏸ Pause';
       btn.style.background = '#e11d48';
       btn.style.borderColor = '#fb7185';
-      runAutoPlayLoop();
+      runAutoLoop();
     } else {
       btn.textContent = '▶ Auto-Play';
-      btn.style.background = '#0284c7';
+      btn.style.background = 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)';
       btn.style.borderColor = '#38bdf8';
-      clearTimeout(autoPlayTimer);
+      clearTimeout(autoTimer);
     }
   }
 
-  function runAutoPlayLoop() {
-    if (!isAutoPlaying) return;
-    if (currentStepIndex < storyScript.length - 1) {
+  function runAutoLoop() {
+    if (!isAutoPlay) return;
+    if (currentTurn < duelStory.length - 1) {
       nextTurn();
-      autoPlayTimer = setTimeout(runAutoPlayLoop, 2600);
+      autoTimer = setTimeout(runAutoLoop, 2800);
     } else {
       toggleAutoPlay();
     }
   }
 
-  // Keyboard Spacebar Navigation
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
       e.preventDefault();
@@ -1004,8 +865,8 @@
     }
   });
 
-  // Init
-  renderCurrentStep();
+  // Start at turn 1
+  renderTurn();
 </script>
 </body>
 </html>
