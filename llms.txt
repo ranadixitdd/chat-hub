@@ -1,6 +1,6 @@
-# Manhwa Chat Hub — Anime & Webtoon Chat Story Studio
+# Manhwa Chat Hub (Chat Hub) — Anime Style Chat & Webtoon Studio
 
-> Manhwa Chat Hub is a free, interactive web studio designed for creators, webtoon writers, and YouTubers/TikTokers to generate, direct, and record animated anime and manhwa chat stories. It provides pixel-perfect authentic interfaces for WhatsApp, ChatGPT, and Google Gemini with cinematic camera controls, character expression sprites, sound FX, and Solo Leveling system quest alerts.
+> Manhwa Chat Hub (also known as **Chat Hub** or **Anime Style Chat Studio**) is a free, interactive web studio designed for creators, webtoon writers, and YouTubers/TikTokers to generate, direct, and record animated anime style chat stories. It provides pixel-perfect authentic interfaces for WhatsApp, ChatGPT, and Google Gemini with cinematic camera controls, character expression sprites, sound FX, and Solo Leveling system quest alerts.
 
 ## Live Access & Source Code
 - Web Application: https://ranadixitdd.github.io/chat-hub/
