@@ -429,7 +429,7 @@
 
 
 <!-- MODAL: SPECIAL EVENT / BANNER INSERT MODAL -->
-<div class="modal-backdrop" id="specialEventModal" style="z-index:9999;">
+<div class="modal-backdrop" id="specialEventModal" style="z-index:10025;">
   <div class="modal-window" style="max-width:420px;">
     <div class="modal-header">
       <div style="display:flex; align-items:center; gap:8px;">
@@ -586,7 +586,7 @@
     <div class="hub-tab-panel" id="hubPanelTools">
       <div class="global-section">
         <label class="form-label" style="font-size:14px; font-weight:800; color:#f8fafc;">🛠️ Story Tools</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div class="global-tools-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
           <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px; border-color:#38bdf8;" onclick="openAssetManagerModal('globalSettingsModal');">
             <span style="font-size:18px;">📦</span><span>Studio Asset Manager</span>
           </button>
@@ -614,7 +614,7 @@
             📥 Restore Backup
           </button>
         </div>
-        <input type="file" id="hiddenFullBackupInput" accept=".json,application/json" style="display:none;" onchange="if(window.ChatHubStorage && this.files[0]) window.ChatHubStorage.importBackup(this.files[0]);">
+        <input type="file" id="hiddenFullBackupInput" accept=".json,application/json" style="display:none;" onclick="this.value=null;" onchange="if(window.ChatHubStorage && this.files[0]) window.ChatHubStorage.importBackup(this.files[0]);">
         <div style="display:flex; gap:12px;">
           <button type="button" class="icon-btn" style="flex:1; justify-content:center; background:#3b82f6; padding:10px; font-size:12px;" onclick="exportBackupJson()">
             💾 Export Story JSON
@@ -645,7 +645,7 @@
 <!-- ===================================================================== -->
 <!-- MODAL: GROUP HEADER, WALLPAPER & RATIO SETTINGS                       -->
 <!-- ===================================================================== -->
-<div class="modal-backdrop" id="groupModal" style="z-index:9999;">
+<div class="modal-backdrop" id="groupModal" style="z-index:10015;">
   <div class="modal-window" style="max-width:440px;">
     <div class="modal-header">
       <span class="modal-title">💬 WhatsApp Chat Mode & Stage</span>
@@ -744,7 +744,7 @@
 <!-- ===================================================================== -->
 <!-- MODAL: CHARACTER CAST & AVATAR MANAGER (EXPANDED STUDIO)              -->
 <!-- ===================================================================== -->
-<div class="modal-backdrop" id="castModal" style="z-index:9999;">
+<div class="modal-backdrop" id="castModal" style="z-index:10010;">
   <div class="modal-window studio-modal-wide">
     <div class="modal-header">
       <span class="modal-title">🎭 Character Cast Studio</span>
@@ -911,7 +911,7 @@
 <!-- ===================================================================== -->
 <!-- MODAL: AI / STORY SCRIPT & AUTO-DIRECTOR STUDIO                       -->
 <!-- ===================================================================== -->
-<div class="modal-backdrop" id="scriptModal" style="z-index:9999;">
+<div class="modal-backdrop" id="scriptModal" style="z-index:10020;">
   <div class="modal-window studio-modal-wide" style="max-width:660px;">
     <div class="modal-header">
       <div style="display:flex; align-items:center; gap:8px;">
@@ -1270,7 +1270,7 @@
 </div>
 
 <!-- === VAULT MEDIA PICKER MODAL (FOR EDITING & ATTACHMENTS) === -->
-<div class="modal-backdrop" id="vaultPickModal">
+<div class="modal-backdrop" id="vaultPickModal" style="z-index:10020;">
   <div class="modal-window" style="max-width:440px;">
     <div class="modal-header">
       <div style="display:flex; align-items:center; gap:8px;">
@@ -1290,15 +1290,15 @@
 <!-- ===================================================================== -->
 <div class="modal-backdrop" id="assetManagerModal" style="z-index:10015;">
   <div class="modal-window studio-modal-wide" style="max-width:640px; width:95vw; max-height:90vh; display:flex; flex-direction:column;">
-    <div class="modal-header" style="padding:14px 18px; border-bottom:1px solid #1e293b;">
-      <div style="display:flex; align-items:center; gap:8px;">
+    <div class="modal-header asset-manager-header" style="padding:14px 18px; border-bottom:1px solid #1e293b;">
+      <div class="asset-header-left" style="display:flex; align-items:center; gap:8px;">
         <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
         <div>
           <div class="modal-title" style="font-size:15px; font-weight:900; color:#f8fafc;">📦 Studio Asset Manager</div>
-          <div style="font-size:11px; color:#94a3b8;">Preview, rename, delete & dynamically export assets for AI</div>
+          <div class="asset-header-subtitle" style="font-size:11px; color:#94a3b8;">Preview, rename, delete & dynamically export assets for AI</div>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
+      <div class="asset-header-actions" style="display:flex; align-items:center; gap:6px;">
         <button type="button" class="icon-btn" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; font-size:11px; font-weight:800; padding:6px 12px; box-shadow:0 2px 10px rgba(16,185,129,0.3);" onclick="copyStudioAssetInventory()" title="Dynamically copy complete asset inventory for ChatGPT">📋 Copy for AI</button>
         <button class="modal-close-btn" onclick="closeAssetManagerModal()">✕</button>
       </div>
@@ -1328,8 +1328,8 @@
     </div>
 
     <!-- FOOTER ACTIONS -->
-    <div style="padding:10px 18px; background:#090d16; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-      <div style="display:flex; gap:8px;">
+    <div class="asset-footer-bar" style="padding:10px 18px; background:#090d16; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+      <div class="asset-footer-copy-group" style="display:flex; gap:8px;">
         <button type="button" class="btn-secondary-comic" style="padding:7px 14px; font-size:12px; font-weight:700;" onclick="copyRawStudioAssetList()">📋 1. Copy Assets List</button>
         <button type="button" class="btn-secondary-comic" style="padding:7px 16px; font-size:12px; background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color:#fff; font-weight:800; box-shadow:0 2px 10px rgba(59,130,246,0.35);" onclick="copyMasterAiPrompt()">🎬 2. Copy Master AI Prompt</button>
       </div>

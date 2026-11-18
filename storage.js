@@ -474,12 +474,45 @@
           }
         }
 
+        // Merge all localStorage & memCache items to guarantee nothing is missed
+        const knownStateKeys = [
+          'manhwa_cast_v2', 'wh_messages', 'manhwa_custom_stickers', 'manhwa_custom_sfx',
+          'manhwa_custom_backgrounds', 'manhwa_saved_stories_library', 'manhwa_script_library',
+          'chathub_active_app', 'wh_sound_enabled', 'wh_cinema_speed', 'wh_cinema_spam_delay',
+          'chathub_pov_character_id', 'chathub_director_deck_mode', 'chathub_director_layout',
+          'wh_group_info'
+        ];
+        for (const k of knownStateKeys) {
+          if (stateObj[k] === undefined) {
+            const raw = ChatHubStorage.get(k);
+            if (raw !== null && raw !== undefined) {
+              try {
+                stateObj[k] = JSON.parse(raw);
+              } catch (e) {
+                stateObj[k] = raw;
+              }
+            }
+          }
+        }
+
+        let finalStories = Array.isArray(stories) ? [...stories] : [];
+        const storiesLib = stateObj['manhwa_saved_stories_library'];
+        if (Array.isArray(storiesLib)) {
+          const idSet = new Set(finalStories.map(s => s.id));
+          storiesLib.forEach(s => {
+            if (s && s.id && !idSet.has(s.id)) {
+              finalStories.push(s);
+              idSet.add(s.id);
+            }
+          });
+        }
+
         const backupData = {
           format: 'ChatHub_Full_Studio_Backup',
           version: '3.3',
           exportedAt: new Date().toISOString(),
           appState: stateObj,
-          savedStories: stories
+          savedStories: finalStories
         };
 
         const jsonString = JSON.stringify(backupData, null, 2);
@@ -525,11 +558,16 @@
           throw new Error('Invalid backup file structure.');
         }
 
+        const writePromises = [];
+
         // Restore appState
         if (data.appState && typeof data.appState === 'object') {
           for (const key of Object.keys(data.appState)) {
-            const val = typeof data.appState[key] === 'object' ? JSON.stringify(data.appState[key]) : data.appState[key];
-            ChatHubStorage.set(key, val);
+            const rawVal = data.appState[key];
+            const strVal = typeof rawVal === 'object' ? JSON.stringify(rawVal) : String(rawVal);
+            memCache.set(key, strVal);
+            try { localStorage.setItem(key, strVal); } catch (e) {}
+            writePromises.push(idbPut(STORE_STATE, { key, value: strVal, updatedAt: Date.now() }));
           }
         }
 
@@ -537,16 +575,22 @@
         if (Array.isArray(data.savedStories)) {
           for (const story of data.savedStories) {
             if (story && story.id) {
-              await ChatHubStorage.saveStory(story);
+              writePromises.push(ChatHubStorage.saveStory(story));
             }
           }
-          ChatHubStorage.set('manhwa_saved_stories_library', JSON.stringify(data.savedStories));
+          const storiesStr = JSON.stringify(data.savedStories);
+          memCache.set('manhwa_saved_stories_library', storiesStr);
+          try { localStorage.setItem('manhwa_saved_stories_library', storiesStr); } catch (e) {}
+          writePromises.push(idbPut(STORE_STATE, { key: 'manhwa_saved_stories_library', value: storiesStr, updatedAt: Date.now() }));
         }
+
+        // Await all IndexedDB writes to complete before refreshing!
+        await Promise.all(writePromises);
 
         if (typeof window.showToast === 'function') {
           window.showToast('🎉 Studio Backup restored successfully! Refreshing...');
         }
-        setTimeout(() => window.location.reload(), 1200);
+        setTimeout(() => window.location.reload(), 800);
       } catch (err) {
         console.error('[Storage] Import backup failed:', err);
         if (typeof window.showToast === 'function') {

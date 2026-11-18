@@ -334,7 +334,7 @@
   let currentCharId = 'c1';
   let currentExpr = 'normal';
   let activeDrawerTab = 'stickers';
-  let soundEnabled = true;
+  let soundEnabled = safeGetStorage('wh_sound_enabled') !== 'false';
   let groupConsecutiveMessages = true;
   let cleanRecordMode = false;
   let activeReplyMsgId = null;
@@ -545,7 +545,10 @@
   function openSpecialEventModal(parentModalId = null) {
     if (parentModalId) pushModalHistory(parentModalId);
     const m = document.getElementById('specialEventModal');
-    if (m) m.classList.add('open');
+    if (m) {
+      m.style.zIndex = '10025';
+      m.classList.add('open');
+    }
   }
 
   function closeSpecialEventModal() {
@@ -2158,6 +2161,10 @@ function playSciFiChimeSound() {
   function toggleCastPickerPopover() {
     const popover = document.getElementById('castPickerPopover');
     if (!popover) return;
+    const isOpening = !popover.classList.contains('open');
+    if (isOpening) {
+      renderDirectorStrip();
+    }
     popover.classList.toggle('open');
   }
 
@@ -7663,7 +7670,7 @@ if (msg.type === 'quest') {
         }
 
         card.innerHTML = `
-          <div style="display:flex; align-items:center; gap:12px; width:100%;">
+          <div class="asset-cast-row" style="display:flex; align-items:center; gap:12px; width:100%;">
             <div class="asset-thumb-wrap" style="border: 3px solid ${c.color || '#3b82f6'}; border-radius: 50%; width:52px; height:52px; min-width:52px;">
               <img src="${avatarSrc}" alt="${escapeHtml(c.name)}" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('${escapeHtml(c.name)}', '${c.color || '#3b82f6'}');">
             </div>
@@ -9852,8 +9859,13 @@ if (msg.type === 'quest') {
 
   function toggleSound() {
     soundEnabled = !soundEnabled;
+    safeSetStorage('wh_sound_enabled', soundEnabled ? 'true' : 'false');
     const btn = document.getElementById('soundToggleBtn');
     if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+    const soundIcon = document.getElementById('globalSoundIcon');
+    const soundLabel = document.getElementById('globalSoundLabel');
+    if (soundIcon) soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+    if (soundLabel) soundLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
     showToast(soundEnabled ? '🔊 Sound ON' : '🔇 Sound Muted');
   }
 
@@ -9966,6 +9978,14 @@ if (msg.type === 'quest') {
   updateCinemaSpeedUI();
   autoResizeComposerInput(document.getElementById('chatMessageInput'));
   initTurboGestures();
+
+  // Initialize Sound UI state
+  const initSoundBtn = document.getElementById('soundToggleBtn');
+  if (initSoundBtn) initSoundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+  const initSoundIcon = document.getElementById('globalSoundIcon');
+  const initSoundLabel = document.getElementById('globalSoundLabel');
+  if (initSoundIcon) initSoundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+  if (initSoundLabel) initSoundLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
 
   // Cinema Dock Auto-Hide Interaction Listeners (keeps video capture crystal clean)
   const phoneWrapperEl = document.getElementById('phoneWrapper');
