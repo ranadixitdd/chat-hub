@@ -3,15 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ToonGod / Manhwa Motion Comic Studio — Live Visual Sample</title>
+<title>Manhwa Motion Stage — Clean Visual Sample</title>
 <style>
-  :root {
-    --gold: #f59e0b;
-    --gold-glow: rgba(245, 158, 11, 0.4);
-    --shadow-purple: #8b5cf6;
-    --neon-blue: #00f0ff;
-    --rage-red: #ef4444;
-  }
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Bangers&display=swap');
 
   * {
     box-sizing: border-box;
@@ -20,474 +14,242 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  body {
-    background: #030712;
-    color: #f8fafc;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px;
-    overflow-x: hidden;
-  }
-
-  /* MASTER CONTROL DOCK */
-  .control-dock {
+  html, body {
     width: 100%;
-    max-width: 840px;
-    background: #0f172a;
-    border: 1.5px solid #334155;
-    border-radius: 20px;
-    padding: 14px 18px;
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.85);
-    z-index: 100;
-  }
-
-  .dock-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    border-bottom: 1px solid #1e293b;
-    padding-bottom: 10px;
-  }
-
-  .dock-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .dock-title h1 {
-    font-size: 16px;
-    font-weight: 900;
-    color: #f8fafc;
-    letter-spacing: -0.3px;
-  }
-
-  .dock-title p {
-    font-size: 11px;
-    color: #94a3b8;
-  }
-
-  .badge-live {
-    font-size: 11px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    border: 1px solid #ef4444;
-    padding: 3px 10px;
-    border-radius: 999px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .pulse-dot {
-    width: 7px;
-    height: 7px;
-    background: #ef4444;
-    border-radius: 50%;
-    animation: livePulse 1.2s infinite;
-  }
-  @keyframes livePulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(1.3); }
-  }
-
-  /* BUTTON TOOLBARS */
-  .dock-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .btn-group {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .dock-btn {
-    background: #1e293b;
-    border: 1px solid #334155;
-    color: #cbd5e1;
-    font-size: 12px;
-    font-weight: 800;
-    padding: 7px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.18s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .dock-btn:hover {
-    background: #334155;
-    color: #ffffff;
-  }
-
-  .dock-btn.active {
-    background: #0284c7;
-    border-color: #38bdf8;
-    color: #ffffff;
-    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
-  }
-
-  .dock-btn.play-btn {
-    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-    border-color: #f87171;
-    color: #ffffff;
-    box-shadow: 0 4px 18px rgba(239, 68, 68, 0.4);
-  }
-
-  .dock-btn.rotate-btn {
-    background: #d97706;
-    border-color: #f59e0b;
-    color: #ffffff;
-  }
-
-  /* EMOTION QUICK-TRIGGER CHIPS */
-  .emotion-tray {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    padding-top: 8px;
-    border-top: 1px solid #1e293b;
-  }
-
-  .tray-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-right: 4px;
-  }
-
-  .emotion-chip {
-    background: #1e293b;
-    border: 1px solid #475569;
-    color: #cbd5e1;
-    font-size: 11px;
-    font-weight: 800;
-    padding: 4px 10px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .emotion-chip:hover, .emotion-chip.active {
-    transform: scale(1.05);
-  }
-
-  .emotion-chip.chip-angry { border-color: #ef4444; color: #f87171; }
-  .emotion-chip.chip-shock { border-color: #38bdf8; color: #38bdf8; }
-  .emotion-chip.chip-laugh { border-color: #f59e0b; color: #fbbf24; }
-  .emotion-chip.chip-arise { border-color: #a855f7; color: #c084fc; background: rgba(168, 85, 247, 0.15); }
-
-  /* =====================================================================
-     THE CINEMA MOTION COMIC STAGE (PORTRAIT 9:16 VS ROTATED 16:9)
-     ===================================================================== */
-  .stage-viewport-box {
-    position: relative;
-    width: 100%;
-    max-width: 420px; /* Default 9:16 Mobile */
-    height: 720px;
-    max-height: 84vh;
-    border-radius: 36px;
-    border: 4px solid #1e293b;
-    background: #020617;
+    height: 100%;
     overflow: hidden;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
-    display: flex;
-    flex-direction: column;
+    background: #050508;
+    color: #f8fafc;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     user-select: none;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* ROTATED LANDSCAPE (16:9 CINEMA STAGE - ZERO OVERLAP) */
-  .stage-viewport-box.landscape-mode {
-    max-width: 820px !important;
-    height: 480px !important;
-    border-radius: 28px;
-  }
-
-  /* ENVIRONMENT BACKGROUND */
-  .stage-bg-layer {
-    position: absolute;
+  /* ═══════════════════════════════════════════════════
+     STAGE CONTAINER (FULLSCREEN OR ROTATED 16:9 VIEW)
+     ═══════════════════════════════════════════════════ */
+  #stageApp {
+    position: fixed;
     inset: 0;
-    background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #090d16 70%, #020617 100%);
-    background-size: cover;
-    z-index: 1;
-    transition: all 0.5s ease;
-  }
-
-  /* DYNAMIC MANHWA SPEEDLINES OVERLAY */
-  .speedlines-overlay {
-    position: absolute;
-    inset: 0;
-    background: repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 3px, rgba(255,255,255,0.03) 4px, transparent 6px);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 5;
-  }
-  .speedlines-active .speedlines-overlay {
-    opacity: 1;
-    animation: speedlineFlicker 0.1s infinite;
-  }
-  @keyframes speedlineFlicker {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-  }
-
-  /* SCREEN VIGNETTE & RUMBLE MULTIPLIERS */
-  .vignette-rage {
-    position: absolute;
-    inset: 0;
-    box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.7);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    z-index: 15;
-  }
-  .rage-active .vignette-rage {
-    opacity: 1;
-    animation: rageHeartbeat 0.8s infinite alternate;
-  }
-  @keyframes rageHeartbeat {
-    from { box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.4); }
-    to { box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.85); }
-  }
-
-  .vignette-arise {
-    position: absolute;
-    inset: 0;
-    box-shadow: inset 0 0 90px rgba(168, 85, 247, 0.8), inset 0 0 30px #00f0ff;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 15;
-  }
-  .arise-active .vignette-arise {
-    opacity: 1;
-  }
-
-  /* SCREEN SHAKE / IMPACT RUMBLE */
-  .shake-screen {
-    animation: screenRumble 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  }
-  @keyframes screenRumble {
-    10%, 90% { transform: translate3d(-3px, 2px, 0); }
-    20%, 80% { transform: translate3d(4px, -3px, 0); }
-    30%, 50%, 70% { transform: translate3d(-4px, 3px, 0); }
-    40%, 60% { transform: translate3d(3px, -2px, 0); }
-  }
-
-  /* TOP CINEMA HUD */
-  .cinema-hud {
-    position: relative;
-    z-index: 30;
-    padding: 12px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
-  }
-
-  .hud-series-tag {
-    font-size: 11px;
-    font-weight: 900;
-    color: #facc15;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .hud-turn-count {
-    font-size: 11px;
-    font-weight: 800;
-    color: #38bdf8;
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid #334155;
-    padding: 3px 10px;
-    border-radius: 12px;
-  }
-
-  /* =====================================================================
-     THE LIVING CHARACTER ARENA: 100% TRANSPARENT CUTOUTS ON AIR
-     ===================================================================== */
-  .comic-arena {
-    position: relative;
-    flex: 1;
-    z-index: 20;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px 14px 20px 14px;
     overflow: hidden;
+    background: #020205;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .landscape-mode .comic-arena {
-    padding: 10px 28px 20px 28px;
+  /* ATMOSPHERIC DYNAMIC BACKGROUND */
+  .dynamic-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    transition: background 0.8s ease, filter 0.8s ease;
   }
 
-  /* SPEAKER ROWS */
-  .actor-dialogue-row {
-    position: relative;
-    width: 100%;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-height: 230px;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  .mood-calm {
+    background: radial-gradient(circle at 50% 20%, #0c4a6e 0%, #071a2e 50%, #020617 100%);
+  }
+  .mood-tense {
+    background: radial-gradient(circle at 50% 30%, #450a0a 0%, #1a0505 55%, #020205 100%);
+  }
+  .mood-epic {
+    background: radial-gradient(circle at 50% 25%, #3b0764 0%, #17072b 55%, #05020a 100%);
+  }
+  .mood-warm {
+    background: radial-gradient(circle at 50% 30%, #78350f 0%, #291003 55%, #050201 100%);
   }
 
-  .actor-dialogue-row.bottom-speaker {
-    align-items: flex-end;
-    min-height: 250px;
-  }
-
-  .landscape-mode .actor-dialogue-row {
-    min-height: 180px;
-  }
-
-  /* CHARACTER CUTOUT CONTAINER (ZERO SQUARES / ZERO CROPPING) */
-  .floating-actor-figure {
-    flex: 0 0 145px;
-    width: 145px;
-    height: 220px;
-    position: relative;
+  /* AMBIENT FLOATING DUST PARTICLES */
+  .particle-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
     pointer-events: none;
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease, opacity 0.3s ease;
-    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.85)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
-    animation: naturalBreathe 3.4s infinite ease-in-out alternate;
   }
 
-  .landscape-mode .floating-actor-figure {
-    flex: 0 0 170px;
-    width: 170px;
-    height: 235px;
+  /* SUBTLE VIGNETTE */
+  .cinema-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.75);
   }
 
-  .actor-dialogue-row.bottom-speaker .floating-actor-figure {
-    order: 2; /* Right side */
-    animation-delay: -1.7s;
+  /* ═══════════════════════════════════════════════════
+     LIVING FULL-BODY / BUST CHARACTER ACTOR
+     ═══════════════════════════════════════════════════ */
+  .actor-container {
+    position: absolute;
+    bottom: 0;
+    z-index: 10;
+    pointer-events: none;
+    transition: all 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  @keyframes naturalBreathe {
-    0% { transform: translateY(0) scale(1); }
-    100% { transform: translateY(-5px) scale(1.012); }
+  /* LEFT SPEAKER PLACEMENT */
+  .actor-left {
+    left: -2%;
   }
 
-  .actor-cutout-img {
+  /* RIGHT SPEAKER PLACEMENT */
+  .actor-right {
+    right: -2%;
+  }
+
+  /* FULL BODY MODE (Default) */
+  .view-full-body .actor-container {
+    width: 60%;
+    max-width: 380px;
+    height: 82vh;
+  }
+  .view-full-body .actor-container img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     object-position: bottom center;
-    display: block;
-    user-select: none;
+    filter: drop-shadow(0 15px 35px rgba(0,0,0,0.85));
   }
 
-  /* EMOTIONAL REACTION POPUPS ABOVE HEAD */
-  .actor-reaction-badge {
+  /* BUST ZOOM MODE (Toggleable via button) */
+  .view-bust .actor-container {
+    width: 82%;
+    max-width: 520px;
+    height: 95vh;
+  }
+  .view-bust .actor-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    transform: translateY(12%);
+    filter: drop-shadow(0 20px 45px rgba(0,0,0,0.9));
+  }
+
+  /* SUBTLE IDLE BREATHING SINE */
+  .actor-container.breathing img {
+    animation: livingBreath 3.6s ease-in-out infinite alternate;
+  }
+  @keyframes livingBreath {
+    0% { transform: translateY(0) scaleY(1); }
+    100% { transform: translateY(-4px) scaleY(1.008); }
+  }
+
+  /* SOFT BLEND AT BOTTOM FEET */
+  .actor-blend-fade {
     position: absolute;
-    top: -12px;
-    right: 15px;
-    font-size: 26px;
-    opacity: 0;
-    transform: scale(0.5) translateY(10px);
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 14%;
+    background: linear-gradient(to top, rgba(2,2,5,0.95) 0%, transparent 100%);
     pointer-events: none;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8));
-    z-index: 10;
+    z-index: 12;
   }
 
-  .show-reaction .actor-reaction-badge {
-    opacity: 1;
-    transform: scale(1.15) translateY(0);
-    animation: reactionBob 0.6s infinite alternate ease-in-out;
-  }
-  @keyframes reactionBob {
-    from { transform: scale(1.15) translateY(0); }
-    to { transform: scale(1.25) translateY(-5px); }
-  }
-
-  /* ACTIVE SPEAKER STATE */
-  .actor-dialogue-row.active .floating-actor-figure {
-    opacity: 1;
-    transform: translateY(-6px) scale(1.06) !important;
-    filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.75)) drop-shadow(0 18px 28px rgba(0, 0, 0, 0.95));
+  /* ═══════════════════════════════════════════════════
+     MINI BABY CHIBI STICKER PLACEHOLDER (NEAR HEAD)
+     ═══════════════════════════════════════════════════ */
+  .chibi-sticker-anchor {
+    position: absolute;
+    top: 14%;
+    z-index: 25;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: chibiPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .actor-dialogue-row.active.is-rage .floating-actor-figure {
-    filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.9)) drop-shadow(0 18px 28px rgba(0, 0, 0, 0.95));
+  .actor-left .chibi-sticker-anchor {
+    right: -25px;
+  }
+  .actor-right .chibi-sticker-anchor {
+    left: -25px;
   }
 
-  .actor-dialogue-row.active.is-arise .floating-actor-figure {
-    filter: drop-shadow(0 0 35px rgba(168, 85, 247, 0.95)) drop-shadow(0 0 15px #00f0ff);
+  @keyframes chibiPop {
+    0% { transform: scale(0.4) translateY(15px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
   }
 
-  /* INACTIVE LISTENER (DIMMED & BREATHING SOFTLY) */
-  .actor-dialogue-row:not(.active) .floating-actor-figure {
-    opacity: 0.55;
-    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.8)) brightness(0.75);
-    transform: scale(0.96);
-  }
-
-  /* =====================================================================
-     MANGA / MANHWA COMIC SPEECH BUBBLE STYLES
-     ===================================================================== */
-  .manga-speech-bubble {
-    flex: 1 1 auto;
-    min-width: 0;
-    position: relative;
-    padding: 14px 16px;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    animation: bubblePop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .actor-dialogue-row.bottom-speaker .manga-speech-bubble {
-    order: 1;
-  }
-
-  @keyframes bubblePop {
-    0% { opacity: 0; transform: scale(0.9) translateY(6px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  /* --- STYLE 1: CRISP COMIC GOLD (CLASH / CLASSIC) --- */
-  .bubble-style-classic {
+  /* CUTE COMIC CHIBI STICKER BUBBLE */
+  .mini-chibi-pill {
     background: #ffffff;
-    border: 3.5px solid #1e1b18;
+    color: #0f172a;
+    border: 2px dashed #38bdf8;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 10.5px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+  }
+
+  .mini-chibi-pill .chibi-avatar-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fef08a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border: 1.5px solid #0f172a;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     MANGA SPEECH BUBBLES (MIX OF 3 AUTHENTIC STYLES)
+     ═══════════════════════════════════════════════════ */
+  .speech-bubble-anchor {
+    position: absolute;
+    z-index: 30;
+    top: 20%;
+    max-width: 58%;
+    min-width: 210px;
+    animation: bubbleSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes bubbleSlideIn {
+    0% { opacity: 0; transform: translateY(14px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* LEFT SPEAKER -> Bubble floats on Right */
+  .bubble-for-left-speaker {
+    right: 5%;
+  }
+
+  /* RIGHT SPEAKER -> Bubble floats on Left */
+  .bubble-for-right-speaker {
+    left: 5%;
+  }
+
+  /* --- STYLE 1: CLEAN CRISP WHITE BUBBLE (NORMAL) --- */
+  .bubble-normal {
+    background: rgba(255, 255, 255, 0.98);
+    color: #0f172a;
     border-radius: 22px;
-    color: #171310;
+    padding: 16px 18px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    border: 2px solid #e2e8f0;
+    position: relative;
   }
 
   /* --- STYLE 2: JAGGED SHOUT BUBBLE (ANGRY / ATTACK) --- */
-  .bubble-style-shout {
+  .bubble-shout {
     background: #fff1f2;
-    border: 3.5px solid #991b1b;
-    border-radius: 12px;
     color: #450a0a;
-    box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+    border: 3px solid #dc2626;
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative;
+    box-shadow: 0 0 30px rgba(220, 38, 38, 0.4);
     clip-path: polygon(
       0% 8%, 4% 0%, 12% 6%, 20% 0%, 28% 5%, 36% 0%, 45% 6%, 55% 0%, 65% 5%, 75% 0%, 85% 6%, 95% 0%, 100% 8%,
       96% 25%, 100% 40%, 95% 55%, 100% 70%, 96% 85%, 100% 92%,
@@ -496,87 +258,68 @@
     );
   }
 
-  /* --- STYLE 3: DARK MENACING AURA BUBBLE (SHADOW MONARCH / ARISE) --- */
-  .bubble-style-arise {
-    background: linear-gradient(135deg, #090d16 0%, #1e1b4b 100%);
-    border: 3px solid #a855f7;
-    border-radius: 20px;
+  /* --- STYLE 3: OBSIDIAN DARK AURA BUBBLE (ARISE / EPIC) --- */
+  .bubble-dark {
+    background: linear-gradient(135deg, #090614 0%, #1e1035 100%);
     color: #f8fafc;
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), inset 0 0 15px rgba(0, 240, 255, 0.3);
+    border: 2px solid #a855f7;
+    border-radius: 22px;
+    padding: 16px 18px;
+    position: relative;
+    box-shadow: 0 0 35px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2);
   }
 
-  /* DIRECTIONAL COMIC TAILS */
-  .bubble-callout-tail {
+  /* ORGANIC DIRECTIONAL TAILS */
+  .bubble-tail {
     position: absolute;
     width: 0;
     height: 0;
     border-style: solid;
   }
 
-  /* Top Row Tail: Points LEFT to Character 1 */
-  .actor-dialogue-row:not(.bottom-speaker) .bubble-callout-tail {
-    left: -18px;
-    top: 32px;
-    border-width: 12px 20px 12px 0;
-    border-color: transparent #1e1b18 transparent transparent;
+  /* Left Speaker tail pointing Left */
+  .bubble-for-left-speaker .bubble-tail {
+    left: -14px;
+    top: 26px;
+    border-width: 9px 15px 9px 0;
+    border-color: transparent rgba(255,255,255,0.98) transparent transparent;
   }
-  .actor-dialogue-row:not(.bottom-speaker) .bubble-callout-tail::after {
-    content: '';
-    position: absolute;
-    left: 5px;
-    top: -9px;
-    border-width: 9px 16px 9px 0;
-    border-color: transparent #ffffff transparent transparent;
+  .bubble-for-left-speaker .bubble-dark .bubble-tail {
+    border-color: transparent #a855f7 transparent transparent;
   }
 
-  /* Bottom Row Tail: Points RIGHT to Character 2 */
-  .actor-dialogue-row.bottom-speaker .bubble-callout-tail {
-    right: -18px;
-    bottom: 34px;
-    border-width: 12px 0 12px 20px;
-    border-color: transparent transparent transparent #1e1b18;
+  /* Right Speaker tail pointing Right */
+  .bubble-for-right-speaker .bubble-tail {
+    right: -14px;
+    top: 26px;
+    border-width: 9px 0 9px 15px;
+    border-color: transparent transparent transparent rgba(255,255,255,0.98);
   }
-  .actor-dialogue-row.bottom-speaker .bubble-callout-tail::after {
-    content: '';
-    position: absolute;
-    right: 5px;
-    top: -9px;
-    border-width: 9px 0 9px 16px;
-    border-color: transparent transparent transparent #ffffff;
+  .bubble-for-right-speaker .bubble-dark .bubble-tail {
+    border-color: transparent transparent transparent #a855f7;
   }
 
-  /* INACTIVE BUBBLE MUTED */
-  .actor-dialogue-row:not(.active) .manga-speech-bubble {
-    opacity: 0.5;
-    filter: grayscale(0.3);
-  }
-
-  .bubble-meta-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-  }
-
-  .speaker-display-name {
+  .speaker-title-tag {
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
+    margin-bottom: 5px;
+    display: inline-block;
   }
 
-  .bubble-style-classic .speaker-display-name { color: #b45309; }
-  .bubble-style-shout .speaker-display-name { color: #dc2626; font-size: 12px; }
-  .bubble-style-arise .speaker-display-name { color: #38bdf8; text-shadow: 0 0 10px #00f0ff; }
+  .bubble-normal .speaker-title-tag { color: #0284c7; }
+  .bubble-shout .speaker-title-tag { color: #dc2626; font-size: 12px; }
+  .bubble-dark .speaker-title-tag { color: #38bdf8; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
 
-  .bubble-dialogue-text {
+  .bubble-text-content {
     font-size: 15px;
-    font-weight: 800;
-    line-height: 1.4;
-    word-break: break-word;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.15px;
   }
 
-  .bubble-dialogue-text mark {
+  .bubble-text-content mark {
     background: #fca5a5;
     color: #991b1b;
     padding: 1px 5px;
@@ -584,760 +327,446 @@
     font-weight: 900;
   }
 
-  .bubble-style-arise .bubble-dialogue-text mark {
+  .bubble-dark .bubble-text-content mark {
     background: #a855f7;
     color: #ffffff;
     box-shadow: 0 0 10px #c084fc;
   }
 
-  /* DYNAMIC FLOATING SOUND EFFECT (SFX IMPACT) */
-  .floating-manga-sfx {
+  /* ═══════════════════════════════════════════════════
+     SYSTEM QUEST / NARRATION CARD
+     ═══════════════════════════════════════════════════ */
+  .system-quest-overlay {
     position: absolute;
-    top: 45%;
+    top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(0) rotate(-8deg);
-    font-size: 42px;
-    font-weight: 950;
-    letter-spacing: 2px;
-    color: #facc15;
-    text-shadow: 
-      -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000,
-      0 0 25px rgba(250, 204, 21, 0.85);
-    pointer-events: none;
-    z-index: 50;
-    opacity: 0;
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .floating-manga-sfx.show {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.15) rotate(-8deg);
-    animation: sfxPunch 0.45s ease-out;
-  }
-  @keyframes sfxPunch {
-    0% { transform: translate(-50%, -50%) scale(0.2) rotate(15deg); }
-    70% { transform: translate(-50%, -50%) scale(1.3) rotate(-10deg); }
-    100% { transform: translate(-50%, -50%) scale(1.15) rotate(-8deg); }
-  }
-
-  /* HOLOGRAPHIC SYSTEM QUEST BANNER */
-  .system-quest-banner {
-    position: relative;
-    background: rgba(10, 25, 47, 0.95);
-    border: 2.5px solid #00f0ff;
-    border-radius: 16px;
-    padding: 12px 18px;
-    box-shadow: 0 0 35px rgba(0, 240, 255, 0.55), inset 0 0 15px rgba(0, 240, 255, 0.2);
+    transform: translate(-50%, -50%);
+    width: 86%;
+    max-width: 440px;
+    z-index: 40;
     text-align: center;
-    margin: 8px 0;
-    animation: questPulse 1.8s infinite alternate ease-in-out;
-    z-index: 25;
-  }
-  @keyframes questPulse {
-    from { transform: scale(0.98); }
-    to { transform: scale(1.01); }
+    animation: questPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* =====================================================================
-     INTEGRATED 1-CLICK BACKGROUND REMOVER TOOL (TEST IT RIGHT HERE!)
-     ===================================================================== */
-  .bg-remover-section {
-    width: 100%;
-    max-width: 840px;
-    background: #0f172a;
-    border: 1.5px solid #334155;
+  @keyframes questPop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .quest-card {
+    background: rgba(6, 15, 30, 0.94);
+    border: 2px solid #00f0ff;
     border-radius: 20px;
-    padding: 16px 20px;
-    margin-top: 14px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+    padding: 20px 24px;
+    box-shadow: 0 0 45px rgba(0, 240, 255, 0.45), inset 0 0 20px rgba(0, 240, 255, 0.15);
+    backdrop-filter: blur(8px);
   }
 
-  .remover-header {
+  /* ═══════════════════════════════════════════════════
+     MINIMAL DISCREET FLOATING HUD (NO UGLY TOOLBAR!)
+     ═══════════════════════════════════════════════════ */
+  .top-floating-hud {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    right: 16px;
+    z-index: 50;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    pointer-events: none;
   }
 
-  .remover-title {
-    font-size: 14px;
-    font-weight: 900;
-    color: #f8fafc;
+  .hud-badge-soft {
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(0, 0, 0, 0.45);
+    padding: 4px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .floating-tools {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    gap: 6px;
+    pointer-events: all;
   }
 
-  .remover-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
-    align-items: center;
-  }
-
-  .drop-zone {
-    border: 2px dashed #475569;
-    background: #020617;
-    border-radius: 14px;
-    padding: 16px;
-    text-align: center;
+  .hud-btn {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f8fafc;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 999px;
     cursor: pointer;
+    backdrop-filter: blur(8px);
     transition: all 0.2s ease;
   }
-  .drop-zone:hover {
+  .hud-btn:hover {
+    background: rgba(30, 41, 59, 0.85);
+  }
+  .hud-btn.active {
+    background: #0284c7;
     border-color: #38bdf8;
-    background: #090d16;
   }
 
-  .remover-preview-card {
-    background: #020617;
-    border: 1px solid #334155;
-    border-radius: 14px;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
+  .bottom-tap-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    z-index: 50;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
   }
 
-  .preview-canvas-box {
-    width: 100px;
-    height: 120px;
-    background-image: 
-      linear-gradient(45deg, #1e293b 25%, transparent 25%),
-      linear-gradient(-45deg, #1e293b 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #1e293b 75%),
-      linear-gradient(-45deg, transparent 75%, #1e293b 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-    border-radius: 10px;
-    border: 1px solid #475569;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+  /* ═══════════════════════════════════════════════════
+     LANDSCAPE 16:9 ROTATED MODE (ZERO OVERLAP)
+     ═══════════════════════════════════════════════════ */
+  @media (orientation: landscape) {
+    .actor-container {
+      width: 35% !important;
+      max-width: 340px !important;
+      height: 92vh !important;
+    }
+    .speech-bubble-anchor {
+      max-width: 44% !important;
+      top: 24% !important;
+    }
   }
 
-  #removerCanvas {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-
+  /* Mobile narrow screen adjustments */
   @media (max-width: 480px) {
-    body { padding: 6px; }
-    .stage-viewport-box { height: 88vh; }
-    .floating-actor-figure { flex: 0 0 115px; width: 115px; height: 185px; }
-    .bubble-dialogue-text { font-size: 13.5px; }
+    .speech-bubble-anchor { max-width: 62%; }
+    .bubble-text-content { font-size: 14px; }
   }
 </style>
 </head>
-<body>
+<body class="view-full-body">
 
-  <!-- MASTER CONTROL DOCK -->
-  <div class="control-dock">
-    <div class="dock-header">
-      <div class="dock-title">
-        <span style="font-size:24px;">🎬</span>
-        <div>
-          <h1>ToonGod Manhwa Motion Comic Studio</h1>
-          <p>Zero-scroll hands-free auto-play, manga bubbles, visual emotion multipliers & 1-click BG remover</p>
-        </div>
-      </div>
-      <span class="badge-live"><span class="pulse-dot"></span> Visual Sample Live</span>
-    </div>
+<div id="stageApp" onclick="handleTapAdvance(event)">
+  <!-- DYNAMIC BACKGROUND -->
+  <div class="dynamic-bg mood-calm" id="stageBg"></div>
 
-    <!-- PRIMARY DOCK ACTIONS -->
-    <div class="dock-toolbar">
-      <div class="btn-group">
-        <button type="button" class="dock-btn play-btn" id="playBtn" onclick="toggleAutoPlay()">
-          <span>▶ Play Full Episode (No Scrolling!)</span>
-        </button>
-        <button type="button" class="dock-btn" onclick="prevTurn()">◀ Prev</button>
-        <button type="button" class="dock-btn" onclick="nextTurn()">Next ▶</button>
-        <button type="button" class="dock-btn" onclick="resetStory()">↺ Reset</button>
-      </div>
+  <!-- FLOATING PARTICLES CANVAS -->
+  <canvas class="particle-canvas" id="particleCanvas"></canvas>
 
-      <div class="btn-group">
-        <!-- SCREEN ROTATE BUTTON (1-TAP 9:16 VS 16:9) -->
-        <button type="button" class="dock-btn rotate-btn" id="rotateBtn" onclick="toggleScreenRotation()">
-          <span>🔄 Rotate Screen (16:9 Cinema Wide)</span>
-        </button>
-        <button type="button" class="dock-btn" id="soundToggleBtn" onclick="toggleSound()">
-          <span>🔊 Sound: ON</span>
-        </button>
-      </div>
-    </div>
+  <!-- CINEMA VIGNETTE -->
+  <div class="cinema-vignette"></div>
 
-    <!-- VISUAL EMOTION QUICK MULTIPLIERS -->
-    <div class="emotion-tray">
-      <span class="tray-label">⚡ Test Emotions:</span>
-      <button type="button" class="emotion-chip chip-angry" onclick="triggerSceneEmotion('angry')">💢 Rage (Steam + Shake + Jagged Bubble)</button>
-      <button type="button" class="emotion-chip chip-shock" onclick="triggerSceneEmotion('shock')">😱 Shock (Sweat Drop + Gasp)</button>
-      <button type="button" class="emotion-chip chip-laugh" onclick="triggerSceneEmotion('laugh')">😆 Laugh (Star Sparkle + Grin)</button>
-      <button type="button" class="emotion-chip chip-arise" onclick="triggerSceneEmotion('arise')">😈 Arise (Dark Monarch Aura)</button>
-      <button type="button" class="emotion-chip" onclick="triggerSceneEmotion('confident')">✨ Confident</button>
+  <!-- TOP DISCREET CONTROLS (MINIMAL & IMMERSIVE) -->
+  <div class="top-floating-hud">
+    <div class="hud-badge-soft" id="turnIndicator">Scene 1 / 6</div>
+    
+    <div class="floating-tools">
+      <!-- 1. TOGGLE FULL-BODY VS BUST VIEW -->
+      <button type="button" class="hud-btn" id="viewToggleBtn" onclick="event.stopPropagation(); toggleBodyView();" title="Toggle Full-body vs Bust Zoom">
+        <span id="viewModeLabel">👤 Bust Zoom</span>
+      </button>
+
+      <!-- 2. AUTO-PLAY TOGGLE -->
+      <button type="button" class="hud-btn" id="autoPlayBtn" onclick="event.stopPropagation(); toggleAutoPlay();">
+        <span id="autoLabel">▶ Auto</span>
+      </button>
+
+      <!-- 3. RESTART -->
+      <button type="button" class="hud-btn" onclick="event.stopPropagation(); restartScene();">
+        <span>↺</span>
+      </button>
     </div>
   </div>
 
-  <!-- THE CINEMA PHONE STAGE CANVAS -->
-  <div class="stage-viewport-box" id="stageCanvas">
-    <div class="stage-bg-layer" id="bgLayer"></div>
-    <div class="speedlines-overlay" id="speedlines"></div>
-    <div class="vignette-rage" id="rageVignette"></div>
-    <div class="vignette-arise" id="ariseVignette"></div>
+  <!-- LIVING CHARACTER LAYER (FULL BODY CUTOUT FLOATING ON AIR) -->
+  <div class="actor-container actor-left breathing" id="actorContainer">
+    <img src="assets/characters/anime_girl_body.png" alt="Character Cutout" id="actorImg">
+    <div class="actor-blend-fade"></div>
 
-    <!-- FLOATING MANGA SFX IMPACT -->
-    <div class="floating-manga-sfx" id="mangaSfxText">BOOM!</div>
-
-    <!-- TOP HUD -->
-    <div class="cinema-hud">
-      <span class="hud-series-tag">
-        <span>⚔️</span>
-        <span id="hudSeriesName">Manhwa Motion Comic: Episode 1</span>
-      </span>
-      <span class="hud-turn-count" id="turnPill">Scene 1 / 6</span>
-    </div>
-
-    <!-- LIVING CUTOUT COMIC ARENA -->
-    <div class="comic-arena" id="comicArena" onclick="handleArenaTap()">
-      
-      <!-- TOP ACTOR ROW: SUNG JIN-WOO (LEFT) + COMIC BUBBLE -->
-      <div class="actor-dialogue-row active" id="rowTop">
-        
-        <!-- LEFT 100% TRANSPARENT CUTOUT CHARACTER ON AIR -->
-        <div class="floating-actor-figure" id="actorLeft">
-          <div class="actor-reaction-badge" id="leftReactionBadge">💢</div>
-          <img src="assets/characters/anime_boy_body.png" alt="Sung Jin-Woo" class="actor-cutout-img" id="actorLeftImg"
-               onerror="this.onerror=null; this.src='assets/characters/barbarian_cutout.png';">
-        </div>
-
-        <!-- MANGA COMIC SPEECH BUBBLE (WITH DIRECTIONAL TAIL POINTING LEFT) -->
-        <div class="manga-speech-bubble bubble-style-classic" id="bubbleTop">
-          <div class="bubble-callout-tail"></div>
-          <div class="bubble-meta-head">
-            <span class="speaker-display-name" id="leftSpeakerLabel">Sung Jin-Woo</span>
-            <span style="font-size:9.5px; font-weight:800; background:#0f172a; color:#f59e0b; padding:1px 6px; border-radius:4px;" id="leftEmotionTag">confident</span>
-          </div>
-          <div class="bubble-dialogue-text" id="leftSpeechText">
-            The Dungeon gate is sealed. Prepare your weapon!
-          </div>
-        </div>
-
-      </div>
-
-      <!-- SYSTEM QUEST POPUP -->
-      <div class="system-quest-banner" id="questAlertBox" style="display:none;">
-        <div style="font-size:11px; font-weight:900; color:#00f0ff; letter-spacing:1.5px; text-transform:uppercase;">❖ URGENT SYSTEM QUEST</div>
-        <div style="font-size:13.5px; font-weight:800; color:#ffffff; margin-top:4px;" id="questAlertText">SURVIVAL TRIAL: Defeat the Monarch or be eliminated!</div>
-      </div>
-
-      <!-- BOTTOM ACTOR ROW: COMIC BUBBLE + BARBARIAN MONARCH (RIGHT) -->
-      <div class="actor-dialogue-row bottom-speaker" id="rowBottom">
-        
-        <!-- MANGA COMIC SPEECH BUBBLE (WITH DIRECTIONAL TAIL POINTING RIGHT) -->
-        <div class="manga-speech-bubble bubble-style-classic" id="bubbleBottom">
-          <div class="bubble-callout-tail"></div>
-          <div class="bubble-meta-head">
-            <span class="speaker-display-name" id="rightSpeakerLabel">Barbarian Monarch</span>
-            <span style="font-size:9.5px; font-weight:800; background:#0f172a; color:#f59e0b; padding:1px 6px; border-radius:4px;" id="rightEmotionTag">serious</span>
-          </div>
-          <div class="bubble-dialogue-text" id="rightSpeechText">
-            You dare challenge me, weak hunter?! My iron blade knows no mercy!
-          </div>
-        </div>
-
-        <!-- RIGHT 100% TRANSPARENT CUTOUT CHARACTER ON AIR -->
-        <div class="floating-actor-figure" id="actorRight">
-          <div class="actor-reaction-badge" id="rightReactionBadge">💢</div>
-          <img src="assets/characters/knight_cutout.png" alt="Barbarian Monarch" class="actor-cutout-img" id="actorRightImg"
-               onerror="this.onerror=null; this.src='assets/characters/anime_girl_body.png';">
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- =====================================================================
-       INTEGRATED 1-CLICK BACKGROUND REMOVER TOOL (TEST YOUR OWN ART!)
-       ===================================================================== -->
-  <div class="bg-remover-section">
-    <div class="remover-header">
-      <div class="remover-title">
-        <span>🪄</span>
-        <span>1-Click Character Background Remover (Test with ANY Image!)</span>
-      </div>
-      <span style="font-size:11px; color:#38bdf8; font-weight:700;">Client-Side Canvas Engine</span>
-    </div>
-
-    <div class="remover-grid">
-      <!-- UPLOAD DROP ZONE -->
-      <label class="drop-zone" for="userUploadFile">
-        <input type="file" id="userUploadFile" accept="image/*" style="display:none;" onchange="handleUserArtUpload(event)">
-        <span style="font-size:28px; display:block; margin-bottom:6px;">📁</span>
-        <strong style="font-size:13px; color:#f8fafc; display:block;">Click to Upload Any Character Image</strong>
-        <span style="font-size:11px; color:#94a3b8;">PNG, JPG, or Screenshot with solid/white/checker background</span>
-      </label>
-
-      <!-- LIVE PREVIEW & AUTO-CLEAN RESULT -->
-      <div class="remover-preview-card">
-        <div class="preview-canvas-box">
-          <canvas id="removerCanvas" width="200" height="240"></canvas>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:12px; font-weight:800; color:#f8fafc; margin-bottom:6px;">Instant Transparent Cutout</div>
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-            <span style="font-size:10.5px; color:#94a3b8;">Threshold:</span>
-            <input type="range" id="toleranceSlider" min="5" max="80" value="25" style="width:100px;" oninput="reprocessCurrentUpload()">
-          </div>
-          <button type="button" class="dock-btn" style="background:#0284c7; color:#fff; border:none; padding:6px 12px; font-size:11.5px;" onclick="applyCutoutToStage()">
-            <span>✨ Put Cutout on Stage!</span>
-          </button>
-        </div>
+    <!-- MINI BABY CHIBI REACTION STICKER (PLACEHOLDER ANCHOR) -->
+    <div class="chibi-sticker-anchor" id="chibiAnchor">
+      <div class="mini-chibi-pill">
+        <span class="chibi-avatar-circle" id="chibiEmoji">✨</span>
+        <span id="chibiText">[Chibi Sticker]</span>
       </div>
     </div>
   </div>
+
+  <!-- MANGA SPEECH BUBBLE ANCHOR -->
+  <div class="speech-bubble-anchor bubble-for-left-speaker" id="bubbleAnchor">
+    <div class="bubble-normal" id="speechBubble">
+      <div class="bubble-tail"></div>
+      <span class="speaker-title-tag" id="speakerLabel">Cha Hae-In</span>
+      <div class="bubble-text-content" id="dialogueText">
+        The Dungeon readings are fluctuating. An irregular mana core is active inside.
+      </div>
+    </div>
+  </div>
+
+  <!-- SYSTEM QUEST OVERLAY (DROPS IN WHEN ACTIVE) -->
+  <div class="system-quest-overlay" id="questOverlay" style="display:none;">
+    <div class="quest-card">
+      <div style="font-size:10.5px; font-weight:900; color:#00f0ff; letter-spacing:2px; margin-bottom:8px;">❖ URGENT SYSTEM QUEST</div>
+      <div style="font-size:14.5px; font-weight:800; color:#ffffff; line-height:1.45;" id="questContent">
+        SURVIVAL MISSION: Clear the S-Rank Dungeon gate before the barrier collapses!
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM HINT -->
+  <div class="bottom-tap-hint" id="tapHint">Tap anywhere to advance • or press Auto</div>
+</div>
 
 <script>
-  /* =====================================================================
-     AUTHENTIC MULTI-TURN SCRIPT WITH MANGA BUBBLES & EMOTION MULTIPLIERS
-     ===================================================================== */
-  const motionComicScript = [
+  /* ═══════════════════════════════════════════════════
+     STORY SCRIPT WITH MIXED BUBBLE STYLES & MOODS
+     ═══════════════════════════════════════════════════ */
+  const storyScript = [
     {
       turn: 1,
       speaker: 'left',
-      name: 'Sung Jin-Woo',
-      emotion: 'confident',
-      bubbleStyle: 'classic',
-      reactionBadge: '✨',
-      sfx: 'SHING!',
-      html: 'Can I get two Star Bonus Snacks in a row from this Dungeon gate?'
+      name: 'Cha Hae-In',
+      img: 'assets/characters/anime_girl_body.png',
+      mood: 'calm',
+      bubbleStyle: 'normal',
+      chibiEmoji: '✨',
+      chibiText: '[Your Chibi: Confident]',
+      text: 'The Dungeon readings are fluctuating. An irregular mana core is active inside.'
     },
     {
       turn: 2,
       speaker: 'right',
-      name: 'Barbarian Monarch',
-      emotion: 'serious',
-      bubbleStyle: 'classic',
-      reactionBadge: '',
-      sfx: '',
-      html: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.'
+      name: 'Barbarian King',
+      img: 'assets/characters/knight_cutout.png',
+      mood: 'warm',
+      bubbleStyle: 'normal',
+      chibiEmoji: '🛡️',
+      chibiText: '[Your Chibi: Smirk]',
+      text: 'Good. A hunter who runs from danger has no business holding a blade.'
     },
     {
       turn: 3,
       speaker: 'system',
       name: 'SYSTEM',
-      emotion: 'quest',
-      bubbleStyle: 'classic',
-      quest: '⚡ SYSTEM ALERT: The Dungeon entrance has collapsed! Defeat the Boss in 180s!'
+      mood: 'tense',
+      bubbleStyle: 'quest',
+      questText: '⚡ SYSTEM ALERT: The Dungeon entrance has collapsed! Time remaining: 180s'
     },
     {
       turn: 4,
       speaker: 'right',
-      name: 'Barbarian Monarch',
-      emotion: 'angry',
+      name: 'Barbarian King',
+      img: 'assets/characters/knight_cutout.png',
+      mood: 'tense',
       bubbleStyle: 'shout',
-      reactionBadge: '💢',
-      sfx: 'BOOM!',
-      html: 'ENOUGH CHATTER, MORTAL! YOU WILL DIE HERE UNDER MY HEAVY BLADE!'
+      chibiEmoji: '💢',
+      chibiText: '[Your Chibi: Angry]',
+      text: 'AN ENTRANCE COLLAPSE?! <mark>WE ARE TRAPPED HERE WITH THE BOSS?!</mark>'
     },
     {
       turn: 5,
       speaker: 'left',
-      name: 'Sung Jin-Woo',
-      emotion: 'shock',
-      bubbleStyle: 'classic',
-      reactionBadge: '😱',
-      sfx: 'GASP!',
-      html: 'Wait! His attack power multiplied by ten?! He\'s entering a Berserker state?!'
+      name: 'Cha Hae-In',
+      img: 'assets/characters/anime_girl_body.png',
+      mood: 'tense',
+      bubbleStyle: 'normal',
+      chibiEmoji: '😱',
+      chibiText: '[Your Chibi: Shocked]',
+      text: 'Wait... look below his feet. That dark shadow mist rising... it is taking human form!'
     },
     {
       turn: 6,
       speaker: 'left',
-      name: 'Sung Jin-Woo',
-      emotion: 'arise',
-      bubbleStyle: 'arise',
-      reactionBadge: '⚡',
-      sfx: 'ARISE!',
-      html: 'Then I shall not hold back either. Shadows of the dead... hear my command... <mark>ARISE.</mark>'
+      name: 'Cha Hae-In',
+      img: 'assets/characters/anime_girl_body.png',
+      mood: 'epic',
+      bubbleStyle: 'dark',
+      chibiEmoji: '😈',
+      chibiText: '[Your Chibi: Arise]',
+      text: 'The Shadow Monarch has answered. Rise from the abyss of death... <mark>ARISE.</mark>'
     }
   ];
 
-  let currentTurnIdx = 0;
-  let isAutoPlayActive = false;
+  let currentIdx = 0;
+  let isAutoPlay = false;
   let autoTimer = null;
-  let isLandscape = false;
-  let soundEnabled = true;
+  let isBustMode = false;
 
-  /* =====================================================================
-     WEB AUDIO API SYNTH SFX (NO EXTERNAL AUDIO FILES NEEDED!)
-     ===================================================================== */
-  let audioCtx = null;
-  function getAudioContext() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    return audioCtx;
-  }
-
-  function playMangaSound(type) {
-    if (!soundEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      const now = ctx.currentTime;
-
-      if (type === 'BOOM!' || type === 'angry') {
-        // Deep Impact Bass Explosion
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(120, now);
-        osc.frequency.exponentialRampToValueAtTime(25, now + 0.4);
-        gain.gain.setValueAtTime(0.6, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.45);
-      } else if (type === 'SHING!' || type === 'confident') {
-        // Blade Sheen / Chime
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, now);
-        osc.frequency.exponentialRampToValueAtTime(1760, now + 0.25);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.3);
-      } else if (type === 'GASP!' || type === 'shock') {
-        // Sharp Violin / Gasp Pip
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(450, now);
-        osc.frequency.linearRampToValueAtTime(650, now + 0.15);
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.2);
-      } else if (type === 'ARISE!' || type === 'arise') {
-        // Dark Ominous Monarch Chord
-        [220, 330, 440].forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(freq, now);
-          osc.frequency.exponentialRampToValueAtTime(freq * 0.8, now + 0.8);
-          gain.gain.setValueAtTime(0.2, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now);
-          osc.stop(now + 0.9);
-        });
-      }
-    } catch(e) {}
-  }
-
-  function toggleSound() {
-    soundEnabled = !soundEnabled;
-    document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
-  }
-
-  /* =====================================================================
-     SCENE RENDERER & VISUAL EMOTION MULTIPLIERS
-     ===================================================================== */
-  function renderSceneTurn(index) {
+  /* RENDER SCENE TURN */
+  function renderTurn(index) {
     if (index < 0) index = 0;
-    if (index >= motionComicScript.length) index = motionComicScript.length - 1;
-    currentTurnIdx = index;
+    if (index >= storyScript.length) index = storyScript.length - 1;
+    currentIdx = index;
 
-    const data = motionComicScript[index];
-    document.getElementById('turnPill').textContent = `Scene ${index + 1} / ${motionComicScript.length}`;
+    const data = storyScript[index];
+    document.getElementById('turnIndicator').textContent = `Scene ${index + 1} / ${storyScript.length}`;
 
-    const rowTop = document.getElementById('rowTop');
-    const rowBottom = document.getElementById('rowBottom');
-    const questBox = document.getElementById('questAlertBox');
-    const canvas = document.getElementById('stageCanvas');
+    const bg = document.getElementById('stageBg');
+    bg.className = `dynamic-bg mood-${data.mood || 'calm'}`;
 
-    // Reset visual multipliers
-    canvas.classList.remove('rage-active', 'arise-active', 'speedlines-active');
-    rowTop.classList.remove('active', 'is-rage', 'is-arise');
-    rowBottom.classList.remove('active', 'is-rage', 'is-arise');
-    hideFloatingSfx();
-    hideReactionBadges();
+    const actorCont = document.getElementById('actorContainer');
+    const bubbleAnchor = document.getElementById('bubbleAnchor');
+    const questOverlay = document.getElementById('questOverlay');
 
+    // System Alert Handling
     if (data.speaker === 'system') {
-      questBox.style.display = 'block';
-      document.getElementById('questAlertText').textContent = data.quest;
-      playMangaSound('shock');
+      questOverlay.style.display = 'block';
+      document.getElementById('questContent').textContent = data.questText;
+      actorCont.style.opacity = '0.35';
+      bubbleAnchor.style.opacity = '0';
       return;
     }
 
-    questBox.style.display = 'none';
+    questOverlay.style.display = 'none';
+    actorCont.style.opacity = '1';
+    bubbleAnchor.style.opacity = '1';
 
-    // Apply Speaker Content
-    if (data.speaker === 'left') {
-      rowTop.classList.add('active');
-      document.getElementById('leftSpeakerLabel').textContent = data.name;
-      document.getElementById('leftEmotionTag').textContent = data.emotion;
-      document.getElementById('leftSpeechText').innerHTML = data.html;
+    // Position Character and Bubble
+    const isLeft = data.speaker === 'left';
+    actorCont.className = `actor-container ${isLeft ? 'actor-left' : 'actor-right'} breathing`;
+    document.getElementById('actorImg').src = data.img;
 
-      // Apply Manga Bubble Style
-      applyBubbleStyle('bubbleTop', data.bubbleStyle);
+    bubbleAnchor.className = `speech-bubble-anchor ${isLeft ? 'bubble-for-left-speaker' : 'bubble-for-right-speaker'}`;
 
-      // Emotion Multipliers
-      applyEmotionMultipliers('rowTop', 'actorLeft', 'leftReactionBadge', data);
+    // Apply Speech Bubble Style (Normal / Shout / Dark)
+    const bubbleEl = document.getElementById('speechBubble');
+    bubbleEl.className = data.bubbleStyle === 'shout' ? 'bubble-shout' :
+                         (data.bubbleStyle === 'dark' ? 'bubble-dark' : 'bubble-normal');
+
+    document.getElementById('speakerLabel').textContent = data.name;
+    document.getElementById('dialogueText').innerHTML = data.text;
+
+    // Mini Baby Chibi Sticker Placeholder
+    document.getElementById('chibiEmoji').textContent = data.chibiEmoji || '✨';
+    document.getElementById('chibiText').textContent = data.chibiText || '[Your Chibi Sticker]';
+  }
+
+  /* TOGGLE FULL BODY VS BUST ZOOM */
+  function toggleBodyView() {
+    isBustMode = !isBustMode;
+    const body = document.body;
+    const label = document.getElementById('viewModeLabel');
+    const btn = document.getElementById('viewToggleBtn');
+
+    if (isBustMode) {
+      body.className = 'view-bust';
+      label.textContent = '🧍 Full Body';
+      btn.classList.add('active');
     } else {
-      rowBottom.classList.add('active');
-      document.getElementById('rightSpeakerLabel').textContent = data.name;
-      document.getElementById('rightEmotionTag').textContent = data.emotion;
-      document.getElementById('rightSpeechText').innerHTML = data.html;
-
-      applyBubbleStyle('bubbleBottom', data.bubbleStyle);
-      applyEmotionMultipliers('rowBottom', 'actorRight', 'rightReactionBadge', data);
-    }
-
-    // Trigger SFX Text & Audio
-    if (data.sfx) {
-      showFloatingSfx(data.sfx);
-      playMangaSound(data.sfx);
-    } else {
-      playMangaSound(data.emotion);
+      body.className = 'view-full-body';
+      label.textContent = '👤 Bust Zoom';
+      btn.classList.remove('active');
     }
   }
 
-  function applyBubbleStyle(bubbleId, style) {
-    const el = document.getElementById(bubbleId);
-    el.className = 'manga-speech-bubble';
-    if (style === 'shout') {
-      el.classList.add('bubble-style-shout');
-    } else if (style === 'arise') {
-      el.classList.add('bubble-style-arise');
-    } else {
-      el.classList.add('bubble-style-classic');
-    }
-  }
-
-  function applyEmotionMultipliers(rowId, actorId, badgeId, data) {
-    const row = document.getElementById(rowId);
-    const actor = document.getElementById(actorId);
-    const badge = document.getElementById(badgeId);
-    const canvas = document.getElementById('stageCanvas');
-
-    if (data.emotion === 'angry') {
-      row.classList.add('is-rage');
-      canvas.classList.add('rage-active', 'speedlines-active');
-      triggerScreenShake();
-      if (badge && data.reactionBadge) {
-        badge.textContent = data.reactionBadge;
-        row.classList.add('show-reaction');
-      }
-      actor.style.transform = 'translateY(-14px) scale(1.12)';
-      setTimeout(() => { actor.style.transform = ''; }, 450);
-    } else if (data.emotion === 'shock') {
-      triggerScreenShake();
-      canvas.classList.add('speedlines-active');
-      if (badge && data.reactionBadge) {
-        badge.textContent = data.reactionBadge;
-        row.classList.add('show-reaction');
-      }
-      actor.style.transform = 'translateY(-16px) scale(1.08)';
-      setTimeout(() => { actor.style.transform = ''; }, 400);
-    } else if (data.emotion === 'arise') {
-      row.classList.add('is-arise');
-      canvas.classList.add('arise-active');
-      if (badge && data.reactionBadge) {
-        badge.textContent = data.reactionBadge;
-        row.classList.add('show-reaction');
-      }
-    } else if (data.emotion === 'laugh') {
-      if (badge) {
-        badge.textContent = '😆';
-        row.classList.add('show-reaction');
-      }
-      actor.style.transform = 'translateY(-8px) scale(1.05)';
-      setTimeout(() => { actor.style.transform = ''; }, 350);
-    }
-  }
-
-  function triggerScreenShake() {
-    const canvas = document.getElementById('stageCanvas');
-    canvas.classList.remove('shake-screen');
-    void canvas.offsetWidth; // trigger reflow
-    canvas.classList.add('shake-screen');
-  }
-
-  function showFloatingSfx(text) {
-    const sfxEl = document.getElementById('mangaSfxText');
-    sfxEl.textContent = text;
-    sfxEl.classList.add('show');
-    setTimeout(() => {
-      sfxEl.classList.remove('show');
-    }, 700);
-  }
-
-  function hideFloatingSfx() {
-    document.getElementById('mangaSfxText').classList.remove('show');
-  }
-
-  function hideReactionBadges() {
-    document.getElementById('rowTop').classList.remove('show-reaction');
-    document.getElementById('rowBottom').classList.remove('show-reaction');
-  }
-
-  /* SCREEN ROTATION TOGGLE (1-TAP 9:16 VS 16:9) */
-  function toggleScreenRotation() {
-    isLandscape = !isLandscape;
-    const canvas = document.getElementById('stageCanvas');
-    const btn = document.getElementById('rotateBtn');
-    if (isLandscape) {
-      canvas.classList.add('landscape-mode');
-      btn.style.background = '#0284c7';
-      btn.innerHTML = '<span>📱 Rotate to Portrait (9:16)</span>';
-    } else {
-      canvas.classList.remove('landscape-mode');
-      btn.style.background = '';
-      btn.innerHTML = '<span>🔄 Rotate Screen (16:9 Cinema Wide)</span>';
-    }
-  }
-
-  /* FULL EPISODE AUTO-PLAY (HANDS-FREE NO SCROLLING) */
+  /* AUTO-PLAY CONTROLLER */
   function toggleAutoPlay() {
-    isAutoPlayActive = !isAutoPlayActive;
-    const btn = document.getElementById('playBtn');
-    if (isAutoPlayActive) {
-      btn.innerHTML = '<span>⏸ Pause Episode</span>';
-      btn.style.background = '#475569';
-      autoTimer = setInterval(() => {
-        if (currentTurnIdx >= motionComicScript.length - 1) {
-          currentTurnIdx = 0;
-        } else {
-          currentTurnIdx++;
-        }
-        renderSceneTurn(currentTurnIdx);
-      }, 2800);
+    isAutoPlay = !isAutoPlay;
+    const btn = document.getElementById('autoPlayBtn');
+    const label = document.getElementById('autoLabel');
+    const hint = document.getElementById('tapHint');
+
+    if (isAutoPlay) {
+      label.textContent = '⏸ Pause';
+      btn.classList.add('active');
+      hint.style.opacity = '0';
+      startAutoCycle();
     } else {
-      btn.innerHTML = '<span>▶ Play Full Episode (No Scrolling!)</span>';
-      btn.style.background = '';
-      if (autoTimer) clearInterval(autoTimer);
+      label.textContent = '▶ Auto';
+      btn.classList.remove('active');
+      hint.style.opacity = '1';
+      if (autoTimer) clearTimeout(autoTimer);
       autoTimer = null;
     }
   }
 
-  function nextTurn() { renderSceneTurn(currentTurnIdx + 1); }
-  function prevTurn() { renderSceneTurn(currentTurnIdx - 1); }
-  function resetStory() {
-    if (isAutoPlayActive) toggleAutoPlay();
-    renderSceneTurn(0);
+  function startAutoCycle() {
+    if (!isAutoPlay) return;
+    const data = storyScript[currentIdx];
+    const textLen = (data.text || data.questText || '').length;
+    const delay = Math.max(2400, Math.min(textLen * 50, 5200));
+
+    autoTimer = setTimeout(() => {
+      if (!isAutoPlay) return;
+      if (currentIdx < storyScript.length - 1) {
+        renderTurn(currentIdx + 1);
+        startAutoCycle();
+      } else {
+        renderTurn(0);
+        startAutoCycle();
+      }
+    }, delay);
   }
 
-  function handleArenaTap() {
-    nextTurn();
-  }
-
-  /* MANUAL EMOTION TEST TRIGGER */
-  function triggerSceneEmotion(emotion) {
-    const isTop = document.getElementById('rowTop').classList.contains('active');
-    const targetData = {
-      emotion: emotion,
-      bubbleStyle: emotion === 'angry' ? 'shout' : (emotion === 'arise' ? 'arise' : 'classic'),
-      reactionBadge: emotion === 'angry' ? '💢' : (emotion === 'shock' ? '😱' : (emotion === 'arise' ? '⚡' : '✨')),
-      sfx: emotion === 'angry' ? 'BOOM!' : (emotion === 'shock' ? 'GASP!' : (emotion === 'arise' ? 'ARISE!' : 'SHING!'))
-    };
-
-    if (isTop) {
-      document.getElementById('leftEmotionTag').textContent = emotion;
-      applyBubbleStyle('bubbleTop', targetData.bubbleStyle);
-      applyEmotionMultipliers('rowTop', 'actorLeft', 'leftReactionBadge', targetData);
+  function handleTapAdvance(e) {
+    if (e.target.closest('.floating-tools')) return;
+    if (currentIdx < storyScript.length - 1) {
+      renderTurn(currentIdx + 1);
     } else {
-      document.getElementById('rightEmotionTag').textContent = emotion;
-      applyBubbleStyle('bubbleBottom', targetData.bubbleStyle);
-      applyEmotionMultipliers('rowBottom', 'actorRight', 'rightReactionBadge', targetData);
+      renderTurn(0);
     }
-
-    showFloatingSfx(targetData.sfx);
-    playMangaSound(targetData.sfx);
   }
 
-  /* =====================================================================
-     1-CLICK CLIENT-SIDE BACKGROUND REMOVER (CANVAS FLOOD-FILL ENGINE)
-     ===================================================================== */
-  let uploadedImageObj = null;
-  let cleanDataUri = null;
-
-  function handleUserArtUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        uploadedImageObj = img;
-        reprocessCurrentUpload();
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  function restartScene() {
+    if (isAutoPlay) toggleAutoPlay();
+    renderTurn(0);
   }
 
-  function reprocessCurrentUpload() {
-    if (!uploadedImageObj) return;
-    const canvas = document.getElementById('removerCanvas');
+  /* FLOATING DUST PARTICLES ENGINE */
+  function initParticles() {
+    const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = uploadedImageObj.width;
-    canvas.height = uploadedImageObj.height;
-    ctx.drawImage(uploadedImageObj, 0, 0);
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
 
-    const tolerance = parseInt(document.getElementById('toleranceSlider').value, 10);
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d = imgData.data;
+    window.addEventListener('resize', () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    });
 
-    // Corner background sampling
-    const bgR = d[0], bgG = d[1], bgB = d[2];
+    const particles = Array.from({ length: 28 }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.8 + 0.6,
+      speedY: Math.random() * 0.4 + 0.15,
+      alpha: Math.random() * 0.35 + 0.1
+    }));
 
-    for (let i = 0; i < d.length; i += 4) {
-      const r = d[i], g = d[i+1], b = d[i+2];
-      const diffR = Math.abs(r - bgR);
-      const diffG = Math.abs(g - bgG);
-      const diffB = Math.abs(b - bgB);
-
-      // If color matches corner background within tolerance, make alpha 0
-      if (diffR <= tolerance && diffG <= tolerance && diffB <= tolerance) {
-        d[i+3] = 0;
-      }
-      // Also catch standard light checkerboard/white pixels
-      if (r >= 230 && g >= 230 && b >= 230 && Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && tolerance > 20) {
-        d[i+3] = 0;
-      }
+    function loop() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff';
+      particles.forEach(p => {
+        p.y -= p.speedY;
+        if (p.y < -5) { p.y = h + 5; p.x = Math.random() * w; }
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      requestAnimationFrame(loop);
     }
-
-    ctx.putImageData(imgData, 0, 0);
-    cleanDataUri = canvas.toDataURL('image/png');
+    loop();
   }
 
-  function applyCutoutToStage() {
-    if (!cleanDataUri) {
-      alert('Please upload an image first to test the BG Remover!');
-      return;
+  // Keybindings
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowRight') {
+      e.preventDefault();
+      handleTapAdvance(e);
+    } else if (e.code === 'KeyA') {
+      toggleAutoPlay();
+    } else if (e.code === 'KeyV') {
+      toggleBodyView();
     }
-    const leftImg = document.getElementById('actorLeftImg');
-    leftImg.src = cleanDataUri;
-    document.getElementById('leftSpeakerLabel').textContent = 'Custom Hero';
-    triggerSceneEmotion('arise');
-    alert('🎉 Cutout successfully placed on the stage!');
-  }
+  });
 
-  // Initialize Scene 1
-  renderSceneTurn(0);
+  // Init
+  initParticles();
+  renderTurn(0);
 </script>
 </body>
 </html>
