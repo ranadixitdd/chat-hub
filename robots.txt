@@ -23,4 +23,4 @@ Allow: /
 User-agent: Applebot-Extended
 Allow: /
 
-Sitemap: https://ranadixitdd.github.io/chat-hub/sitemap.xml
+Sitemap: https://chat-hub-640c1f.netlify.app/sitemap.xml

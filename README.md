@@ -1,12 +1,12 @@
 # 📱 Manhwa Chat Hub — Anime & Webtoon Comic Story Studio
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![GitHub Pages](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-success.svg)](https://ranadixitdd.github.io/chat-hub/)
+[![Netlify Status](https://img.shields.io/badge/Live%20Demo-Netlify-00C7B7.svg)](https://chat-hub-640c1f.netlify.app/)
 [![AI Ready](https://img.shields.io/badge/AI%20Standard-llms.txt%20Ready-purple.svg)](llms.txt)
 
 **Manhwa Chat Hub** is a free, interactive web studio designed for content creators, animators, and webtoon storytellers to create, direct, and record viral anime and manhwa chat stories. Disguised as authentic **WhatsApp**, **ChatGPT 4o**, and **Google Gemini** interfaces, it provides built-in cinematic auto-playback, Solo Leveling system quest alerts, multi-sprite emotion wardrobes, meme stickers, and synchronized sound effects.
 
-👉 **Live Web App:** [https://ranadixitdd.github.io/chat-hub/](https://ranadixitdd.github.io/chat-hub/)
+👉 **Live Web App:** [https://chat-hub-640c1f.netlify.app/](https://chat-hub-640c1f.netlify.app/)
 
 ---
 
