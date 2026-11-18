@@ -1,6 +1,6 @@
 {
   "name": "chat-hub",
-  "version": "1.0.0",
+  "version": "3.3.2",
   "description": "Manhwa Chat Hub — WhatsApp Comic Studio",
   "main": "server.js",
   "scripts": {

@@ -140,12 +140,15 @@
 
     </div>
     <div class="gpt-sidebar-footer">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div style="width:28px; height:28px; border-radius:50%; background:#10a37f; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; color:#fff;">AI</div>
-        <div style="display:flex; flex-direction:column;">
-          <span style="font-size:12px; font-weight:700; color:#fff;">Story AI Pro</span>
-          <span style="font-size:10px; color:#9ca3af;">Unlimited Tokens</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:#10a37f; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; color:#fff;">AI</div>
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-size:12px; font-weight:700; color:#fff;">Story AI Pro</span>
+            <span style="font-size:10px; color:#9ca3af;">v3.3.2 • Stable</span>
+          </div>
         </div>
+        <button type="button" class="icon-btn" onclick="openAboutModal(); toggleGptSidebar(false);" style="background:#1e293b; color:#facc15; font-size:11px; padding:4px 8px; border-radius:6px; border:1px solid #334155;" title="About Studio & Versions">ℹ️ About</button>
       </div>
     </div>
   </div>
@@ -207,12 +210,15 @@
 
     </div>
     <div class="gpt-sidebar-footer" style="background:#17181a; border-top:1px solid #282a2d;">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #4285f4, #9b72cb); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:#fff;">G</div>
-        <div style="display:flex; flex-direction:column;">
-          <span style="font-size:12px; font-weight:700; color:#fff;">Gemini Advanced</span>
-          <span style="font-size:10px; color:#9aa0a6;">2M Token Window</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #4285f4, #9b72cb); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:#fff;">G</div>
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-size:12px; font-weight:700; color:#fff;">Gemini Advanced</span>
+            <span style="font-size:10px; color:#9aa0a6;">v3.3.2 • Stable</span>
+          </div>
         </div>
+        <button type="button" class="icon-btn" onclick="openAboutModal(); toggleGeminiSidebar(false);" style="background:#282a2d; color:#facc15; font-size:11px; padding:4px 8px; border-radius:6px; border:1px solid #3c4043;" title="About Studio & Versions">ℹ️ About</button>
       </div>
     </div>
   </div>
@@ -271,6 +277,7 @@
     <div class="dropdown-item" onclick="openScriptModal(); closeDropdownMenu();">📜 AI Script Importer</div>
     <div class="dropdown-item" onclick="openSpecialEventModal(); closeDropdownMenu();">✨ Insert Banner / Special Alert</div>
     <div class="dropdown-item" onclick="openGlobalSettingsModal(); closeDropdownMenu();">⚙️ Global Settings & Studio Hub</div>
+    <div class="dropdown-item" style="color:#facc15; font-weight:800; background:rgba(250, 204, 21, 0.08);" onclick="openAboutModal(); closeDropdownMenu();">ℹ️ About Studio & Versions</div>
     <div class="dropdown-item" id="menuGroupMsgItem" onclick="toggleMessageGrouping(); closeDropdownMenu();">🔗 Group Same-Speaker: ON</div>
     <div class="dropdown-item" onclick="exportBackupJson(); closeDropdownMenu();">💾 Export Story JSON</div>
     <div class="dropdown-item danger" onclick="confirmClearChat(); closeDropdownMenu();">🗑️ Clear All Messages</div>
@@ -541,6 +548,9 @@
       <button type="button" class="hub-tab-btn" id="tabBtnHubTools" onclick="switchHubTab('tools')">
         <span>🛠️</span> <span>Story Tools & Data</span>
       </button>
+      <button type="button" class="hub-tab-btn" id="tabBtnHubAbout" onclick="switchHubTab('about')">
+        <span>ℹ️</span> <span>About & Version</span>
+      </button>
     </div>
 
     <!-- TAB PANEL 1: SCENES & MULTIVERSE -->
@@ -644,6 +654,9 @@
           <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="toggleSound()">
             <span id="globalSoundIcon" style="font-size:18px;">🔊</span><span id="globalSoundLabel">Audio FX: ON</span>
           </button>
+          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px; border-color:#facc15;" onclick="openAboutModal('globalSettingsModal');">
+            <span style="font-size:18px;">ℹ️</span><span>About Studio & Versions</span>
+          </button>
         </div>
       </div>
 
@@ -664,6 +677,87 @@
           <button type="button" class="icon-btn danger" id="clearChatBtn" style="flex:1; justify-content:center; background:#ef4444; padding:10px; font-size:12px;" onclick="handleInlineClearChat(this)">
             🗑️ Clear Messages
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB PANEL 4: ABOUT & VERSION DETAILS -->
+    <div class="hub-tab-panel" id="hubPanelAbout">
+      <div class="global-section" style="background:linear-gradient(135deg, #090d16 0%, #1e293b 100%); border-color:#facc15;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="font-size:32px;">📱</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="margin:0; font-size:18px; font-weight:900; color:#f8fafc;">Manhwa Chat Hub</h3>
+                <span class="version-badge-pill" id="hubPanelVersionBadge">v3.3.2</span>
+                <span class="version-tag-pill">Latest</span>
+              </div>
+              <p style="margin:3px 0 0 0; font-size:12.5px; color:#94a3b8;">Anime & Webtoon Comic Story Studio • Direct, Animate & Record</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn-primary-comic" style="padding:9px 18px; font-size:12.5px; background:linear-gradient(135deg, #facc15 0%, #eab308 100%); color:#0f172a; font-weight:900;" onclick="checkAboutUpdates()">
+              🔄 Check for Updates
+            </button>
+            <button type="button" class="btn-secondary-comic" style="padding:9px 16px; font-size:12.5px; border-color:#38bdf8;" onclick="openAboutModal('globalSettingsModal')">
+              📖 Open Full About Hub ↗
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Diagnostics Strip -->
+      <div class="global-section">
+        <label class="form-label" style="font-size:13px; font-weight:800; color:#f8fafc; margin-bottom:10px;">📊 Live System Diagnostics</label>
+        <div class="about-diag-grid">
+          <div class="about-diag-card">
+            <span class="diag-label">Active Scene</span>
+            <span class="diag-value" id="hubDiagActiveScene">WhatsApp</span>
+          </div>
+          <div class="about-diag-card">
+            <span class="diag-label">Aspect Ratio</span>
+            <span class="diag-value" id="hubDiagAspectRatio">9:16 (Shorts)</span>
+          </div>
+          <div class="about-diag-card">
+            <span class="diag-label">Dialogue Lines</span>
+            <span class="diag-value" id="hubDiagMsgCount">0</span>
+          </div>
+          <div class="about-diag-card">
+            <span class="diag-label">Cast Members</span>
+            <span class="diag-value" id="hubDiagCastCount">0</span>
+          </div>
+          <div class="about-diag-card">
+            <span class="diag-label">Storage Engine</span>
+            <span class="diag-value" id="hubDiagStorage">IndexedDB (Ready)</span>
+          </div>
+          <div class="about-diag-card">
+            <span class="diag-label">Audio Synth</span>
+            <span class="diag-value" id="hubDiagAudio">Web Audio API</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Highlights & Guide -->
+      <div class="global-section">
+        <label class="form-label" style="font-size:13px; font-weight:800; color:#f8fafc; margin-bottom:10px;">💡 Things to Know</label>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px;">
+          <div style="background:#090d16; border:1px solid #334155; border-radius:10px; padding:12px;">
+            <div style="font-weight:800; color:#38bdf8; font-size:13px; margin-bottom:4px;">⚡ Solo Leveling Quests</div>
+            <div style="font-size:12px; color:#94a3b8; line-height:1.4;">Type <code style="color:#facc15;">[QUEST: mission objective]</code> or use the banner tool to pop holographic Hunter alerts with neon sound effects!</div>
+          </div>
+          <div style="background:#090d16; border:1px solid #334155; border-radius:10px; padding:12px;">
+            <div style="font-weight:800; color:#a855f7; font-size:13px; margin-bottom:4px;">👗 Dynamic Wardrobes</div>
+            <div style="font-size:12px; color:#94a3b8; line-height:1.4;">Tag dialogue with <code style="color:#facc15;">[Nobita:shock]</code> or <code style="color:#facc15;">[Doraemon:angry]</code> to dynamically swap character faces in real-time.</div>
+          </div>
+          <div style="background:#090d16; border:1px solid #334155; border-radius:10px; padding:12px;">
+            <div style="font-weight:800; color:#10b981; font-size:13px; margin-bottom:4px;">🎬 Pure Clean Recording Mode</div>
+            <div style="font-size:12px; color:#94a3b8; line-height:1.4;">Press <code style="color:#facc15;">H</code> on your keyboard to instantly hide all studio editor bars for recording clean video for Shorts, Reels & TikTok.</div>
+          </div>
+          <div style="background:#090d16; border:1px solid #334155; border-radius:10px; padding:12px;">
+            <div style="font-weight:800; color:#eab308; font-size:13px; margin-bottom:4px;">🎭 Seamless Multiverse</div>
+            <div style="font-size:12px; color:#94a3b8; line-height:1.4;">Switch between WhatsApp, ChatGPT 4o and Google Gemini at any time without losing active characters or conversation flow.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1400,6 +1494,464 @@
   </div>
 </div>
 
+<!-- ===================================================================== -->
+<!-- MODAL: ABOUT CHAT HUB & VERSION MATRIX                                -->
+<!-- ===================================================================== -->
+<div class="modal-backdrop" id="aboutModal" style="z-index:10035;">
+  <div class="modal-window about-modal-window">
+    <!-- MODAL HEADER -->
+    <div class="modal-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button type="button" class="modal-back-btn" onclick="navigateModalBack()" title="Back to previous screen">← Back</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">📱</span>
+          <div>
+            <div class="modal-title" style="color:#facc15; font-size:16.5px; font-weight:900; line-height:1.2;">Manhwa Chat Hub</div>
+            <div style="font-size:11px; color:#94a3b8;">About Studio & Version Matrix</div>
+          </div>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="closeAboutModal()">✕</button>
+    </div>
+
+    <!-- ABOUT TAB NAVIGATION -->
+    <div class="about-tab-bar">
+      <button type="button" class="about-tab-btn active" id="tabBtnAboutOverview" onclick="switchAboutTab('overview')">
+        <span>✨</span> <span>Overview</span>
+      </button>
+      <button type="button" class="about-tab-btn" id="tabBtnAboutGuide" onclick="switchAboutTab('guide')">
+        <span>💡</span> <span>Things to Know</span>
+      </button>
+      <button type="button" class="about-tab-btn" id="tabBtnAboutVersions" onclick="switchAboutTab('versions')">
+        <span>🚀</span> <span>Latest Versions</span>
+      </button>
+      <button type="button" class="about-tab-btn" id="tabBtnAboutSystem" onclick="switchAboutTab('system')">
+        <span>⚙️</span> <span>System & Diagnostics</span>
+      </button>
+    </div>
+
+    <!-- BODY CONTENT AREA (SCROLLABLE) -->
+    <div class="about-modal-body">
+      <!-- 1. OVERVIEW PANEL -->
+      <div class="about-tab-panel active" id="aboutPanelOverview">
+        <!-- Hero Card -->
+        <div class="about-hero-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div class="about-logo-badge">💬</div>
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <h3 style="margin:0; font-size:19px; font-weight:900; color:#f8fafc;">Manhwa Chat Hub</h3>
+                  <span class="version-badge-pill">v3.3.2</span>
+                  <span class="version-tag-pill">Latest Stable</span>
+                </div>
+                <div style="font-size:12.5px; color:#cbd5e1; margin-top:4px;">Next-Gen Anime & Webtoon Comic Story Studio</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Production Release • November 2026 • MIT Open Source</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn-check-updates" id="aboutCheckUpdateBtn" onclick="checkAboutUpdates()">
+                <span id="aboutUpdateIcon">🔄</span> <span id="aboutUpdateText">Check for Updates</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="about-section-box">
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#cbd5e1;">
+            <b>Manhwa Chat Hub</b> is a dedicated creative studio built for animators, content creators, and webtoon authors to write, direct, and record viral chat stories disguised as authentic <b>WhatsApp</b>, <b>ChatGPT 4o</b>, and <b>Google Gemini</b> interfaces. Complete with cinematic auto-playback, Solo Leveling system quest alerts, emotion wardrobes, meme soundboards, and zero-loss offline storage.
+          </p>
+        </div>
+
+        <!-- Core Feature Pillars -->
+        <div class="about-section-box">
+          <div style="font-size:13px; font-weight:800; color:#f8fafc; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">🌟 Studio Highlights</div>
+          <div class="about-pillar-grid">
+            <div class="about-pillar-item">
+              <span class="about-pillar-icon">🎭</span>
+              <div>
+                <div class="about-pillar-title">Multiverse Scene Switching</div>
+                <div class="about-pillar-desc">Seamlessly jump between WhatsApp, ChatGPT, and Gemini mid-story with authentic interface transitions.</div>
+              </div>
+            </div>
+            <div class="about-pillar-item">
+              <span class="about-pillar-icon">⚡</span>
+              <div>
+                <div class="about-pillar-title">Solo Leveling System Quests</div>
+                <div class="about-pillar-desc">Pop futuristic blue hunter quest windows with glowing alert animations and dramatic hit sounds.</div>
+              </div>
+            </div>
+            <div class="about-pillar-item">
+              <span class="about-pillar-icon">👗</span>
+              <div>
+                <div class="about-pillar-title">Multi-Sprite Wardrobe Engine</div>
+                <div class="about-pillar-desc">Characters dynamically shift expressions (shock, angry, cry, laugh, blush, smug) during dialogue.</div>
+              </div>
+            </div>
+            <div class="about-pillar-item">
+              <span class="about-pillar-icon">🎬</span>
+              <div>
+                <div class="about-pillar-title">Cinematic Auto-Play & Rec</div>
+                <div class="about-pillar-desc">Auto punch-zooms, typing suspense, speed presets, and 1-tap Clean Recording Mode (press <code>H</code>).</div>
+              </div>
+            </div>
+            <div class="about-pillar-item">
+              <span class="about-pillar-icon">🔊</span>
+              <div>
+                <div class="about-pillar-title">Dynamic SFX & Voice Pitch</div>
+                <div class="about-pillar-desc">Pair audio effects directly with stickers, plus custom speech pitch synthesis for each character.</div>
+              </div>
+            </div>
+            <div class="about-pillar-item">
+              <span class="about-pillar-icon">💾</span>
+              <div>
+                <div class="about-pillar-title">Unlimited Offline Storage</div>
+                <div class="about-pillar-desc">IndexedDB client storage with one-click JSON full backup export and restore with zero data loss.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Creator & Links -->
+        <div class="about-section-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="font-size:12px; color:#94a3b8;">Created & Maintained by</div>
+            <div style="font-size:14px; font-weight:800; color:#f8fafc; margin-top:2px;">Rana Dixit</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="https://github.com/ranadixitdd/chat-hub" target="_blank" rel="noopener noreferrer" class="about-link-pill">
+              <span>🐙</span> <span>GitHub Repository</span>
+            </a>
+            <a href="https://ranadixitdd.github.io/chat-hub/" target="_blank" rel="noopener noreferrer" class="about-link-pill">
+              <span>🌐</span> <span>Live Demo</span>
+            </a>
+            <button type="button" class="about-link-pill" onclick="switchAboutTab('guide')">
+              <span>💡</span> <span>Things to Know →</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. THINGS TO KNOW PANEL -->
+      <div class="about-tab-panel" id="aboutPanelGuide">
+        <!-- Directing Secrets & Tips -->
+        <div class="about-section-box">
+          <div style="font-size:13.5px; font-weight:800; color:#facc15; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+            <span>⚡</span> <span>Essential Screenplay Tags & Syntax</span>
+          </div>
+          <p style="font-size:12.5px; color:#cbd5e1; margin-top:0; margin-bottom:12px;">
+            You can type or paste these tags directly into your chat or the <b>AI Script Importer</b> to trigger dynamic anime events:
+          </p>
+          <div class="syntax-guide-grid">
+            <div class="syntax-card">
+              <div class="syntax-code">[QUEST: ⚡ URGENT SURVIVAL MISSION: Evade Gian for 5 min!]</div>
+              <div class="syntax-desc">Spawns a glowing Solo Leveling holographic system quest window with dramatic sound effect!</div>
+            </div>
+            <div class="syntax-card">
+              <div class="syntax-code">[Nobita:shock]: What?! A System Quest on my phone?!</div>
+              <div class="syntax-desc">Automatically swaps Nobita's avatar to his shock face sprite for this line.</div>
+            </div>
+            <div class="syntax-card">
+              <div class="syntax-code">[Doraemon:laugh]: [STICKER: Dorayaki Feast]</div>
+              <div class="syntax-desc">Sends the paired reaction sticker with synchronized anime pop/fanfare audio!</div>
+            </div>
+            <div class="syntax-card">
+              <div class="syntax-code">[SCENE: chatgpt] or [SCENE: whatsapp]</div>
+              <div class="syntax-desc">Seamlessly auto-switches interfaces mid-playback when cinema reaches this line!</div>
+            </div>
+            <div class="syntax-card">
+              <div class="syntax-code">[BANNER: CHAPTER 2: ENTER THE DUNGEON]</div>
+              <div class="syntax-desc">Inserts a centered anime chapter title divider across the chat stream.</div>
+            </div>
+            <div class="syntax-card">
+              <div class="syntax-code">/delay 2.5sec</div>
+              <div class="syntax-desc">Forces a dramatic suspense pause before the next dialogue appears.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Table -->
+        <div class="about-section-box">
+          <div style="font-size:13.5px; font-weight:800; color:#38bdf8; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+            <span>⌨️</span> <span>Keyboard Shortcuts (Directing Cheat Sheet)</span>
+          </div>
+          <div class="about-shortcut-table">
+            <div class="shortcut-row header">
+              <span class="sc-key-col">Key</span>
+              <span class="sc-action-col">Directing Action</span>
+              <span class="sc-detail-col">Purpose</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="sc-key-col"><kbd>H</kbd></span>
+              <span class="sc-action-col">Toggle Pure Recording Mode</span>
+              <span class="sc-detail-col">Hides all studio headers, buttons & director dock for clean video recording.</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="sc-key-col"><kbd>Space</kbd></span>
+              <span class="sc-action-col">Pause / Resume Playback</span>
+              <span class="sc-detail-col">Halts or continues the cinema playback timeline instantly.</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="sc-key-col"><kbd>Enter</kbd></span>
+              <span class="sc-action-col">Send Message</span>
+              <span class="sc-detail-col">Adds the typed dialogue line directly into the chat stream.</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="sc-key-col"><kbd>Shift</kbd> + <kbd>Enter</kbd></span>
+              <span class="sc-action-col">Multi-line Message</span>
+              <span class="sc-detail-col">Creates a new line within the same message bubble.</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="sc-key-col"><kbd>Esc</kbd></span>
+              <span class="sc-action-col">Emergency Stop / Close</span>
+              <span class="sc-detail-col">Halts active cinema playback, stops audio, and closes any open modal window.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pro Directing Tips for Shorts & Reels -->
+        <div class="about-section-box">
+          <div style="font-size:13.5px; font-weight:800; color:#10b981; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+            <span>🎬</span> <span>Directing Secrets for Viral Shorts & Reels</span>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:10px;">
+            <div class="about-tip-card">
+              <div class="tip-title">📱 9:16 Shorts Framing</div>
+              <div class="tip-body">Click the WhatsApp header to open Group Settings and select <b>9:16 Shorts/TikTok</b>. This formats bubbles perfectly for mobile video feeds without letterboxing.</div>
+            </div>
+            <div class="tip-card">
+              <div class="tip-title">⚡ Speed Presets</div>
+              <div class="tip-body">Tap the <b>⚡ Speed Hub</b> in the Cinema pill bar to switch between Slow (0.6x), Normal (1.0x), Fast (1.6x), or Instant playback for fast-paced comedic skits.</div>
+            </div>
+            <div class="tip-card">
+              <div class="tip-title">🎥 Auto-Camera Punch-In</div>
+              <div class="tip-body">Keep <code>🎥 Cam: ON</code> to let the studio automatically punch-in zoom during dramatic lines, quest alerts, and climactic moments.</div>
+            </div>
+            <div class="tip-card">
+              <div class="tip-title">💾 One-Click JSON Backup</div>
+              <div class="tip-body">Always export a full studio backup before clearing messages. You can restore your entire cast, wardrobes, custom stickers, and stories at any time!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. LATEST VERSIONS PANEL -->
+      <div class="about-tab-panel" id="aboutPanelVersions">
+        <div class="about-section-box" style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div style="font-size:15px; font-weight:900; color:#f8fafc;">🚀 Release History & Changelog</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:2px;">Track the latest versions, updates, and feature additions</div>
+            </div>
+            <span class="version-badge-pill" style="font-size:12px;">Active: v3.3.2</span>
+          </div>
+        </div>
+
+        <!-- Version Timeline -->
+        <div class="changelog-timeline">
+          <!-- v3.3.2 -->
+          <div class="changelog-entry current">
+            <div class="entry-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="entry-version">v3.3.2</span>
+                <span class="entry-badge-latest">CURRENT LATEST</span>
+              </div>
+              <span class="entry-date">November 2026</span>
+            </div>
+            <div class="entry-title">✨ About Studio & Live Diagnostics Hub</div>
+            <ul class="entry-list">
+              <li><b>About Studio & Version Matrix:</b> Added comprehensive About modal with tabs for Overview, Things to Know, Release History, and Live Diagnostics.</li>
+              <li><b>Live System Diagnostics:</b> Real-time monitoring of active multiverse scene, aspect ratio, message count, cast roster, storage status, and audio context.</li>
+              <li><b>Things to Know Directory:</b> Built-in quick reference for Solo Leveling quests, screenplay tags, keyboard shortcuts, and viral video directing secrets.</li>
+              <li><b>Fast Navigation Shortcuts:</b> Integrated About access into WhatsApp 3-dots dropdown menu, ChatGPT sidebar footer, Gemini sidebar footer, and Global Studio Hub.</li>
+              <li><b>Diagnostic Clipboard Copy:</b> One-click copy of version and system diagnostics for quick debugging and issue reports.</li>
+            </ul>
+          </div>
+
+          <!-- v3.3.0 -->
+          <div class="changelog-entry">
+            <div class="entry-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="entry-version">v3.3.0</span>
+                <span class="entry-badge-major">MAJOR RELEASE</span>
+              </div>
+              <span class="entry-date">October 2026</span>
+            </div>
+            <div class="entry-title">📦 Full Studio Backup & Universal Multiverse Scenes</div>
+            <ul class="entry-list">
+              <li><b>Full Studio Backup Engine:</b> One-click JSON backup exporting all custom characters, wardrobe emotion sprites, custom stickers, audio songs, and story library.</li>
+              <li><b>Hybrid IndexedDB & Disk Sync:</b> Automatic synchronization with local server disk storage alongside unlimited client-side IndexedDB persistence.</li>
+              <li><b>Multiverse Scene Switcher:</b> Switch live between realistic WhatsApp, ChatGPT 4o, and Google Gemini interfaces with shared state.</li>
+              <li><b>Auto Scene Switching in Cinema:</b> Cinema auto-play automatically transitions interfaces when <code>[SCENE: chatgpt]</code> banners are encountered.</li>
+            </ul>
+          </div>
+
+          <!-- v3.2.0 -->
+          <div class="changelog-entry">
+            <div class="entry-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="entry-version">v3.2.0</span>
+              </div>
+              <span class="entry-date">September 2026</span>
+            </div>
+            <div class="entry-title">📦 Studio Asset Manager & SFX Sound Pairing</div>
+            <ul class="entry-list">
+              <li><b>Studio Asset Manager:</b> Unified dashboard for managing Cast Avatars, Wardrobes, Custom Meme Stickers, and Background Songs.</li>
+              <li><b>Dynamic SFX Sticker Pairing:</b> Link custom audio clips to reaction stickers with synchronized playback upon message render.</li>
+              <li><b>Multi-Voice Pitch Synthesizer:</b> Pitch shifting controls for each character to produce distinct vocal tones during playback.</li>
+              <li><b>Fullscreen Lightbox:</b> High-resolution preview modals for attached photos and video clips.</li>
+            </ul>
+          </div>
+
+          <!-- v3.1.0 -->
+          <div class="changelog-entry">
+            <div class="entry-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="entry-version">v3.1.0</span>
+              </div>
+              <span class="entry-date">August 2026</span>
+            </div>
+            <div class="entry-title">⚡ Solo Leveling Quests & Smart Cinema HUD</div>
+            <ul class="entry-list">
+              <li><b>Solo Leveling Holographic Quests:</b> Anime hunter system alerts triggered by <code>[QUEST: ...]</code> with glowing neon animations.</li>
+              <li><b>Smart Dynamic Cinema Dock:</b> Sleek floating pill bar with speed presets (0.6x, 1.0x, 1.6x, 2.5x, Instant) and live progress tracker.</li>
+              <li><b>Pure Clean Recording Mode:</b> Press <code>H</code> to immediately hide all studio editor controls for zero-clutter screen recording.</li>
+              <li><b>Dynamic Camera Engine:</b> Automatic punch-zooms targeting dramatic dialogue lines and system banners.</li>
+            </ul>
+          </div>
+
+          <!-- v3.0.0 -->
+          <div class="changelog-entry">
+            <div class="entry-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="entry-version">v3.0.0</span>
+              </div>
+              <span class="entry-date">July 2026</span>
+            </div>
+            <div class="entry-title">👗 Multi-Sprite Wardrobe & AI Script Importer</div>
+            <ul class="entry-list">
+              <li><b>Dynamic Emotion Wardrobe:</b> Support for multi-sprite character faces (shock, angry, cry, laugh, blush, smug).</li>
+              <li><b>AI Script Importer:</b> Direct copy-paste script parser with multi-genre template library (Solo Leveling, Doraemon, Romance, Horror).</li>
+              <li><b>Speaker Grouping:</b> Automatically group consecutive speech bubbles from the same character.</li>
+            </ul>
+          </div>
+
+          <!-- v2.0.0 -->
+          <div class="changelog-entry">
+            <div class="entry-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="entry-version">v2.0.0</span>
+              </div>
+              <span class="entry-date">May 2026</span>
+            </div>
+            <div class="entry-title">💬 Authentic WhatsApp Comic Studio</div>
+            <ul class="entry-list">
+              <li><b>Group, Private, and Global Modes:</b> Flexible chat room layouts with customizable group icons, titles, and member subtitles.</li>
+              <li><b>Voice Notes & Audio FX:</b> Simulated WhatsApp voice notes with waveforms and duration badges.</li>
+              <li><b>Mobile Responsive & PWA Support:</b> Installable web app with offline capabilities and touch optimization.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. SYSTEM & DIAGNOSTICS PANEL -->
+      <div class="about-tab-panel" id="aboutPanelSystem">
+        <div class="about-section-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+            <div>
+              <div style="font-size:14px; font-weight:900; color:#f8fafc;">⚙️ Live Runtime Environment</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:2px;">Real-time system diagnostics & platform status</div>
+            </div>
+            <button type="button" class="icon-btn" onclick="updateAboutSystemDiagnostics()" style="padding:5px 12px; font-size:11.5px; background:#0284c7; color:#fff;">
+              🔄 Refresh Diagnostics
+            </button>
+          </div>
+
+          <div class="about-diag-grid">
+            <div class="about-diag-card">
+              <span class="diag-label">Studio Version</span>
+              <span class="diag-value" style="color:#facc15;">v3.3.2 (Latest)</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Active Scene</span>
+              <span class="diag-value" id="aboutDiagActiveScene">WhatsApp</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Aspect Ratio</span>
+              <span class="diag-value" id="aboutDiagAspectRatio">9:16 (Shorts/Reels)</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Current Story</span>
+              <span class="diag-value" id="aboutDiagStoryTitle" style="font-size:12px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">Episode 1</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Messages in Chat</span>
+              <span class="diag-value" id="aboutDiagMsgCount">0</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Cast Members</span>
+              <span class="diag-value" id="aboutDiagCastCount">0</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Storage Engine</span>
+              <span class="diag-value" id="aboutDiagStorage">IndexedDB (Active)</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Audio Synth Engine</span>
+              <span class="diag-value" id="aboutDiagAudio">Web Audio API</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Viewport Resolution</span>
+              <span class="diag-value" id="aboutDiagResolution">1920 × 1080</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Network Status</span>
+              <span class="diag-value" id="aboutDiagOnline" style="color:#10b981;">Online</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">PWA Mode</span>
+              <span class="diag-value" id="aboutDiagPwa">Browser Mode</span>
+            </div>
+            <div class="about-diag-card">
+              <span class="diag-label">Release Channel</span>
+              <span class="diag-value" style="color:#38bdf8;">Stable Production</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostic Actions -->
+        <div class="about-section-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:12px; color:#94a3b8;">Need to report an issue or back up your studio?</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="icon-btn" onclick="copyAboutDiagnostics()" style="padding:9px 16px; font-size:12px; background:#1e293b; color:#38bdf8; border:1px solid #38bdf8;">
+              📋 Copy Diagnostic Report
+            </button>
+            <button type="button" class="icon-btn" onclick="if(window.ChatHubStorage) window.ChatHubStorage.exportBackup();" style="padding:9px 16px; font-size:12px; background:#0284c7; color:#fff;">
+              📦 Download Full Backup (.json)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL FOOTER -->
+    <div class="about-modal-footer">
+      <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#94a3b8; flex-wrap:wrap;">
+        <span>Crafted by <b style="color:#f8fafc;">Rana Dixit</b></span>
+        <span>•</span>
+        <span>MIT Open Source License</span>
+        <span>•</span>
+        <span style="color:#facc15;">v3.3.2</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="icon-btn" onclick="copyAboutDiagnostics()" style="padding:6px 12px; font-size:11px; background:#1e293b; color:#38bdf8; border:1px solid #334155;" title="Copy version & diagnostic details">📋 Copy Version Info</button>
+        <button type="button" class="icon-btn" onclick="closeAboutModal()" style="padding:6px 14px; font-size:11px; background:#334155; color:#fff;">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- === FULLSCREEN IMAGE LIGHTBOX MODAL === -->
 <div class="modal-backdrop" id="imageLightboxModal" style="z-index:10060; background:rgba(0,0,0,0.92); display:none; align-items:center; justify-content:center; padding:12px;" onclick="closeFullscreenImage()">
   <div style="position:relative; max-width:680px; width:100%; max-height:90vh; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
@@ -1417,6 +1969,6 @@
 </div>
 
 <script src="storage.js?v=1.0"></script>
-<script src="app.js?v=3.2"></script>
+<script src="app.js?v=3.3.2"></script>
 </body>
 </html>
