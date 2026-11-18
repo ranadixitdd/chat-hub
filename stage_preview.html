@@ -3,15 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Anime Stage & Duel Prototype — Transparent Cutout Characters</title>
+<title>Interactive Visual Samples — Animated Character Dialogue Interface</title>
 <style>
   :root {
     --gold-accent: #f59e0b;
     --gold-border: #d97706;
     --gold-dark: #b45309;
-    --bubble-border: #231912;
+    --bubble-border: #1e1b18;
     --bubble-bg: #ffffff;
     --text-color: #171310;
+    --left-accent: #38bdf8;
+    --right-accent: #f59e0b;
   }
 
   * {
@@ -30,129 +32,277 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 10px;
+    padding: 12px;
     overflow-x: hidden;
   }
 
-  /* TOP PROTOTYPE BAR */
-  .demo-nav-bar {
+  /* =====================================================================
+     TOP MASTER CONTROL TOOLBAR (SWITCH SAMPLES, ROTATE, TEST EMOTIONS)
+     ===================================================================== */
+  .control-panel {
     width: 100%;
-    max-width: 440px;
+    max-width: 820px;
     background: #0f172a;
     border: 1.5px solid #334155;
-    border-radius: 16px;
-    padding: 10px 14px;
-    margin-bottom: 12px;
+    border-radius: 18px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    gap: 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
     z-index: 100;
   }
 
-  .demo-nav-header {
+  .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 10px;
   }
 
-  .demo-badge {
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-title h1 {
+    font-size: 16px;
+    font-weight: 900;
+    color: #f8fafc;
+    letter-spacing: -0.3px;
+  }
+
+  .panel-title p {
     font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .badge-tag {
+    font-size: 10.5px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-    border: 1px solid #f59e0b;
-    padding: 3px 8px;
-    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    padding: 3px 10px;
+    border-radius: 999px;
   }
 
-  .demo-actions-row {
-    display: flex;
-    gap: 8px;
+  /* CONTROL PILL GROUPS */
+  .control-rows-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
   }
 
-  .demo-btn {
-    flex: 1;
-    background: #1e293b;
-    border: 1px solid #334155;
-    color: #f8fafc;
-    font-size: 12px;
-    font-weight: 800;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
+  .control-group {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 5px;
   }
 
-  .demo-btn:hover {
+  .control-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .pill-switcher {
+    display: flex;
+    background: #020617;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .switch-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .switch-btn:hover {
+    color: #f8fafc;
+  }
+
+  .switch-btn.active {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(2, 132, 199, 0.45);
+  }
+
+  .switch-btn.active.rotate-active {
+    background: #d97706;
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(217, 119, 6, 0.45);
+  }
+
+  /* LIVE ACTION BUTTONS ROW */
+  .actions-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #1e293b;
+  }
+
+  .playback-btn-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f8fafc;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .action-btn:hover {
     background: #334155;
   }
 
-  .demo-btn.play-btn {
+  .action-btn.primary {
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     border-color: #38bdf8;
     color: #fff;
   }
 
-  /* MOBILE PHONE CANVAS (9:16 VERTICAL STAGE) */
-  .stage-phone-frame {
+  .expression-chip-list {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .expr-chip {
+    background: #1e293b;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .expr-chip:hover, .expr-chip.active {
+    background: #f59e0b;
+    color: #000;
+    border-color: #d97706;
+    font-weight: 900;
+  }
+
+  /* =====================================================================
+     THE PHONE STAGE CONTAINER (PORTRAIT 9:16 VS ROTATED LANDSCAPE 16:9)
+     ===================================================================== */
+  .stage-phone-wrapper {
+    position: relative;
     width: 100%;
-    max-width: 420px;
-    height: 740px;
-    max-height: 84vh;
-    border-radius: 32px;
+    max-width: 420px; /* Default Portrait */
+    height: 720px;
+    max-height: 82vh;
+    border-radius: 36px;
     border: 4px solid #1e293b;
     background: #090d16;
-    position: relative;
     overflow: hidden;
-    box-shadow: 0 25px 65px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
     user-select: none;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* CINEMATIC BATTLEFIELD ENVIRONMENT BACKGROUND */
-  .stage-bg {
+  /* ROTATED LANDSCAPE 16:9 MODE (WIDE CINEMA STAGE - ZERO OVERLAP) */
+  .stage-phone-wrapper.mode-landscape {
+    max-width: 780px !important;
+    height: 480px !important;
+    border-radius: 28px;
+  }
+
+  /* ENVIRONMENT BACKGROUND */
+  .stage-backdrop {
     position: absolute;
     inset: 0;
-    background-image: 
-      linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, rgba(2, 6, 23, 0.75) 100%),
-      radial-gradient(ellipse at 50% 20%, rgba(56, 189, 248, 0.25) 0%, transparent 70%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='700' viewBox='0 0 400 700'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%231e3a8a'/%3E%3Cstop offset='45%25' stop-color='%2338bdf8'/%3E%3Cstop offset='75%25' stop-color='%2364748b'/%3E%3Cstop offset='100%25' stop-color='%230f172a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='700' fill='url(%23sky)'/%3E%3Cpath d='M0 480 L60 410 L140 470 L210 390 L290 460 L400 370 L400 700 L0 700 Z' fill='%231e293b' opacity='0.7'/%3E%3Cpath d='M0 540 L80 470 L170 530 L260 460 L350 520 L400 480 L400 700 L0 700 Z' fill='%23090d16'/%3E%3C/svg%3E");
     background-size: cover;
     background-position: center;
     z-index: 1;
+    transition: background-image 0.4s ease;
   }
 
-  /* TOP STAGE HUD BAR */
-  .stage-hud {
+  .theme-clash .stage-backdrop {
+    background-image: 
+      linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(2, 6, 23, 0.8) 100%),
+      radial-gradient(circle at 50% 10%, rgba(245, 158, 11, 0.25) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='700' viewBox='0 0 400 700'%3E%3Cdefs%3E%3ClinearGradient id='bgGrad' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%231e3a8a'/%3E%3Cstop offset='50%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%230f172a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='700' fill='url(%23bgGrad)'/%3E%3Cpath d='M0 480 L70 410 L150 470 L230 390 L310 460 L400 370 L400 700 L0 700 Z' fill='%231e293b' opacity='0.7'/%3E%3Cpath d='M0 540 L90 470 L180 530 L270 460 L360 520 L400 480 L400 700 L0 700 Z' fill='%23090d16'/%3E%3C/svg%3E");
+  }
+
+  .theme-anime .stage-backdrop {
+    background-image: 
+      linear-gradient(180deg, rgba(15, 23, 42, 0.3) 0%, rgba(2, 6, 23, 0.88) 100%),
+      radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.3) 0%, transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='700' viewBox='0 0 400 700'%3E%3Cdefs%3E%3ClinearGradient id='neonGrad' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23090d16'/%3E%3Cstop offset='45%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%23020617'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='700' fill='url(%23neonGrad)'/%3E%3Cpath d='M0 430 L80 380 L170 440 L260 360 L340 420 L400 350 L400 700 L0 700 Z' fill='%231e293b' opacity='0.8'/%3E%3Cpath d='M0 510 L100 450 L200 510 L300 440 L400 500 L400 700 L0 700 Z' fill='%23020617'/%3E%3C/svg%3E");
+  }
+
+  /* STAGE HEADER HUD */
+  .stage-top-hud {
     position: relative;
-    z-index: 20;
-    padding: 14px 18px;
+    z-index: 25;
+    padding: 12px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
   }
 
-  .stage-badge-hud {
+  .hud-badge {
     font-size: 11px;
     font-weight: 900;
     color: #facc15;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  .stage-turn-pill {
+  .hud-turn-pill {
     font-size: 10.5px;
     font-weight: 800;
     color: #38bdf8;
@@ -163,160 +313,150 @@
   }
 
   /* =====================================================================
-     THE LIVING CUTOUT STAGE: NO BOXES, NO SQUARES, FLOATING SPRITES
+     SAMPLE 1: VISUAL NOVEL DIALOGUE DUEL STAGE
      ===================================================================== */
-  .stage-arena {
+  .stage-view-duel {
     position: relative;
     flex: 1;
     z-index: 10;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px 14px 24px 14px;
+    padding: 10px 14px 20px 14px;
     overflow: hidden;
   }
 
-  /* --- TOP ROW: LEFT CUTOUT CHARACTER + FLOATING RIGHT BUBBLE --- */
-  .stage-dialogue-row-top {
+  /* LANDSCAPE DUEL ADJUSTMENTS (ACTORS ON LEFT/RIGHT EDGES, BUBBLES IN CENTER) */
+  .mode-landscape .stage-view-duel {
+    padding: 10px 24px 20px 24px;
+  }
+
+  .duel-row-top {
     position: relative;
     width: 100%;
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    min-height: 250px;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 230px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* --- BOTTOM ROW: FLOATING LEFT BUBBLE + RIGHT CUTOUT CHARACTER --- */
-  .stage-dialogue-row-bottom {
+  .duel-row-bottom {
     position: relative;
     width: 100%;
     display: flex;
     align-items: flex-end;
     gap: 12px;
-    min-height: 270px;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 250px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mode-landscape .duel-row-top,
+  .mode-landscape .duel-row-bottom {
+    min-height: 180px;
   }
 
   /* TRANSPARENT CUTOUT CHARACTER CONTAINER (ZERO SQUARES / ZERO BORDERS) */
-  .cutout-character-actor {
-    flex: 0 0 150px;
-    width: 150px;
+  .cutout-actor-wrapper {
+    flex: 0 0 145px;
+    width: 145px;
     height: 220px;
     position: relative;
     pointer-events: none;
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease, opacity 0.3s ease;
-    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.85)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
-    animation: characterBreathe 3.2s infinite ease-in-out alternate;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.85)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+    animation: actorBreathe 3.4s infinite ease-in-out alternate;
   }
 
-  .stage-dialogue-row-bottom .cutout-character-actor {
-    order: 2; /* Sits on right side */
-    animation-delay: -1.6s;
+  .mode-landscape .cutout-actor-wrapper {
+    flex: 0 0 170px;
+    width: 170px;
+    height: 230px;
   }
 
-  @keyframes characterBreathe {
+  .duel-row-bottom .cutout-actor-wrapper {
+    order: 2; /* Right character */
+    animation-delay: -1.7s;
+  }
+
+  @keyframes actorBreathe {
     0% { transform: translateY(0) scale(1); }
-    100% { transform: translateY(-6px) scale(1.015); }
+    100% { transform: translateY(-5px) scale(1.012); }
   }
 
-  /* CHARACTER SPRITE GRAPHIC (FULL BODY / TORSO CUTOUT) */
-  .cutout-sprite-graphic {
+  /* CUTOUT CHARACTER IMAGE / SPRITE */
+  .actor-cutout-img {
     width: 100%;
     height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
     display: block;
-    overflow: visible;
+    user-select: none;
+    -webkit-user-drag: none;
   }
 
-  /* ACTIVE SPEAKER LIVING EFFECT: SCALES UP & RADIATES AURA */
-  .stage-dialogue-row-top.active .cutout-character-actor {
+  /* ACTIVE SPEAKER STATE: GLOWS, EMPHASIS SCALE */
+  .duel-row-top.active .cutout-actor-wrapper {
     opacity: 1;
-    transform: translateY(-8px) scale(1.08) !important;
-    filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.75)) drop-shadow(0 18px 30px rgba(0, 0, 0, 0.95));
+    transform: translateY(-6px) scale(1.06) !important;
+    filter: drop-shadow(0 0 24px rgba(56, 189, 248, 0.7)) drop-shadow(0 18px 28px rgba(0, 0, 0, 0.95));
   }
 
-  .stage-dialogue-row-bottom.active .cutout-character-actor {
+  .duel-row-bottom.active .cutout-actor-wrapper {
     opacity: 1;
-    transform: translateY(-8px) scale(1.08) !important;
-    filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.75)) drop-shadow(0 18px 30px rgba(0, 0, 0, 0.95));
+    transform: translateY(-6px) scale(1.06) !important;
+    filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.7)) drop-shadow(0 18px 28px rgba(0, 0, 0, 0.95));
   }
 
-  /* INACTIVE LISTENER DIMMED EFFECT */
-  .stage-dialogue-row-top:not(.active) .cutout-character-actor,
-  .stage-dialogue-row-bottom:not(.active) .cutout-character-actor {
-    opacity: 0.65;
-    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.8)) brightness(0.78);
+  /* INACTIVE LISTENER: SLIGHTLY DIMMED & MUTED */
+  .duel-row-top:not(.active) .cutout-actor-wrapper,
+  .duel-row-bottom:not(.active) .cutout-actor-wrapper {
+    opacity: 0.6;
+    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.8)) brightness(0.8);
     transform: scale(0.96);
   }
 
-  /* =====================================================================
-     COMIC SPEECH BUBBLES WITH GOLDEN ORNAMENTS (EXACTLY LIKE USER IMAGE)
-     ===================================================================== */
-  .comic-dialogue-bubble {
+  /* COMIC SPEECH BUBBLE WITH POINTER TAIL */
+  .stage-speech-bubble {
     flex: 1 1 auto;
     min-width: 0;
     background: #ffffff;
-    border: 3.5px solid #231912;
-    border-radius: 22px;
-    padding: 16px 18px 16px 20px;
+    border: 3.5px solid var(--bubble-border);
+    border-radius: 20px;
+    padding: 14px 16px;
     position: relative;
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), inset 0 2px 0 rgba(255, 255, 255, 0.9);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     transform-origin: left top;
-    animation: bubbleEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: bubblePop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .stage-dialogue-row-bottom .comic-dialogue-bubble {
-    order: 1; /* Sits on left */
+  .duel-row-bottom .stage-speech-bubble {
+    order: 1;
     transform-origin: right bottom;
   }
 
-  @keyframes bubbleEnter {
+  @keyframes bubblePop {
     0% { opacity: 0; transform: scale(0.9) translateY(6px); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  /* GOLDEN ORNAMENTAL CORNERS (4-CORNER COMIC FILIGREE) */
-  .corner-ornament {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    pointer-events: none;
-  }
-
-  .corner-ornament.top-left {
-    top: 6px;
-    left: 6px;
-  }
-  .corner-ornament.top-right {
-    top: 6px;
-    right: 6px;
-  }
-  .corner-ornament.bottom-left {
-    bottom: 6px;
-    left: 6px;
-  }
-  .corner-ornament.bottom-right {
-    bottom: 6px;
-    right: 6px;
-  }
-
-  /* COMIC SPEECH POINTER TAIL (POINTS RIGHT AT CHARACTER'S FACE) */
-  .comic-tail {
+  /* DIRECTIONAL COMIC CALLOUT TAILS */
+  .bubble-pointer-tail {
     position: absolute;
     width: 0;
     height: 0;
     border-style: solid;
   }
 
-  /* Top Row Tail: Points LEFT towards character */
-  .stage-dialogue-row-top .comic-tail {
+  /* Top Row Tail: Points LEFT towards Character 1 */
+  .duel-row-top .bubble-pointer-tail {
     left: -18px;
-    top: 36px;
+    top: 32px;
     border-width: 12px 20px 12px 0;
-    border-color: transparent #231912 transparent transparent;
+    border-color: transparent var(--bubble-border) transparent transparent;
   }
-  .stage-dialogue-row-top .comic-tail::after {
+  .duel-row-top .bubble-pointer-tail::after {
     content: '';
     position: absolute;
     left: 5px;
@@ -325,14 +465,14 @@
     border-color: transparent #ffffff transparent transparent;
   }
 
-  /* Bottom Row Tail: Points RIGHT towards character */
-  .stage-dialogue-row-bottom .comic-tail {
+  /* Bottom Row Tail: Points RIGHT towards Character 2 */
+  .duel-row-bottom .bubble-pointer-tail {
     right: -18px;
-    bottom: 40px;
+    bottom: 34px;
     border-width: 12px 0 12px 20px;
-    border-color: transparent transparent transparent #231912;
+    border-color: transparent transparent transparent var(--bubble-border);
   }
-  .stage-dialogue-row-bottom .comic-tail::after {
+  .duel-row-bottom .bubble-pointer-tail::after {
     content: '';
     position: absolute;
     right: 5px;
@@ -341,23 +481,35 @@
     border-color: transparent transparent transparent #ffffff;
   }
 
-  .bubble-speaker-header {
+  /* GOLDEN ORNAMENTAL CORNERS */
+  .corner-filigree {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+  .corner-filigree.tl { top: 6px; left: 6px; }
+  .corner-filigree.br { bottom: 6px; right: 6px; }
+
+  .bubble-author-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
 
-  .bubble-speaker-name {
+  .bubble-author-title {
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #b45309;
   }
 
-  .bubble-emotion-chip {
-    font-size: 10px;
+  .bubble-author-title.left-side { color: #0369a1; }
+  .bubble-author-title.right-side { color: #b45309; }
+
+  .bubble-emotion-tag {
+    font-size: 9.5px;
     font-weight: 800;
     background: #0f172a;
     color: #f59e0b;
@@ -366,17 +518,15 @@
     text-transform: uppercase;
   }
 
-  .bubble-dialogue-content {
-    font-size: 16px;
+  .bubble-text-body {
+    font-size: 15px;
     font-weight: 800;
-    line-height: 1.42;
-    color: #1a1512;
-    letter-spacing: -0.2px;
+    line-height: 1.4;
+    color: #171310;
     word-break: break-word;
   }
 
-  /* HIGHLIGHTED WORD STYLING (LIKE 'waiting' IN REFERENCE IMAGE) */
-  .bubble-dialogue-content mark {
+  .bubble-text-body mark {
     background: #fca5a5;
     color: #991b1b;
     padding: 1px 5px;
@@ -384,452 +534,748 @@
     font-weight: 900;
   }
 
-  /* INACTIVE BUBBLE MUTED */
-  .stage-dialogue-row-top:not(.active) .comic-dialogue-bubble,
-  .stage-dialogue-row-bottom:not(.active) .comic-dialogue-bubble {
+  .duel-row-top:not(.active) .stage-speech-bubble,
+  .duel-row-bottom:not(.active) .stage-speech-bubble {
     opacity: 0.55;
-    filter: grayscale(0.25);
+    filter: grayscale(0.2);
   }
 
-  /* HOLOGRAPHIC QUEST ALERT POPUP */
-  .stage-system-quest {
+  /* =====================================================================
+     SAMPLE 2: WEBTOON VERTICAL COMIC SCROLL VIEW
+     ===================================================================== */
+  .stage-view-webtoon {
+    position: relative;
+    flex: 1;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  .webtoon-message-entry {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    width: 100%;
+    animation: webtoonEnter 0.25s ease-out;
+  }
+
+  .webtoon-message-entry.right-side {
+    flex-direction: row-reverse;
+  }
+
+  @keyframes webtoonEnter {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .webtoon-standing-figure {
+    flex: 0 0 75px;
+    width: 75px;
+    height: 120px;
+    position: relative;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.75));
+    animation: actorBreathe 3.5s infinite ease-in-out alternate;
+  }
+
+  .webtoon-standing-figure img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    display: block;
+  }
+
+  .webtoon-bubble-card {
+    flex: 1 1 auto;
+    max-width: 75%;
+    background: #ffffff;
+    border: 2.5px solid var(--bubble-border);
+    border-radius: 16px;
+    padding: 10px 12px;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  .webtoon-message-entry.left-side .webtoon-bubble-card::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    bottom: 20px;
+    border-width: 7px 12px 7px 0;
+    border-style: solid;
+    border-color: transparent var(--bubble-border) transparent transparent;
+  }
+
+  .webtoon-message-entry.right-side .webtoon-bubble-card::before {
+    content: '';
+    position: absolute;
+    right: -12px;
+    bottom: 20px;
+    border-width: 7px 0 7px 12px;
+    border-style: solid;
+    border-color: transparent transparent transparent var(--bubble-border);
+  }
+
+  /* SYSTEM QUEST NOTIFICATION */
+  .system-quest-banner {
+    width: 100%;
     background: rgba(10, 25, 47, 0.96);
     border: 2.5px solid #00f0ff;
-    border-radius: 16px;
-    padding: 12px 18px;
-    box-shadow: 0 0 35px rgba(0, 240, 255, 0.55), inset 0 0 20px rgba(0, 240, 255, 0.2);
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.5), inset 0 0 15px rgba(0, 240, 255, 0.2);
     text-align: center;
-    animation: questAura 1.8s infinite alternate ease-in-out;
+    animation: questPulse 1.8s infinite alternate ease-in-out;
   }
 
-  @keyframes questAura {
-    from { transform: scale(0.98); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); }
-    to { transform: scale(1.02); box-shadow: 0 0 40px rgba(0, 240, 255, 0.85); }
+  @keyframes questPulse {
+    from { transform: scale(0.98); }
+    to { transform: scale(1.01); }
   }
 
-  .quest-badge-tag {
+  .system-quest-title {
     font-size: 11px;
     font-weight: 900;
     color: #00f0ff;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
   }
 
-  .quest-body-text {
-    font-size: 13.5px;
+  .system-quest-desc {
+    font-size: 13px;
     font-weight: 800;
     color: #ffffff;
-    margin-top: 5px;
-    line-height: 1.4;
+    margin-top: 4px;
+    line-height: 1.35;
   }
 
-  /* BOTTOM HELPER BAR */
-  .stage-bottom-bar {
+  /* BOTTOM STAGE COMPOSER / NAVIGATION BAR */
+  .stage-footer-bar {
     position: relative;
-    z-index: 20;
-    padding: 12px 18px;
+    z-index: 25;
+    padding: 10px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, transparent 100%);
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+    gap: 8px;
   }
 
-  .stage-hint {
-    font-size: 11.5px;
-    color: #94a3b8;
+  .stage-footer-input-row {
     display: flex;
-    align-items: center;
-    gap: 5px;
+    gap: 6px;
+    width: 100%;
   }
 
-  .stage-hint kbd {
-    background: #1e293b;
-    border: 1px solid #475569;
-    padding: 1px 6px;
-    border-radius: 4px;
-    color: #facc15;
-    font-size: 10.5px;
+  .stage-input {
+    flex: 1;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #f8fafc;
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    outline: none;
+  }
+
+  .stage-input:focus {
+    border-color: #38bdf8;
+  }
+
+  .stage-send-btn {
+    background: #0284c7;
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  /* RESPONSIVE SCALING */
+  @media (max-width: 480px) {
+    body { padding: 6px; }
+    .stage-phone-wrapper { height: 90vh; }
+    .cutout-actor-wrapper { flex: 0 0 120px; width: 120px; height: 190px; }
+    .bubble-text-body { font-size: 13.5px; }
   }
 </style>
 </head>
 <body>
 
-  <!-- CONTROL TOOLBAR -->
-  <div class="demo-nav-bar">
-    <div class="demo-nav-header">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:20px;">⚔️</span>
+  <!-- MASTER CONTROL TOOLBAR -->
+  <div class="control-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span style="font-size:24px;">🎬</span>
         <div>
-          <strong style="font-size:14px; color:#f8fafc;">Cutout Anime Stage Duel</strong>
-          <div style="font-size:10.5px; color:#94a3b8;">Full 2D/3D floating characters (No boxes/squares!)</div>
+          <h1>Animated Character Dialogue Sandbox</h1>
+          <p>Experiment & verify layout, screen rotation, 2D cutouts, and emotions</p>
         </div>
       </div>
-      <span class="demo-badge">V2 Prototype</span>
+      <span class="badge-tag">Visual Samples Ready</span>
     </div>
 
-    <!-- PLAYBACK & TURN BUTTONS -->
-    <div class="demo-actions-row">
-      <button type="button" class="demo-btn" onclick="prevTurn()" title="Previous Turn">◀ Prev</button>
-      <button type="button" class="demo-btn play-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
-      <button type="button" class="demo-btn" onclick="nextTurn()" title="Next Turn">Next ▶</button>
-      <button type="button" class="demo-btn" onclick="resetStory()" title="Restart">↺ Reset</button>
+    <!-- 3 MAIN SWITCHERS -->
+    <div class="control-rows-grid">
+      <!-- 1. SAMPLE LAYOUT SWITCHER -->
+      <div class="control-group">
+        <span class="control-label">📐 1. Choose Layout Sample</span>
+        <div class="pill-switcher">
+          <button type="button" class="switch-btn active" id="btnSample1" onclick="switchSampleLayout('duel')">
+            <span>⚔️ Sample 1: Stage Duel</span>
+          </button>
+          <button type="button" class="switch-btn" id="btnSample2" onclick="switchSampleLayout('webtoon')">
+            <span>📜 Sample 2: Webtoon Scroll</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. SCREEN ROTATION SWITCHER (PORTRAIT VS LANDSCAPE) -->
+      <div class="control-group">
+        <span class="control-label">📱 2. Screen Rotation (Overlap Solution)</span>
+        <div class="pill-switcher">
+          <button type="button" class="switch-btn active" id="btnPort" onclick="switchScreenOrientation('portrait')">
+            <span>📱 9:16 Portrait</span>
+          </button>
+          <button type="button" class="switch-btn" id="btnLand" onclick="switchScreenOrientation('landscape')">
+            <span>🔄 16:9 Rotated (Zero Overlap)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. CHARACTER THEME SWITCHER -->
+      <div class="control-group">
+        <span class="control-label">🎭 3. Character Style Pack</span>
+        <div class="pill-switcher">
+          <button type="button" class="switch-btn active" id="btnThemeClash" onclick="switchCharacterTheme('clash')">
+            <span>🛡️ Clash / 3D Cutouts</span>
+          </button>
+          <button type="button" class="switch-btn" id="btnThemeAnime" onclick="switchCharacterTheme('anime')">
+            <span>✨ Anime / Manhwa Duo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE ACTIONS & EXPRESSIONS TOOLBAR -->
+    <div class="actions-toolbar">
+      <div class="playback-btn-group">
+        <button type="button" class="action-btn" onclick="prevStoryTurn()">◀ Prev</button>
+        <button type="button" class="action-btn primary" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play Story</button>
+        <button type="button" class="action-btn" onclick="nextStoryTurn()">Next ▶</button>
+        <button type="button" class="action-btn" onclick="resetStory()">↺ Reset</button>
+      </div>
+
+      <!-- EMOTION TEST CHIPS -->
+      <div class="expression-chip-list">
+        <span style="font-size:10.5px; color:#94a3b8; font-weight:700;">Test Emotion:</span>
+        <button type="button" class="expr-chip active" onclick="setLiveEmotion('confident')">Confident</button>
+        <button type="button" class="expr-chip" onclick="setLiveEmotion('shock')">Shock 😱</button>
+        <button type="button" class="expr-chip" onclick="setLiveEmotion('angry')">Angry 💢</button>
+        <button type="button" class="expr-chip" onclick="setLiveEmotion('laugh')">Laugh 😆</button>
+        <button type="button" class="expr-chip" onclick="setLiveEmotion('thinking')">Thinking 🤔</button>
+      </div>
     </div>
   </div>
 
-  <!-- PHONE STAGE FRAME -->
-  <div class="stage-phone-frame" id="phoneFrame" onclick="handleStageClick(event)">
-    <div class="stage-bg"></div>
+  <!-- PHONE STAGE CANVAS (PORTRAIT 9:16 OR ROTATED LANDSCAPE 16:9) -->
+  <div class="stage-phone-wrapper theme-clash" id="phoneCanvas" onclick="handleCanvasTap(event)">
+    <div class="stage-backdrop"></div>
 
-    <!-- STAGE HUD -->
-    <div class="stage-hud">
-      <span class="stage-badge-hud">
-        <span>⚔️</span>
-        <span>Anime Stage: Solo Leveling Duel</span>
+    <!-- STAGE TOP HUD -->
+    <div class="stage-top-hud">
+      <span class="hud-badge">
+        <span id="hudIcon">🛡️</span>
+        <span id="hudTitle">Clash Duel: Barbarian vs Knight</span>
       </span>
-      <span class="stage-turn-pill" id="turnPill">Turn 1 / 6</span>
+      <span class="hud-turn-pill" id="turnIndicator">Turn 1 / 6</span>
     </div>
 
-    <!-- THE LIVING STAGE ARENA -->
-    <div class="stage-arena">
-
-      <!-- ============================================================== -->
-      <!-- TOP SPEAKER: CHARACTER 1 (FULL CUTOUT FIGURE ON LEFT)          -->
-      <!-- ============================================================== -->
-      <div class="stage-dialogue-row-top active" id="rowTop">
+    <!-- ============================================================== -->
+    <!-- VIEW A: SAMPLE 1 - DIALOGUE DUEL STAGE (VISUAL NOVEL MODE)     -->
+    <!-- ============================================================== -->
+    <div class="stage-view-duel" id="viewDuel">
+      
+      <!-- TOP ROW: LEFT CHARACTER + FLOATING BUBBLE -->
+      <div class="duel-row-top active" id="duelRowTop">
         
-        <!-- LEFT CHARACTER: 100% TRANSPARENT CUTOUT SPRITE (ZERO BOX / ZERO BORDER) -->
-        <div class="cutout-character-actor" id="topActor">
-          <svg class="cutout-sprite-graphic" viewBox="0 0 150 220" xmlns="http://www.w3.org/2000/svg">
-            <!-- Anime Hunter / Hero Sprite (Waist-Up Cutout with Raised Arm) -->
-            <g id="heroCutoutBody">
-              <!-- Shadow Cape / Coat -->
-              <path d="M20 220 C20 140, 35 90, 70 85 C105 90, 120 140, 120 220 Z" fill="#0f172a"/>
-              <!-- Torso & Hunter Vest -->
-              <path d="M40 220 L50 120 L95 120 L105 220 Z" fill="#0284c7"/>
-              <path d="M60 120 L72 220 L85 120 Z" fill="#090d16"/>
-              
-              <!-- Left Raised Hand / Fist (Clash Barbarian Pose) -->
-              <path d="M25 150 Q10 110, 18 60 Q28 65, 36 95 L45 130 Z" fill="#fed7aa"/>
-              <!-- Spiked Wristband -->
-              <path d="M12 75 L28 80 L25 90 L8 85 Z" fill="#78350f"/>
-              <polygon points="12,75 16,65 20,77" fill="#cbd5e1"/>
-              <polygon points="20,78 24,68 28,80" fill="#cbd5e1"/>
-              <!-- Raised Fist -->
-              <circle cx="18" cy="56" r="14" fill="#fed7aa"/>
-              <path d="M10 56 Q18 48 26 56" stroke="#ea580c" stroke-width="2" fill="none"/>
-
-              <!-- Neck & Face -->
-              <path d="M64 95 L80 95 L80 115 L64 115 Z" fill="#fcd34d"/>
-              <path d="M52 65 C52 40, 92 40, 92 65 C92 90, 52 90, 52 65 Z" fill="#fed7aa"/>
-
-              <!-- Anime Spiky Hair (Shadow Hunter Cutout) -->
-              <path d="M42 62 Q35 20, 72 15 Q108 20, 102 62 Q92 32, 72 26 Q52 32, 42 62 Z" fill="#0f172a"/>
-              <path d="M50 35 L68 70 L75 32 L82 70 L100 35" fill="#0f172a"/>
-
-              <!-- Dynamic Living Face Expressions -->
-              <g id="heroFaceGroup">
-                <!-- Eyes & Confident Smirk -->
-                <circle cx="64" cy="65" r="4.5" fill="#0284c7"/>
-                <circle cx="84" cy="65" r="4.5" fill="#0284c7"/>
-                <path d="M58 56 L70 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M90 56 L78 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M68 78 Q74 84 82 78" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-              </g>
-            </g>
-          </svg>
+        <!-- LEFT CUTOUT CHARACTER (100% TRANSPARENT / NO BOX / DROP SHADOW) -->
+        <div class="cutout-actor-wrapper" id="actorLeftWrapper">
+          <img src="assets/characters/barbarian_cutout.png" alt="Left Character" class="actor-cutout-img" id="actorLeftImg"
+               onerror="this.onerror=null; this.src='https://api.iconify.design/fluent-emoji:crossed-swords.svg';">
         </div>
 
-        <!-- FLOATING SPEECH BUBBLE (WITH GOLDEN CORNERS & DIRECT SPEECH TAIL) -->
-        <div class="comic-dialogue-bubble" id="topBubble">
-          <div class="comic-tail"></div>
+        <!-- SPEECH BUBBLE WITH DIRECT POINTER TAIL TO LEFT ACTOR -->
+        <div class="stage-speech-bubble" id="topBubble">
+          <div class="bubble-pointer-tail"></div>
           
-          <!-- Golden Corner Filigree (Like Clash Reference Image) -->
-          <svg class="corner-ornament top-left" viewBox="0 0 20 20" fill="none">
+          <!-- Golden Corner Filigree (As in Clash reference) -->
+          <svg class="corner-filigree tl" viewBox="0 0 20 20" fill="none">
             <path d="M3 17 L3 6 C3 4.3 4.3 3 6 3 L17 3" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
             <circle cx="8" cy="8" r="2.5" fill="#f59e0b"/>
           </svg>
-          <svg class="corner-ornament bottom-right" viewBox="0 0 20 20" fill="none">
+          <svg class="corner-filigree br" viewBox="0 0 20 20" fill="none">
             <path d="M17 3 L17 14 C17 15.7 15.7 17 14 17 L3 17" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
             <circle cx="12" cy="12" r="2.5" fill="#f59e0b"/>
           </svg>
 
-          <div class="bubble-speaker-header">
-            <span class="bubble-speaker-name" id="topNameLabel">Sung Jin-Woo</span>
-            <span class="bubble-emotion-chip" id="topEmotionChip">confident</span>
+          <div class="bubble-author-bar">
+            <span class="bubble-author-title left-side" id="leftNameLabel">Barbarian</span>
+            <span class="bubble-emotion-tag" id="leftEmotionTag">confident</span>
           </div>
-          <div class="bubble-dialogue-content" id="topDialogueText">
-            Can I get two Star Bonus Snacks in a row from this Dungeon gate?
+          <div class="bubble-text-body" id="leftDialogueText">
+            Can I get two Star Bonus Snacks in a row?
           </div>
         </div>
 
       </div>
 
-      <!-- ============================================================== -->
-      <!-- MIDDLE: HOLOGRAPHIC SYSTEM QUEST (DROPS IN ON QUEST TURNS)     -->
-      <!-- ============================================================== -->
-      <div class="stage-system-quest" id="systemQuestCard" style="display:none;">
-        <div class="quest-badge-tag">⚡ URGENT SYSTEM QUEST</div>
-        <div class="quest-body-text" id="questBodyText">SURVIVAL MISSION: Evade the Shadow Monarch for 3 minutes without weapons!</div>
+      <!-- MIDDLE: HOLOGRAPHIC SYSTEM QUEST (TRIGGERED ON TURN 3) -->
+      <div class="system-quest-banner" id="questAlertBox" style="display:none;">
+        <div class="system-quest-title">⚡ SYSTEM MISSION ALERT</div>
+        <div class="system-quest-desc" id="questText">SPECIAL EVENT: Both warriors must pass the Star Bonus trial!</div>
       </div>
 
-      <!-- ============================================================== -->
-      <!-- BOTTOM SPEAKER: CHARACTER 2 (FULL CUTOUT FIGURE ON RIGHT)      -->
-      <!-- ============================================================== -->
-      <div class="stage-dialogue-row-bottom" id="rowBottom">
+      <!-- BOTTOM ROW: FLOATING BUBBLE + RIGHT CHARACTER -->
+      <div class="duel-row-bottom" id="duelRowBottom">
         
-        <!-- FLOATING SPEECH BUBBLE (SITS ON LEFT SIDE) -->
-        <div class="comic-dialogue-bubble" id="bottomBubble">
-          <div class="comic-tail"></div>
+        <!-- SPEECH BUBBLE WITH DIRECT POINTER TAIL TO RIGHT ACTOR -->
+        <div class="stage-speech-bubble" id="bottomBubble">
+          <div class="bubble-pointer-tail"></div>
 
-          <!-- Golden Corner Filigree -->
-          <svg class="corner-ornament top-left" viewBox="0 0 20 20" fill="none">
+          <svg class="corner-filigree tl" viewBox="0 0 20 20" fill="none">
             <path d="M3 17 L3 6 C3 4.3 4.3 3 6 3 L17 3" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
             <circle cx="8" cy="8" r="2.5" fill="#f59e0b"/>
           </svg>
-          <svg class="corner-ornament bottom-right" viewBox="0 0 20 20" fill="none">
+          <svg class="corner-filigree br" viewBox="0 0 20 20" fill="none">
             <path d="M17 3 L17 14 C17 15.7 15.7 17 14 17 L3 17" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
             <circle cx="12" cy="12" r="2.5" fill="#f59e0b"/>
           </svg>
 
-          <div class="bubble-speaker-header">
-            <span class="bubble-speaker-name" id="bottomNameLabel" style="color:#b91c1c;">Barbarian Monarch</span>
-            <span class="bubble-emotion-chip" id="bottomEmotionChip" style="color:#38bdf8;">serious</span>
+          <div class="bubble-author-bar">
+            <span class="bubble-author-title right-side" id="rightNameLabel">Barbarian King</span>
+            <span class="bubble-emotion-tag" id="rightEmotionTag">serious</span>
           </div>
-          <div class="bubble-dialogue-content" id="bottomDialogueText">
+          <div class="bubble-text-body" id="rightDialogueText">
             No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it's removed from the Snack Pack pool until you've used it.
           </div>
         </div>
 
-        <!-- RIGHT CHARACTER: 100% TRANSPARENT CUTOUT SPRITE (ZERO BOX / ZERO BORDER) -->
-        <div class="cutout-character-actor" id="bottomActor">
-          <svg class="cutout-sprite-graphic" viewBox="0 0 150 220" xmlns="http://www.w3.org/2000/svg">
-            <!-- Armored Barbarian King / Boss Cutout Figure -->
-            <g id="bossCutoutBody">
-              <!-- Armored Body & Red Sash -->
-              <path d="M30 220 L45 130 L115 130 L130 220 Z" fill="#78350f"/>
-              <path d="M40 140 L120 220 L105 220 L25 140 Z" fill="#991b1b"/>
-              <circle cx="70" cy="180" r="14" fill="#f59e0b" stroke="#78350f" stroke-width="2"/>
-
-              <!-- Heavy Steel Shoulder Guard (Right) -->
-              <path d="M100 135 C125 125, 145 145, 140 175 C125 185, 105 165, 100 135 Z" fill="#475569"/>
-              <circle cx="122" cy="155" r="7" fill="#f59e0b"/>
-
-              <!-- Heavy Iron Blade / Sword in Hand -->
-              <path d="M125 120 L145 40 L135 35 L115 115 Z" fill="#94a3b8" stroke="#334155" stroke-width="2"/>
-              <rect x="110" y="115" width="22" height="8" rx="3" fill="#f59e0b"/>
-
-              <!-- Muscular Neck & Face -->
-              <path d="M65 110 L95 110 L95 130 L65 130 Z" fill="#fdba74"/>
-              <path d="M50 75 C50 50, 105 50, 105 75 C105 105, 50 105, 50 75 Z" fill="#fed7aa"/>
-
-              <!-- Golden Royal Crown / Helmet (Like Barbarian King) -->
-              <path d="M48 60 L55 25 L70 42 L80 18 L90 42 L105 25 L112 60 Z" fill="#f59e0b" stroke="#78350f" stroke-width="2.5"/>
-              <rect x="46" y="55" width="68" height="10" rx="3" fill="#b45309"/>
-
-              <!-- Big Yellow Mustache -->
-              <path d="M52 88 Q78 82 104 88 Q95 105 78 98 Q60 105 52 88 Z" fill="#eab308" stroke="#713f12" stroke-width="2"/>
-
-              <!-- Dynamic Living Face Expressions -->
-              <g id="bossFaceGroup">
-                <circle cx="66" cy="74" r="5" fill="#dc2626"/>
-                <circle cx="90" cy="74" r="5" fill="#dc2626"/>
-                <!-- Heavy Angry Eyebrows -->
-                <path d="M56 64 L74 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
-                <path d="M100 64 L82 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
-              </g>
-            </g>
-          </svg>
+        <!-- RIGHT CUTOUT CHARACTER (100% TRANSPARENT / NO BOX / DROP SHADOW) -->
+        <div class="cutout-actor-wrapper" id="actorRightWrapper">
+          <img src="assets/characters/knight_cutout.png" alt="Right Character" class="actor-cutout-img" id="actorRightImg"
+               onerror="this.onerror=null; this.src='https://api.iconify.design/fluent-emoji:shield.svg';">
         </div>
 
       </div>
 
     </div>
 
-    <!-- BOTTOM HINT -->
-    <div class="stage-bottom-bar">
-      <span class="stage-hint">
-        <span>💡 Tap anywhere or press <kbd>Space</kbd> for next line</span>
-      </span>
-      <span style="font-size:11px; color:#facc15; font-weight:800;">
-        Living Cutout Stage
-      </span>
+    <!-- ============================================================== -->
+    <!-- VIEW B: SAMPLE 2 - WEBTOON VERTICAL COMIC SCROLL VIEW          -->
+    <!-- ============================================================== -->
+    <div class="stage-view-webtoon" id="viewWebtoon" style="display:none;">
+      <!-- Populated dynamically via renderWebtoonStream() -->
+    </div>
+
+    <!-- BOTTOM INTERACTIVE MESSAGE COMPOSER -->
+    <div class="stage-footer-bar">
+      <form class="stage-footer-input-row" onsubmit="handleSendCustomLine(event)">
+        <select id="composerSpeaker" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; font-size:11px; padding:0 8px; border-radius:999px;">
+          <option value="left">Left Speaker</option>
+          <option value="right">Right Speaker</option>
+        </select>
+        <input type="text" id="composerInput" class="stage-input" placeholder="Type your dialogue line..." autocomplete="off">
+        <button type="submit" class="stage-send-btn">Speak ▶</button>
+      </form>
     </div>
 
   </div>
 
 <script>
-  /* DIALOGUE DATASET WITH AUTHENTIC SCRIPT LINES & EMOTIONS */
-  const duelStory = [
-    {
-      turn: 1,
-      speaker: 'left',
-      name: 'Sung Jin-Woo',
-      emotion: 'confident',
-      html: 'Can I get two Star Bonus Snacks in a row from this Dungeon gate?'
-    },
-    {
-      turn: 2,
-      speaker: 'right',
-      name: 'Barbarian Monarch',
-      emotion: 'serious',
-      html: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.'
-    },
-    {
-      turn: 3,
-      speaker: 'system',
-      name: 'SYSTEM',
-      emotion: 'quest',
-      quest: '⚡ URGENT SYSTEM QUEST: Survive against the Barbarian Monarch for 180 seconds without retreat!'
-    },
-    {
-      turn: 4,
-      speaker: 'left',
-      name: 'Sung Jin-Woo',
-      emotion: 'shock',
-      html: 'A System Quest appeared?! If I don\'t defeat him in 3 minutes, my HP drops to zero?!'
-    },
-    {
-      turn: 5,
-      speaker: 'right',
-      name: 'Barbarian Monarch',
-      emotion: 'laugh',
-      html: 'BWAHAHA! You tremble before my iron blade, hunter! Prepare to be crushed!'
-    },
-    {
-      turn: 6,
-      speaker: 'left',
-      name: 'Sung Jin-Woo',
-      emotion: 'arise',
-      html: '...Tremble? No. You are just another shadow soldier for my army. <mark>ARISE.</mark>'
-    }
-  ];
+  /* =====================================================================
+     DATASET: MULTI-TURN DIALOGUE WITH EMOTIONS & SCRIPT
+     ===================================================================== */
+  const storyDataset = {
+    clash: [
+      {
+        turn: 1,
+        speaker: 'left',
+        name: 'Barbarian',
+        emotion: 'confident',
+        html: 'Can I get two Star Bonus Snacks in a row?'
+      },
+      {
+        turn: 2,
+        speaker: 'right',
+        name: 'Barbarian King',
+        emotion: 'serious',
+        html: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.'
+      },
+      {
+        turn: 3,
+        speaker: 'system',
+        name: 'SYSTEM',
+        emotion: 'quest',
+        quest: '⚡ SYSTEM ALERT: The Clan War countdown has begun! Deploy your heroes!'
+      },
+      {
+        turn: 4,
+        speaker: 'left',
+        name: 'Barbarian',
+        emotion: 'shock',
+        html: 'WAIT! Clan War starts in 3 minutes?! I haven\'t sharpened my sword yet!'
+      },
+      {
+        turn: 5,
+        speaker: 'right',
+        name: 'Barbarian King',
+        emotion: 'laugh',
+        html: 'BWAHAHA! Grab your helmet and follow me! Victory awaits the bold!'
+      },
+      {
+        turn: 6,
+        speaker: 'left',
+        name: 'Barbarian',
+        emotion: 'confident',
+        html: 'FOR THE CLAN! CHARGEEEE!'
+      }
+    ],
+    anime: [
+      {
+        turn: 1,
+        speaker: 'left',
+        name: 'Sung Jin-Woo',
+        emotion: 'confident',
+        html: 'The Double Dungeon gate is opening. Are you ready?'
+      },
+      {
+        turn: 2,
+        speaker: 'right',
+        name: 'Cha Hae-In',
+        emotion: 'serious',
+        html: 'My sword is always ready. But be careful... the magical aura in this room is dangerous.'
+      },
+      {
+        turn: 3,
+        speaker: 'system',
+        name: 'SYSTEM',
+        emotion: 'quest',
+        quest: '⚡ URGENT SYSTEM QUEST: Survive against the Monarch for 180 seconds!'
+      },
+      {
+        turn: 4,
+        speaker: 'right',
+        name: 'Cha Hae-In',
+        emotion: 'shock',
+        html: 'Jin-Woo, look at your shadow! It\'s completely engulfing the arena floor!'
+      },
+      {
+        turn: 5,
+        speaker: 'left',
+        name: 'Sung Jin-Woo',
+        emotion: 'laugh',
+        html: 'Don\'t worry. From this moment on... the shadows serve us. <mark>ARISE.</mark>'
+      },
+      {
+        turn: 6,
+        speaker: 'right',
+        name: 'Cha Hae-In',
+        emotion: 'confident',
+        html: 'Incredible... Then let us clear this raid together!'
+      }
+    ]
+  };
 
-  let currentTurn = 0;
+  /* CHARACTER ASSET DEFINITIONS */
+  const characterPacks = {
+    clash: {
+      left: {
+        name: 'Barbarian',
+        img: 'assets/characters/barbarian_cutout.png',
+        fallback: 'https://api.iconify.design/fluent-emoji:crossed-swords.svg',
+        color: '#0284c7'
+      },
+      right: {
+        name: 'Barbarian King',
+        img: 'assets/characters/knight_cutout.png',
+        fallback: 'https://api.iconify.design/fluent-emoji:shield.svg',
+        color: '#b45309'
+      },
+      title: 'Clash Duel: Barbarian vs King',
+      icon: '🛡️'
+    },
+    anime: {
+      left: {
+        name: 'Sung Jin-Woo',
+        img: 'assets/characters/anime_boy_body.png',
+        fallback: 'https://api.iconify.design/fluent-emoji:mage.svg',
+        color: '#38bdf8'
+      },
+      right: {
+        name: 'Cha Hae-In',
+        img: 'assets/characters/anime_girl_body.png',
+        fallback: 'https://api.iconify.design/fluent-emoji:woman-superhero.svg',
+        color: '#ec4899'
+      },
+      title: 'Anime Duel: Shadow Monarch & Swordmaster',
+      icon: '✨'
+    }
+  };
+
+  let activeTheme = 'clash';
+  let activeLayout = 'duel'; // 'duel' | 'webtoon'
+  let activeOrientation = 'portrait'; // 'portrait' | 'landscape'
+  let currentTurnIndex = 0;
   let isAutoPlay = false;
   let autoTimer = null;
 
-  /* DYNAMIC EMOTION SWAPPING ON 100% CUTOUT ACTORS */
-  function getHeroFace(emotion) {
-    if (emotion === 'shock') {
-      return `
-        <!-- Wide Shocked Eyes with Pupils -->
-        <circle cx="64" cy="65" r="7" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
-        <circle cx="84" cy="65" r="7" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
-        <circle cx="64" cy="65" r="3" fill="#0f172a"/>
-        <circle cx="84" cy="65" r="3" fill="#0f172a"/>
-        <!-- Nervous Eyebrows -->
-        <path d="M56 52 Q64 48 72 56" stroke="#0f172a" stroke-width="2.5" fill="none"/>
-        <path d="M92 52 Q84 48 76 56" stroke="#0f172a" stroke-width="2.5" fill="none"/>
-        <!-- Gasping Mouth -->
-        <ellipse cx="74" cy="80" rx="6" ry="8" fill="#0f172a"/>
-        <!-- Anime Sweat Drops Floating on Side -->
-        <path d="M94 48 C94 44, 98 40, 98 38 C98 40, 102 44, 102 48 C102 51, 98 53, 98 53 C98 53, 94 51, 94 48 Z" fill="#38bdf8"/>
-      `;
-    } else if (emotion === 'arise') {
-      return `
-        <!-- Glowing Shadow Monarch Eyes (Light Rays) -->
-        <circle cx="64" cy="65" r="6" fill="#38bdf8"/>
-        <circle cx="84" cy="65" r="6" fill="#38bdf8"/>
-        <line x1="64" y1="65" x2="40" y2="65" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="84" y1="65" x2="108" y2="65" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
-        <!-- Sharp Menacing Brows -->
-        <path d="M56 55 L70 60" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        <path d="M92 55 L78 60" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        <!-- Dangerous Smirk -->
-        <path d="M66 77 Q75 85 84 75" stroke="#38bdf8" stroke-width="3" fill="none" stroke-linecap="round"/>
-      `;
+  /* =====================================================================
+     CONTROLLER FUNCTIONS
+     ===================================================================== */
+  function switchSampleLayout(layout) {
+    activeLayout = layout;
+    document.getElementById('btnSample1').classList.toggle('active', layout === 'duel');
+    document.getElementById('btnSample2').classList.toggle('active', layout === 'webtoon');
+
+    const duelEl = document.getElementById('viewDuel');
+    const webtoonEl = document.getElementById('viewWebtoon');
+
+    if (layout === 'duel') {
+      duelEl.style.display = 'flex';
+      webtoonEl.style.display = 'none';
+      renderDuelTurn(currentTurnIndex);
+    } else {
+      duelEl.style.display = 'none';
+      webtoonEl.style.display = 'flex';
+      renderWebtoonStream();
     }
-    // Confident / Normal
-    return `
-      <circle cx="64" cy="65" r="4.5" fill="#0284c7"/>
-      <circle cx="84" cy="65" r="4.5" fill="#0284c7"/>
-      <path d="M58 56 L70 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M90 56 L78 59" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M68 78 Q74 84 82 78" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    `;
   }
 
-  function getBossFace(emotion) {
-    if (emotion === 'laugh') {
-      return `
-        <!-- Happy Laughing Arcs -->
-        <path d="M58 72 Q66 62 74 72" stroke="#dc2626" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <path d="M82 72 Q90 62 98 72" stroke="#dc2626" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <path d="M54 62 L74 68" stroke="#450a0a" stroke-width="3.5"/>
-        <path d="M102 62 L82 68" stroke="#450a0a" stroke-width="3.5"/>
-      `;
+  function switchScreenOrientation(orientation) {
+    activeOrientation = orientation;
+    const phone = document.getElementById('phoneCanvas');
+    const btnPort = document.getElementById('btnPort');
+    const btnLand = document.getElementById('btnLand');
+
+    if (orientation === 'landscape') {
+      phone.classList.add('mode-landscape');
+      btnLand.classList.add('active', 'rotate-active');
+      btnPort.classList.remove('active');
+    } else {
+      phone.classList.remove('mode-landscape');
+      btnPort.classList.add('active');
+      btnLand.classList.remove('active', 'rotate-active');
     }
-    // Serious / Fierce
-    return `
-      <circle cx="66" cy="74" r="5" fill="#dc2626"/>
-      <circle cx="90" cy="74" r="5" fill="#dc2626"/>
-      <path d="M56 64 L74 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M100 64 L82 72" stroke="#450a0a" stroke-width="3.5" stroke-linecap="round"/>
-    `;
   }
 
-  /* RENDER CURRENT DIALOGUE TURN */
-  function renderTurn() {
-    const item = duelStory[currentTurn];
-    document.getElementById('turnPill').textContent = `Turn ${currentTurn + 1} / ${duelStory.length}`;
+  function switchCharacterTheme(theme) {
+    activeTheme = theme;
+    document.getElementById('btnThemeClash').classList.toggle('active', theme === 'clash');
+    document.getElementById('btnThemeAnime').classList.toggle('active', theme === 'anime');
 
-    const topRow = document.getElementById('rowTop');
-    const bottomRow = document.getElementById('rowBottom');
-    const questCard = document.getElementById('systemQuestCard');
+    const phone = document.getElementById('phoneCanvas');
+    phone.classList.toggle('theme-clash', theme === 'clash');
+    phone.classList.toggle('theme-anime', theme === 'anime');
 
-    if (item.speaker === 'system' && item.quest) {
-      questCard.style.display = 'block';
-      document.getElementById('questBodyText').textContent = item.quest;
-      topRow.classList.remove('active');
-      bottomRow.classList.remove('active');
+    const pack = characterPacks[theme];
+    document.getElementById('hudIcon').textContent = pack.icon;
+    document.getElementById('hudTitle').textContent = pack.title;
+
+    // Update Actors
+    const leftImg = document.getElementById('actorLeftImg');
+    const rightImg = document.getElementById('actorRightImg');
+    leftImg.src = pack.left.img;
+    rightImg.src = pack.right.img;
+
+    document.getElementById('leftNameLabel').textContent = pack.left.name;
+    document.getElementById('rightNameLabel').textContent = pack.right.name;
+
+    currentTurnIndex = 0;
+    renderDuelTurn(0);
+    if (activeLayout === 'webtoon') renderWebtoonStream();
+  }
+
+  /* RENDER DUEL TURN */
+  function renderDuelTurn(index) {
+    const list = storyDataset[activeTheme];
+    if (index < 0) index = 0;
+    if (index >= list.length) index = list.length - 1;
+    currentTurnIndex = index;
+
+    const data = list[index];
+    const pack = characterPacks[activeTheme];
+
+    document.getElementById('turnIndicator').textContent = `Turn ${index + 1} / ${list.length}`;
+
+    const rowTop = document.getElementById('duelRowTop');
+    const rowBottom = document.getElementById('duelRowBottom');
+    const questBox = document.getElementById('questAlertBox');
+
+    if (data.speaker === 'system') {
+      rowTop.classList.remove('active');
+      rowBottom.classList.remove('active');
+      questBox.style.display = 'block';
+      document.getElementById('questText').textContent = data.quest;
       return;
-    } else {
-      questCard.style.display = 'none';
     }
 
-    if (item.speaker === 'left') {
-      topRow.classList.add('active');
-      bottomRow.classList.remove('active');
+    questBox.style.display = 'none';
 
-      document.getElementById('topNameLabel').textContent = item.name;
-      document.getElementById('topEmotionChip').textContent = item.emotion;
-      document.getElementById('topDialogueText').innerHTML = item.html;
-      document.getElementById('heroFaceGroup').innerHTML = getHeroFace(item.emotion);
-    } else if (item.speaker === 'right') {
-      bottomRow.classList.add('active');
-      topRow.classList.remove('active');
+    if (data.speaker === 'left') {
+      rowTop.classList.add('active');
+      rowBottom.classList.remove('active');
 
-      document.getElementById('bottomNameLabel').textContent = item.name;
-      document.getElementById('bottomEmotionChip').textContent = item.emotion;
-      document.getElementById('bottomDialogueText').innerHTML = item.html;
-      document.getElementById('bossFaceGroup').innerHTML = getBossFace(item.emotion);
+      document.getElementById('leftNameLabel').textContent = data.name;
+      document.getElementById('leftEmotionTag').textContent = data.emotion;
+      document.getElementById('leftDialogueText').innerHTML = data.html;
+
+      // Micro speaking effect on Left Actor
+      triggerActorSpeaking('actorLeftWrapper');
+    } else {
+      rowBottom.classList.add('active');
+      rowTop.classList.remove('active');
+
+      document.getElementById('rightNameLabel').textContent = data.name;
+      document.getElementById('rightEmotionTag').textContent = data.emotion;
+      document.getElementById('rightDialogueText').innerHTML = data.html;
+
+      // Micro speaking effect on Right Actor
+      triggerActorSpeaking('actorRightWrapper');
     }
   }
 
-  function nextTurn() {
-    if (currentTurn < duelStory.length - 1) {
-      currentTurn++;
-      renderTurn();
-    } else {
-      if (isAutoPlay) toggleAutoPlay();
+  function triggerActorSpeaking(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.style.transform = 'translateY(-10px) scale(1.08)';
+    setTimeout(() => {
+      el.style.transform = '';
+    }, 400);
+  }
+
+  /* RENDER WEBTOON SCROLL STREAM */
+  function renderWebtoonStream() {
+    const stream = document.getElementById('viewWebtoon');
+    stream.innerHTML = '';
+    const list = storyDataset[activeTheme];
+    const pack = characterPacks[activeTheme];
+
+    list.forEach(msg => {
+      if (msg.speaker === 'system') {
+        const quest = document.createElement('div');
+        quest.className = 'system-quest-banner';
+        quest.innerHTML = `
+          <div class="system-quest-title">⚡ SYSTEM MISSION ALERT</div>
+          <div class="system-quest-desc">${msg.quest}</div>
+        `;
+        stream.appendChild(quest);
+        return;
+      }
+
+      const isRight = msg.speaker === 'right';
+      const actorData = isRight ? pack.right : pack.left;
+
+      const entry = document.createElement('div');
+      entry.className = `webtoon-message-entry ${isRight ? 'right-side' : 'left-side'}`;
+
+      entry.innerHTML = `
+        <div class="webtoon-standing-figure">
+          <img src="${actorData.img}" alt="${msg.name}" onerror="this.onerror=null; this.src='${actorData.fallback}';">
+        </div>
+        <div class="webtoon-bubble-card">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong style="font-size:11px; color:${actorData.color}; text-transform:uppercase;">${msg.name}</strong>
+            <span style="font-size:9.5px; color:#f59e0b; background:#0f172a; padding:1px 6px; border-radius:4px;">${msg.emotion}</span>
+          </div>
+          <div style="font-size:14px; font-weight:700; color:#1e1b18; line-height:1.35;">
+            ${msg.html}
+          </div>
+        </div>
+      `;
+
+      stream.appendChild(entry);
+    });
+
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  /* LIVE EMOTION OVERRIDE */
+  function setLiveEmotion(emotion) {
+    document.querySelectorAll('.expr-chip').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const isTopActive = document.getElementById('duelRowTop').classList.contains('active');
+    const tag = isTopActive ? document.getElementById('leftEmotionTag') : document.getElementById('rightEmotionTag');
+    tag.textContent = emotion;
+
+    const actorId = isTopActive ? 'actorLeftWrapper' : 'actorRightWrapper';
+    const actor = document.getElementById(actorId);
+
+    if (emotion === 'shock') {
+      actor.style.transform = 'translateY(-14px) scale(1.1)';
+      setTimeout(() => { actor.style.transform = ''; }, 300);
+    } else if (emotion === 'angry') {
+      actor.style.filter = 'drop-shadow(0 0 25px rgba(239, 68, 68, 0.9))';
+      setTimeout(() => { actor.style.filter = ''; }, 1000);
+    } else if (emotion === 'laugh') {
+      actor.style.transform = 'translateY(-8px) scale(1.04)';
+      setTimeout(() => { actor.style.transform = ''; }, 400);
     }
   }
 
-  function prevTurn() {
-    if (currentTurn > 0) {
-      currentTurn--;
-      renderTurn();
+  /* USER COMPOSER INJECTION */
+  function handleSendCustomLine(e) {
+    e.preventDefault();
+    const input = document.getElementById('composerInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const speaker = document.getElementById('composerSpeaker').value;
+    const pack = characterPacks[activeTheme];
+    const name = speaker === 'left' ? pack.left.name : pack.right.name;
+
+    const newLine = {
+      turn: storyDataset[activeTheme].length + 1,
+      speaker: speaker,
+      name: name,
+      emotion: 'confident',
+      html: escapeHtml(text)
+    };
+
+    storyDataset[activeTheme].push(newLine);
+    input.value = '';
+
+    if (activeLayout === 'duel') {
+      renderDuelTurn(storyDataset[activeTheme].length - 1);
+    } else {
+      renderWebtoonStream();
     }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function nextStoryTurn() {
+    renderDuelTurn(currentTurnIndex + 1);
+  }
+
+  function prevStoryTurn() {
+    renderDuelTurn(currentTurnIndex - 1);
   }
 
   function resetStory() {
-    currentTurn = 0;
-    renderTurn();
-  }
-
-  function handleStageClick(e) {
-    if (e.target.closest('.demo-nav-bar') || e.target.closest('button')) return;
-    nextTurn();
+    if (isAutoPlay) toggleAutoPlay();
+    renderDuelTurn(0);
+    if (activeLayout === 'webtoon') renderWebtoonStream();
   }
 
   function toggleAutoPlay() {
@@ -837,36 +1283,42 @@
     const btn = document.getElementById('autoPlayBtn');
     if (isAutoPlay) {
       btn.textContent = '⏸ Pause';
-      btn.style.background = '#e11d48';
-      btn.style.borderColor = '#fb7185';
-      runAutoLoop();
+      btn.style.background = '#dc2626';
+      autoTimer = setInterval(() => {
+        if (currentTurnIndex >= storyDataset[activeTheme].length - 1) {
+          currentTurnIndex = 0;
+        } else {
+          currentTurnIndex++;
+        }
+        renderDuelTurn(currentTurnIndex);
+      }, 2600);
     } else {
-      btn.textContent = '▶ Auto-Play';
-      btn.style.background = 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)';
-      btn.style.borderColor = '#38bdf8';
-      clearTimeout(autoTimer);
+      btn.textContent = '▶ Auto-Play Story';
+      btn.style.background = '';
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
     }
   }
 
-  function runAutoLoop() {
-    if (!isAutoPlay) return;
-    if (currentTurn < duelStory.length - 1) {
-      nextTurn();
-      autoTimer = setTimeout(runAutoLoop, 2800);
-    } else {
-      toggleAutoPlay();
-    }
+  function handleCanvasTap(e) {
+    if (e.target.closest('.stage-footer-bar') || e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+    nextStoryTurn();
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
+  // Keyboard navigation
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.code === 'Space' || e.code === 'ArrowRight') {
       e.preventDefault();
-      nextTurn();
+      nextStoryTurn();
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      prevStoryTurn();
     }
   });
 
-  // Start at turn 1
-  renderTurn();
+  // Initialize
+  renderDuelTurn(0);
 </script>
 </body>
 </html>
