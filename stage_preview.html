@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Anime Stage & Duel Prototype — Manhwa Chat Hub</title>
+<style>
+  :root {
+    --bg-dark: #090d16;
+    --card-bg: #ffffff;
+    --card-border: #2c2518;
+    --gold-accent: #f59e0b;
+    --gold-border: #d97706;
+    --blue-accent: #38bdf8;
+    --text-dark: #1e1b18;
+    --font-comic: 'Impact', 'Segoe UI Black', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-dialogue: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: #030712;
+    color: #f8fafc;
+    font-family: var(--font-dialogue);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px;
+  }
+
+  /* TOP PROTOTYPE CONTROL BAR */
+  .demo-nav-bar {
+    width: 100%;
+    max-width: 440px;
+    background: #0f172a;
+    border: 1.5px solid #334155;
+    border-radius: 16px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  .demo-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .demo-badge {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .demo-toggle-group {
+    display: flex;
+    gap: 6px;
+    background: #090d16;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
+  }
+
+  .demo-toggle-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .demo-toggle-btn.active {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #0f172a;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  }
+
+  .demo-actions-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .demo-btn {
+    flex: 1;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f8fafc;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .demo-btn:hover {
+    background: #334155;
+  }
+
+  .demo-btn.play-btn {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #fff;
+  }
+
+  /* MOBILE PHONE CANVAS WRAPPER (9:16 VERTICAL STAGE) */
+  .stage-phone-frame {
+    width: 100%;
+    max-width: 410px;
+    height: 720px;
+    max-height: 82vh;
+    border-radius: 28px;
+    border: 3px solid #1e293b;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* BATTLEFIELD / FANTASY STAGE BACKGROUND */
+  .stage-bg-layer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(2, 6, 23, 0.85) 100%),
+                radial-gradient(circle at 50% 30%, #1e3a8a 0%, #090d16 80%);
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+  }
+
+  /* STAGE HEADER */
+  .stage-top-header {
+    position: relative;
+    z-index: 10;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  }
+
+  .stage-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #f8fafc;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stage-turn-counter {
+    font-size: 11px;
+    font-weight: 800;
+    color: #38bdf8;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #334155;
+    padding: 3px 8px;
+    border-radius: 12px;
+  }
+
+  /* =====================================================================
+     STYLE A: RPG CUTSCENE / VISUAL NOVEL STAGE (LIVING STAGGERED CHARACTERS)
+     ===================================================================== */
+  .rpg-stage-container {
+    position: relative;
+    flex: 1;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 14px 20px 14px;
+    overflow: hidden;
+  }
+
+  /* TOP SECTION: SPEAKER 1 (LEFT CHARACTER + RIGHT BUBBLE) */
+  .rpg-speaker-row-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-height: 200px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* BOTTOM SECTION: SPEAKER 2 (LEFT BUBBLE + RIGHT CHARACTER) */
+  .rpg-speaker-row-bottom {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+    min-height: 220px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* LARGE CHARACTER SPRITE AVATARS */
+  .rpg-char-actor {
+    flex: 0 0 110px;
+    width: 110px;
+    height: 140px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .rpg-speaker-row-bottom .rpg-char-actor {
+    order: 2; /* Sits on the right */
+  }
+
+  .rpg-char-portrait-box {
+    width: 100px;
+    height: 115px;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    background: #0f172a;
+    border: 3px solid #334155;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.8);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .rpg-char-portrait-box img,
+  .rpg-char-portrait-box svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .rpg-char-nametag {
+    position: absolute;
+    bottom: -6px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1.5px solid #334155;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ACTIVE TALKING STATE (AURA GLOW & BOUNCE) */
+  .rpg-speaker-row-top.active .rpg-char-portrait-box {
+    border-color: #f59e0b;
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.65), 0 12px 30px rgba(0, 0, 0, 0.9);
+    transform: translateY(-4px) scale(1.06);
+    animation: speakingPulse 1.8s infinite alternate ease-in-out;
+  }
+
+  .rpg-speaker-row-bottom.active .rpg-char-portrait-box {
+    border-color: #38bdf8;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.65), 0 12px 30px rgba(0, 0, 0, 0.9);
+    transform: translateY(-4px) scale(1.06);
+    animation: speakingPulse 1.8s infinite alternate ease-in-out;
+  }
+
+  .rpg-speaker-row-top:not(.active) .rpg-char-actor,
+  .rpg-speaker-row-bottom:not(.active) .rpg-char-actor {
+    opacity: 0.62;
+    transform: scale(0.96);
+    filter: brightness(0.85);
+  }
+
+  @keyframes speakingPulse {
+    from { transform: translateY(-4px) scale(1.04); }
+    to { transform: translateY(-7px) scale(1.08); }
+  }
+
+  /* FANCY CLASH & MANHWA STYLE DIALOGUE BUBBLE */
+  .rpg-dialogue-bubble {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: #ffffff;
+    border: 3.5px solid #201a15;
+    border-radius: 20px;
+    padding: 14px 16px;
+    position: relative;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), inset 0 2px 0 rgba(255, 255, 255, 0.8);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: left top;
+    animation: bubblePop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .rpg-speaker-row-bottom .rpg-dialogue-bubble {
+    order: 1; /* Sits on left */
+    transform-origin: right bottom;
+  }
+
+  @keyframes bubblePop {
+    0% { opacity: 0; transform: scale(0.88); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* GOLDEN ORNAMENTAL CORNER ACCENTS (LIKE REFERENCE IMAGE) */
+  .rpg-dialogue-bubble::before,
+  .rpg-dialogue-bubble::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: #d97706;
+    pointer-events: none;
+  }
+
+  .rpg-dialogue-bubble::before {
+    top: 5px;
+    left: 5px;
+    border-top: 2.5px solid #d97706;
+    border-left: 2.5px solid #d97706;
+    border-top-left-radius: 12px;
+  }
+
+  .rpg-dialogue-bubble::after {
+    bottom: 5px;
+    right: 5px;
+    border-bottom: 2.5px solid #d97706;
+    border-right: 2.5px solid #d97706;
+    border-bottom-right-radius: 12px;
+  }
+
+  /* COMIC SPEECH POINTER TAIL */
+  .rpg-dialogue-tail {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+  }
+
+  /* Tail pointing to Left Character */
+  .rpg-speaker-row-top .rpg-dialogue-tail {
+    left: -15px;
+    top: 24px;
+    border-width: 10px 16px 10px 0;
+    border-color: transparent #201a15 transparent transparent;
+  }
+  .rpg-speaker-row-top .rpg-dialogue-tail::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: -8px;
+    border-width: 8px 13px 8px 0;
+    border-color: transparent #ffffff transparent transparent;
+  }
+
+  /* Tail pointing to Right Character */
+  .rpg-speaker-row-bottom .rpg-dialogue-tail {
+    right: -15px;
+    bottom: 24px;
+    border-width: 10px 0 10px 16px;
+    border-color: transparent transparent transparent #201a15;
+  }
+  .rpg-speaker-row-bottom .rpg-dialogue-tail::after {
+    content: '';
+    position: absolute;
+    right: 4px;
+    top: -8px;
+    border-width: 8px 0 8px 13px;
+    border-color: transparent transparent transparent #ffffff;
+  }
+
+  .rpg-bubble-text {
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.42;
+    color: #1a1714;
+    word-break: break-word;
+  }
+
+  .rpg-bubble-emotion-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: #0f172a;
+    color: #f59e0b;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+
+  /* INACTIVE BUBBLE MUTED STATE */
+  .rpg-speaker-row-top:not(.active) .rpg-dialogue-bubble,
+  .rpg-speaker-row-bottom:not(.active) .rpg-dialogue-bubble {
+    opacity: 0.55;
+    filter: grayscale(0.2);
+  }
+
+  /* =====================================================================
+     STYLE B: VERTICAL COMIC PANEL STREAM (SCROLLING WEBTOON DUEL)
+     ===================================================================== */
+  .comic-stream-container {
+    flex: 1;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 12px 24px 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .comic-panel-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    animation: panelSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes panelSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .comic-panel-card.right-speaker {
+    flex-direction: row-reverse;
+  }
+
+  .comic-panel-avatar {
+    flex: 0 0 68px;
+    width: 68px;
+    height: 80px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: #0f172a;
+    border: 2.5px solid #f59e0b;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
+  }
+
+  .comic-panel-card.right-speaker .comic-panel-avatar {
+    border-color: #38bdf8;
+  }
+
+  .comic-panel-avatar img,
+  .comic-panel-avatar svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .comic-panel-avatar-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.9);
+    font-size: 9.5px;
+    font-weight: 800;
+    text-align: center;
+    color: #f8fafc;
+    padding: 1px 0;
+    text-transform: uppercase;
+  }
+
+  .comic-panel-bubble {
+    flex: 1;
+    min-width: 0;
+    background: #ffffff;
+    border: 3px solid #201a15;
+    border-radius: 16px;
+    padding: 10px 14px;
+    position: relative;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  }
+
+  .comic-panel-bubble .rpg-bubble-text {
+    font-size: 14px;
+    line-height: 1.38;
+  }
+
+  /* COMIC PANEL CORNERS */
+  .comic-panel-bubble::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 10px;
+    height: 10px;
+    border-top: 2px solid #d97706;
+    border-left: 2px solid #d97706;
+    border-top-left-radius: 8px;
+  }
+
+  /* HOLOGRAPHIC QUEST ALERT IN STAGE */
+  .stage-quest-card {
+    background: rgba(10, 25, 47, 0.94);
+    border: 2px solid #00f0ff;
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15);
+    text-align: center;
+    animation: questGlow 2s infinite alternate ease-in-out;
+  }
+
+  @keyframes questGlow {
+    from { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
+    to { box-shadow: 0 0 30px rgba(0, 240, 255, 0.7); }
+  }
+
+  .stage-quest-title {
+    font-size: 11px;
+    font-weight: 900;
+    color: #00f0ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stage-quest-desc {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-top: 4px;
+  }
+
+  /* STAGE BOTTOM CONTROLS */
+  .stage-bottom-bar {
+    position: relative;
+    z-index: 10;
+    padding: 10px 14px;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.92) 0%, transparent 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stage-tap-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stage-tap-hint kbd {
+    background: #1e293b;
+    border: 1px solid #475569;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #facc15;
+    font-family: inherit;
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- TOP PROTOTYPE BAR -->
+  <div class="demo-nav-bar">
+    <div class="demo-nav-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:18px;">⚔️</span>
+        <strong style="font-size:14px; color:#f8fafc;">Anime Stage Duel Experiment</strong>
+      </div>
+      <span class="demo-badge">Live Sandbox</span>
+    </div>
+
+    <!-- TOGGLE SWITCHER BETWEEN STYLE A & STYLE B -->
+    <div class="demo-toggle-group">
+      <button type="button" class="demo-toggle-btn active" id="btnStyleA" onclick="switchPrototypeStyle('A')">
+        <span>🎭 Style A</span>
+        <span style="font-size:10px; opacity:0.8;">(Cutscene Stage)</span>
+      </button>
+      <button type="button" class="demo-toggle-btn" id="btnStyleB" onclick="switchPrototypeStyle('B')">
+        <span>📜 Style B</span>
+        <span style="font-size:10px; opacity:0.8;">(Comic Stream)</span>
+      </button>
+    </div>
+
+    <!-- PLAYBACK & TURN CONTROLS -->
+    <div class="demo-actions-row">
+      <button type="button" class="demo-btn" onclick="prevTurn()" title="Previous Dialogue">◀ Prev</button>
+      <button type="button" class="demo-btn play-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
+      <button type="button" class="demo-btn" onclick="nextTurn()" title="Next Dialogue">Next ▶</button>
+      <button type="button" class="demo-btn" onclick="resetStory()" title="Restart">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- PHONE CONTAINER FRAME -->
+  <div class="stage-phone-frame" id="phoneFrame" onclick="handleStageClick(event)">
+    <div class="stage-bg-layer"></div>
+
+    <!-- STAGE HEADER -->
+    <div class="stage-top-header">
+      <div class="stage-title">
+        <span>⚔️</span>
+        <span>Anime Stage: Boss Confrontation</span>
+      </div>
+      <span class="stage-turn-counter" id="stageTurnCounter">Turn 1 / 6</span>
+    </div>
+
+    <!-- STYLE A CONTAINER (CUTSCENE STAGE) -->
+    <div class="rpg-stage-container" id="containerStyleA">
+      <!-- TOP SPEAKER: CHARACTER 1 (LEFT) -->
+      <div class="rpg-speaker-row-top active" id="rpgRowTop">
+        <div class="rpg-char-actor">
+          <div class="rpg-char-portrait-box" id="topCharBox">
+            <svg viewBox="0 0 100 115" width="100" height="115" xmlns="http://www.w3.org/2000/svg">
+              <!-- Anime Hunter / Hero (Sung Jin-Woo style) -->
+              <rect width="100" height="115" fill="#1e1b4b"/>
+              <circle cx="50" cy="50" r="34" fill="#fed7aa"/>
+              <!-- Hair -->
+              <path d="M20 50 Q16 15 50 12 Q84 15 80 50 Q75 25 50 20 Q25 25 20 50 Z" fill="#0f172a"/>
+              <path d="M30 25 L45 52 L50 24 L55 52 L70 25" fill="#0f172a"/>
+              <!-- Hunter Jacket -->
+              <path d="M10 115 L25 80 L75 80 L90 115 Z" fill="#0284c7"/>
+              <path d="M35 80 L50 115 L65 80 Z" fill="#090d16"/>
+              <!-- Eyes & Expression (Dynamic inside) -->
+              <g id="topCharFaceGroup">
+                <circle cx="38" cy="52" r="4.5" fill="#0284c7"/>
+                <circle cx="62" cy="52" r="4.5" fill="#0284c7"/>
+                <path d="M32 44 L44 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M68 44 L56 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Confident Smile -->
+                <path d="M43 66 Q50 72 57 66" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              </g>
+            </svg>
+          </div>
+          <span class="rpg-char-nametag" style="border-color:#f59e0b; color:#fbbf24;">Jin-Woo</span>
+        </div>
+
+        <div class="rpg-dialogue-bubble" id="topBubble">
+          <div class="rpg-dialogue-tail"></div>
+          <div class="rpg-bubble-emotion-tag" id="topEmotionTag">confident</div>
+          <p class="rpg-bubble-text" id="topBubbleText">Did you really think entering this S-Rank Dungeon gate was a good idea?</p>
+        </div>
+      </div>
+
+      <!-- MIDDLE HOLOGRAM QUEST ALERT (IF TRIGGERED) -->
+      <div class="stage-quest-card" id="rpgQuestCard" style="display:none;">
+        <div class="stage-quest-title">⚡ URGENT SYSTEM QUEST</div>
+        <div class="stage-quest-desc" id="rpgQuestText">SURVIVAL MISSION: Defeat the Dungeon Monarch within 180 seconds!</div>
+      </div>
+
+      <!-- BOTTOM SPEAKER: CHARACTER 2 (RIGHT) -->
+      <div class="rpg-speaker-row-bottom" id="rpgRowBottom">
+        <div class="rpg-dialogue-bubble" id="bottomBubble">
+          <div class="rpg-dialogue-tail"></div>
+          <div class="rpg-bubble-emotion-tag" id="bottomEmotionTag" style="color:#38bdf8;">smug</div>
+          <p class="rpg-bubble-text" id="bottomBubbleText">Ha! A puny E-rank hunter like you cannot even scratch my shadow armor.</p>
+        </div>
+
+        <div class="rpg-char-actor">
+          <div class="rpg-char-portrait-box" id="bottomCharBox" style="border-color:#38bdf8;">
+            <svg viewBox="0 0 100 115" width="100" height="115" xmlns="http://www.w3.org/2000/svg">
+              <!-- Armored Boss / Monarch (Barbarian King style) -->
+              <rect width="100" height="115" fill="#450a0a"/>
+              <circle cx="50" cy="54" r="36" fill="#fbcfe8"/>
+              <!-- Crown / Iron Helmet -->
+              <path d="M18 42 L25 15 L40 28 L50 10 L60 28 L75 15 L82 42 Z" fill="#f59e0b" stroke="#78350f" stroke-width="2"/>
+              <!-- Heavy Shoulder Armor -->
+              <path d="M5 115 L20 78 L80 78 L95 115 Z" fill="#991b1b"/>
+              <circle cx="20" cy="85" r="10" fill="#f59e0b"/>
+              <circle cx="80" cy="85" r="10" fill="#f59e0b"/>
+              <!-- Eyes & Expression (Dynamic inside) -->
+              <g id="bottomCharFaceGroup">
+                <circle cx="38" cy="56" r="4.5" fill="#dc2626"/>
+                <circle cx="62" cy="56" r="4.5" fill="#dc2626"/>
+                <!-- Fierce Eyebrows -->
+                <path d="M30 48 L46 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
+                <path d="M70 48 L54 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
+                <!-- Fierce Grin -->
+                <path d="M40 70 Q50 80 60 70 Z" fill="#7f1d1d" stroke="#450a0a" stroke-width="2"/>
+              </g>
+            </svg>
+          </div>
+          <span class="rpg-char-nametag" style="border-color:#38bdf8; color:#7dd3fc;">Blood Monarch</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STYLE B CONTAINER (VERTICAL COMIC STREAM) -->
+    <div class="comic-stream-container" id="containerStyleB" style="display:none;">
+      <!-- Populated dynamically by renderComicStream() -->
+    </div>
+
+    <!-- STAGE BOTTOM FOOTER -->
+    <div class="stage-bottom-bar">
+      <div class="stage-tap-hint">
+        <span>💡 Tap anywhere or press <kbd>Space</kbd> to advance</span>
+      </div>
+      <div style="font-size:10.5px; color:#facc15; font-weight:800;">
+        Manhwa Chat Hub v3.4 Preview
+      </div>
+    </div>
+  </div>
+
+<script>
+  /* STORY DIALOGUE DATASET WITH EMOTIONS & QUESTS */
+  const storyScript = [
+    {
+      turn: 1,
+      speaker: 'left',
+      name: 'Jin-Woo',
+      emotion: 'confident',
+      text: 'Did you really think entering this S-Rank Dungeon gate was a good idea?',
+      quest: null
+    },
+    {
+      turn: 2,
+      speaker: 'right',
+      name: 'Blood Monarch',
+      emotion: 'smug',
+      text: 'Ha! A puny E-rank hunter like you cannot even scratch my shadow armor.',
+      quest: null
+    },
+    {
+      turn: 3,
+      speaker: 'system',
+      name: 'SYSTEM',
+      emotion: 'alert',
+      text: null,
+      quest: '⚡ URGENT SYSTEM QUEST: Survive against the Blood Monarch for 3 minutes without retreating!'
+    },
+    {
+      turn: 4,
+      speaker: 'left',
+      name: 'Jin-Woo',
+      emotion: 'shock',
+      text: 'A System Quest popped up?! The penalty for failing this mission is death?!',
+      quest: null
+    },
+    {
+      turn: 5,
+      speaker: 'right',
+      name: 'Blood Monarch',
+      emotion: 'laugh',
+      text: 'Why do you stare at empty air, boy?! Tremble before true shadow power!',
+      quest: null
+    },
+    {
+      turn: 6,
+      speaker: 'left',
+      name: 'Jin-Woo',
+      emotion: 'arise',
+      text: '...Empty air? No. I am not trembling. I am simply commanding: ARISE.',
+      quest: null
+    }
+  ];
+
+  let currentStepIndex = 0;
+  let activePrototypeStyle = 'A';
+  let isAutoPlaying = false;
+  let autoPlayTimer = null;
+
+  /* EXPRESSION FACE SVG BUILDERS */
+  function getLeftFaceSvg(emotion) {
+    if (emotion === 'shock') {
+      return `
+        <circle cx="38" cy="52" r="6" fill="#fff" stroke="#0284c7" stroke-width="2"/>
+        <circle cx="62" cy="52" r="6" fill="#fff" stroke="#0284c7" stroke-width="2"/>
+        <circle cx="38" cy="52" r="2.5" fill="#090d16"/>
+        <circle cx="62" cy="52" r="2.5" fill="#090d16"/>
+        <path d="M30 42 Q38 38 46 44" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+        <path d="M70 42 Q62 38 54 44" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+        <ellipse cx="50" cy="70" rx="6" ry="9" fill="#0f172a"/>
+        <!-- Anime Sweat Drop -->
+        <path d="M72 38 C72 35, 75 32, 75 30 C75 32, 78 35, 78 38 C78 40, 75 42, 75 42 C75 42, 72 40, 72 38 Z" fill="#38bdf8"/>
+      `;
+    } else if (emotion === 'arise') {
+      return `
+        <circle cx="38" cy="52" r="5" fill="#38bdf8"/>
+        <circle cx="62" cy="52" r="5" fill="#38bdf8"/>
+        <!-- Glowing Eyes Beams -->
+        <line x1="38" y1="52" x2="20" y2="52" stroke="#38bdf8" stroke-width="3"/>
+        <line x1="62" y1="52" x2="80" y2="52" stroke="#38bdf8" stroke-width="3"/>
+        <path d="M30 44 L44 48" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+        <path d="M70 44 L56 48" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+        <!-- Dark Smirk -->
+        <path d="M42 66 Q52 74 58 64" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      `;
+    }
+    // Confident / Normal
+    return `
+      <circle cx="38" cy="52" r="4.5" fill="#0284c7"/>
+      <circle cx="62" cy="52" r="4.5" fill="#0284c7"/>
+      <path d="M32 44 L44 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M68 44 L56 46" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M43 66 Q50 72 57 66" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    `;
+  }
+
+  function getRightFaceSvg(emotion) {
+    if (emotion === 'laugh') {
+      return `
+        <!-- Closed Laughing Eyes -->
+        <path d="M32 54 Q38 46 44 54" stroke="#dc2626" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M56 54 Q62 46 68 54" stroke="#dc2626" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M30 46 L46 50" stroke="#450a0a" stroke-width="3"/>
+        <path d="M70 46 L54 50" stroke="#450a0a" stroke-width="3"/>
+        <!-- Wide Laugh Mouth -->
+        <path d="M38 68 Q50 84 62 68 Z" fill="#991b1b" stroke="#450a0a" stroke-width="2"/>
+      `;
+    }
+    // Smug / Fierce
+    return `
+      <circle cx="38" cy="56" r="4.5" fill="#dc2626"/>
+      <circle cx="62" cy="56" r="4.5" fill="#dc2626"/>
+      <path d="M30 48 L46 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M70 48 L54 54" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M40 70 Q50 80 60 70 Z" fill="#7f1d1d" stroke="#450a0a" stroke-width="2"/>
+    `;
+  }
+
+  /* UPDATE DISPLAY */
+  function renderCurrentStep() {
+    const item = storyScript[currentStepIndex];
+    document.getElementById('stageTurnCounter').textContent = `Turn ${currentStepIndex + 1} / ${storyScript.length}`;
+
+    if (activePrototypeStyle === 'A') {
+      renderStyleA(item);
+    } else {
+      renderStyleB(item);
+    }
+  }
+
+  /* RENDER STYLE A (RPG CUTSCENE STAGE) */
+  function renderStyleA(item) {
+    const topRow = document.getElementById('rpgRowTop');
+    const bottomRow = document.getElementById('rpgRowBottom');
+    const questCard = document.getElementById('rpgQuestCard');
+
+    if (item.speaker === 'system' && item.quest) {
+      // System Quest Popup Mode
+      questCard.style.display = 'block';
+      document.getElementById('rpgQuestText').textContent = item.quest;
+      topRow.classList.remove('active');
+      bottomRow.classList.remove('active');
+      return;
+    } else {
+      questCard.style.display = 'none';
+    }
+
+    if (item.speaker === 'left') {
+      topRow.classList.add('active');
+      bottomRow.classList.remove('active');
+
+      document.getElementById('topEmotionTag').textContent = item.emotion;
+      document.getElementById('topBubbleText').textContent = item.text;
+      document.getElementById('topCharFaceGroup').innerHTML = getLeftFaceSvg(item.emotion);
+    } else if (item.speaker === 'right') {
+      bottomRow.classList.add('active');
+      topRow.classList.remove('active');
+
+      document.getElementById('bottomEmotionTag').textContent = item.emotion;
+      document.getElementById('bottomBubbleText').textContent = item.text;
+      document.getElementById('bottomCharFaceGroup').innerHTML = getRightFaceSvg(item.emotion);
+    }
+  }
+
+  /* RENDER STYLE B (VERTICAL COMIC STREAM) */
+  function renderStyleB() {
+    const container = document.getElementById('containerStyleB');
+    container.innerHTML = '';
+
+    // Render all dialogs up to currentStepIndex in a scrollable comic panel feed
+    for (let i = 0; i <= currentStepIndex; i++) {
+      const item = storyScript[i];
+
+      if (item.speaker === 'system' && item.quest) {
+        const questEl = document.createElement('div');
+        questEl.className = 'stage-quest-card';
+        questEl.innerHTML = `
+          <div class="stage-quest-title">⚡ URGENT SYSTEM QUEST</div>
+          <div class="stage-quest-desc">${item.quest}</div>
+        `;
+        container.appendChild(questEl);
+        continue;
+      }
+
+      const isRight = item.speaker === 'right';
+      const card = document.createElement('div');
+      card.className = `comic-panel-card ${isRight ? 'right-speaker' : ''}`;
+
+      const avatarSvg = isRight
+        ? `<svg viewBox="0 0 100 115" width="100%" height="100%"><rect width="100" height="115" fill="#450a0a"/><circle cx="50" cy="54" r="36" fill="#fbcfe8"/><path d="M18 42 L25 15 L40 28 L50 10 L60 28 L75 15 L82 42 Z" fill="#f59e0b"/><path d="M5 115 L20 78 L80 78 L95 115 Z" fill="#991b1b"/>${getRightFaceSvg(item.emotion)}</svg>`
+        : `<svg viewBox="0 0 100 115" width="100%" height="100%"><rect width="100" height="115" fill="#1e1b4b"/><circle cx="50" cy="50" r="34" fill="#fed7aa"/><path d="M20 50 Q16 15 50 12 Q84 15 80 50 Z" fill="#0f172a"/><path d="M10 115 L25 80 L75 80 L90 115 Z" fill="#0284c7"/>${getLeftFaceSvg(item.emotion)}</svg>`;
+
+      card.innerHTML = `
+        <div class="comic-panel-avatar">
+          ${avatarSvg}
+          <div class="comic-panel-avatar-label">${item.name}</div>
+        </div>
+        <div class="comic-panel-bubble">
+          <div class="rpg-bubble-emotion-tag" style="color:${isRight ? '#38bdf8' : '#f59e0b'};">${item.emotion}</div>
+          <p class="rpg-bubble-text">${item.text}</p>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    container.scrollTop = container.scrollHeight;
+  }
+
+  /* TOGGLE BETWEEN STYLE A & STYLE B */
+  function switchPrototypeStyle(style) {
+    activePrototypeStyle = style;
+    document.getElementById('btnStyleA').classList.toggle('active', style === 'A');
+    document.getElementById('btnStyleB').classList.toggle('active', style === 'B');
+
+    document.getElementById('containerStyleA').style.display = (style === 'A') ? 'flex' : 'none';
+    document.getElementById('containerStyleB').style.display = (style === 'B') ? 'flex' : 'none';
+
+    renderCurrentStep();
+  }
+
+  /* TURN NAVIGATION */
+  function nextTurn() {
+    if (currentStepIndex < storyScript.length - 1) {
+      currentStepIndex++;
+      renderCurrentStep();
+    } else {
+      if (isAutoPlaying) toggleAutoPlay();
+    }
+  }
+
+  function prevTurn() {
+    if (currentStepIndex > 0) {
+      currentStepIndex--;
+      renderCurrentStep();
+    }
+  }
+
+  function resetStory() {
+    currentStepIndex = 0;
+    renderCurrentStep();
+  }
+
+  function handleStageClick(e) {
+    if (e.target.closest('.demo-nav-bar') || e.target.closest('button')) return;
+    nextTurn();
+  }
+
+  function toggleAutoPlay() {
+    isAutoPlaying = !isAutoPlaying;
+    const btn = document.getElementById('autoPlayBtn');
+    if (isAutoPlaying) {
+      btn.textContent = '⏸ Pause';
+      btn.style.background = '#e11d48';
+      btn.style.borderColor = '#fb7185';
+      runAutoPlayLoop();
+    } else {
+      btn.textContent = '▶ Auto-Play';
+      btn.style.background = '#0284c7';
+      btn.style.borderColor = '#38bdf8';
+      clearTimeout(autoPlayTimer);
+    }
+  }
+
+  function runAutoPlayLoop() {
+    if (!isAutoPlaying) return;
+    if (currentStepIndex < storyScript.length - 1) {
+      nextTurn();
+      autoPlayTimer = setTimeout(runAutoPlayLoop, 2600);
+    } else {
+      toggleAutoPlay();
+    }
+  }
+
+  // Keyboard Spacebar Navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      nextTurn();
+    }
+  });
+
+  // Init
+  renderCurrentStep();
+</script>
+</body>
+</html>
