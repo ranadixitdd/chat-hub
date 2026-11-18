@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Manhwa Motion Stage — Clean Visual Sample</title>
+<title>Character Dialogue — Pure Focus</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Bangers&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap');
 
   * {
     box-sizing: border-box;
@@ -18,238 +18,227 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #050508;
+    /* PURE SOLID NEUTRAL BACKGROUND — NO GRADIENTS, NO PARTICLES, NO VIGNETTES */
+    background: #0f1117;
     color: #f8fafc;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     user-select: none;
   }
 
-  /* ═══════════════════════════════════════════════════
-     STAGE CONTAINER (FULLSCREEN OR ROTATED 16:9 VIEW)
-     ═══════════════════════════════════════════════════ */
-  #stageApp {
+  /* ═════════════════════════════════════════════════════
+     MAIN SCREEN CANVAS
+     ═════════════════════════════════════════════════════ */
+  #mainStage {
     position: fixed;
     inset: 0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    overflow: hidden;
-    background: #020205;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 20px 16px;
+    cursor: pointer;
   }
 
-  /* ATMOSPHERIC DYNAMIC BACKGROUND */
-  .dynamic-bg {
+  /* TOP MINIMAL STATUS & CONTROLS */
+  .top-bar {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .scene-pill {
+    font-size: 11px;
+    font-weight: 800;
+    color: #94a3b8;
+    background: #181d28;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid #283142;
+    letter-spacing: 0.5px;
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-pill-btn {
+    background: #181d28;
+    border: 1px solid #283142;
+    color: #f1f5f9;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .action-pill-btn:hover {
+    background: #232b3b;
+    border-color: #3b475e;
+  }
+  .action-pill-btn.active {
+    background: #3b82f6;
+    border-color: #60a5fa;
+    color: #ffffff;
+  }
+
+  /* ═════════════════════════════════════════════════════
+     STAGE ARENA: THE TWO CHARACTERS STANDING DIRECTLY ON SCREEN
+     (EXACTLY LIKE USER REFERENCE: BARBARIAN & KNIGHT)
+     ═════════════════════════════════════════════════════ */
+  .characters-arena {
     position: absolute;
     inset: 0;
-    z-index: 1;
-    transition: background 0.8s ease, filter 0.8s ease;
-  }
-
-  .mood-calm {
-    background: radial-gradient(circle at 50% 20%, #0c4a6e 0%, #071a2e 50%, #020617 100%);
-  }
-  .mood-tense {
-    background: radial-gradient(circle at 50% 30%, #450a0a 0%, #1a0505 55%, #020205 100%);
-  }
-  .mood-epic {
-    background: radial-gradient(circle at 50% 25%, #3b0764 0%, #17072b 55%, #05020a 100%);
-  }
-  .mood-warm {
-    background: radial-gradient(circle at 50% 30%, #78350f 0%, #291003 55%, #050201 100%);
-  }
-
-  /* AMBIENT FLOATING DUST PARTICLES */
-  .particle-canvas {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  /* SUBTLE VIGNETTE */
-  .cinema-vignette {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.75);
-  }
-
-  /* ═══════════════════════════════════════════════════
-     LIVING FULL-BODY / BUST CHARACTER ACTOR
-     ═══════════════════════════════════════════════════ */
-  .actor-container {
-    position: absolute;
-    bottom: 0;
     z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 4% 35px 4%;
     pointer-events: none;
-    transition: all 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* MEDIUM SIZE CHARACTER BOXES — NEVER COVERING THE FULL SCREEN */
+  .character-actor {
+    position: relative;
+    width: 44%;
+    max-width: 250px;
+    height: 48vh;
+    max-height: 380px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
+    transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1), opacity 0.25s ease, filter 0.25s ease;
   }
 
-  /* LEFT SPEAKER PLACEMENT */
-  .actor-left {
-    left: -2%;
-  }
-
-  /* RIGHT SPEAKER PLACEMENT */
-  .actor-right {
-    right: -2%;
-  }
-
-  /* FULL BODY MODE (Default) */
-  .view-full-body .actor-container {
-    width: 60%;
-    max-width: 380px;
-    height: 82vh;
-  }
-  .view-full-body .actor-container img {
-    width: 100%;
-    height: 100%;
+  /* 100% CLEAN TRANSPARENT PNG CUTOUT — NO BOX, NO BORDER */
+  .character-actor img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
-    object-position: bottom center;
-    filter: drop-shadow(0 15px 35px rgba(0,0,0,0.85));
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.9));
   }
 
-  /* BUST ZOOM MODE (Toggleable via button) */
-  .view-bust .actor-container {
-    width: 82%;
-    max-width: 520px;
-    height: 95vh;
-  }
-  .view-bust .actor-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top center;
-    transform: translateY(12%);
-    filter: drop-shadow(0 20px 45px rgba(0,0,0,0.9));
+  /* ACTIVE SPEAKER STATE */
+  .character-actor.is-speaking {
+    opacity: 1;
+    transform: scale(1.05) translateY(-6px);
+    filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.95));
   }
 
-  /* SUBTLE IDLE BREATHING SINE */
-  .actor-container.breathing img {
-    animation: livingBreath 3.6s ease-in-out infinite alternate;
-  }
-  @keyframes livingBreath {
-    0% { transform: translateY(0) scaleY(1); }
-    100% { transform: translateY(-4px) scaleY(1.008); }
+  /* INACTIVE LISTENER (SOFTENED SO VIEWER FOCUSES ON SPEAKER) */
+  .character-actor.is-listening {
+    opacity: 0.45;
+    transform: scale(0.96);
+    filter: grayscale(0.25) brightness(0.85);
   }
 
-  /* SOFT BLEND AT BOTTOM FEET */
-  .actor-blend-fade {
+  /* MINI BABY CHIBI STICKER ANCHOR (NEAR HEAD) */
+  .chibi-sticker-spot {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 14%;
-    background: linear-gradient(to top, rgba(2,2,5,0.95) 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 12;
-  }
-
-  /* ═══════════════════════════════════════════════════
-     MINI BABY CHIBI STICKER PLACEHOLDER (NEAR HEAD)
-     ═══════════════════════════════════════════════════ */
-  .chibi-sticker-anchor {
-    position: absolute;
-    top: 14%;
-    z-index: 25;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    animation: chibiPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .actor-left .chibi-sticker-anchor {
-    right: -25px;
-  }
-  .actor-right .chibi-sticker-anchor {
-    left: -25px;
-  }
-
-  @keyframes chibiPop {
-    0% { transform: scale(0.4) translateY(15px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
-  }
-
-  /* CUTE COMIC CHIBI STICKER BUBBLE */
-  .mini-chibi-pill {
+    top: 0;
     background: #ffffff;
     color: #0f172a;
-    border: 2px dashed #38bdf8;
+    border: 1.5px dashed #38bdf8;
     border-radius: 999px;
-    padding: 4px 10px;
-    font-size: 10.5px;
+    padding: 3px 8px;
+    font-size: 10px;
     font-weight: 800;
     display: flex;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .mini-chibi-pill .chibi-avatar-circle {
-    width: 24px;
-    height: 24px;
+  .actor-left .chibi-sticker-spot {
+    right: -10px;
+  }
+  .actor-right .chibi-sticker-spot {
+    left: -10px;
+  }
+
+  .character-actor.is-speaking .chibi-sticker-spot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .chibi-avatar-badge {
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: #fef08a;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    border: 1.5px solid #0f172a;
+    font-size: 11px;
+    border: 1px solid #1e293b;
   }
 
-  /* ═══════════════════════════════════════════════════
-     MANGA SPEECH BUBBLES (MIX OF 3 AUTHENTIC STYLES)
-     ═══════════════════════════════════════════════════ */
-  .speech-bubble-anchor {
-    position: absolute;
-    z-index: 30;
-    top: 20%;
-    max-width: 58%;
-    min-width: 210px;
-    animation: bubbleSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-
-  @keyframes bubbleSlideIn {
-    0% { opacity: 0; transform: translateY(14px) scale(0.96); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  /* LEFT SPEAKER -> Bubble floats on Right */
-  .bubble-for-left-speaker {
-    right: 5%;
-  }
-
-  /* RIGHT SPEAKER -> Bubble floats on Left */
-  .bubble-for-right-speaker {
-    left: 5%;
-  }
-
-  /* --- STYLE 1: CLEAN CRISP WHITE BUBBLE (NORMAL) --- */
-  .bubble-normal {
-    background: rgba(255, 255, 255, 0.98);
-    color: #0f172a;
-    border-radius: 22px;
-    padding: 16px 18px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
-    border: 2px solid #e2e8f0;
+  /* ═════════════════════════════════════════════════════
+     AUTHENTIC SPEECH BUBBLES — CLEAN & PRECISELY POSITIONED
+     (POSITIONED IN THE UPPER HALF OF THE SCREEN, CONNECTING
+      WITH A DIRECTIONAL TAIL STRAIGHT TO THE CHARACTER)
+     ═════════════════════════════════════════════════════ */
+  .dialogue-wrapper {
     position: relative;
+    z-index: 50;
+    width: 100%;
+    margin-top: 15px;
+    min-height: 140px;
+    display: flex;
+    pointer-events: none;
+  }
+
+  /* Bubble alignment */
+  .dialogue-wrapper.align-left {
+    justify-content: flex-start;
+  }
+  .dialogue-wrapper.align-right {
+    justify-content: flex-end;
+  }
+
+  .comic-bubble {
+    position: relative;
+    width: 82%;
+    max-width: 360px;
+    border-radius: 20px;
+    padding: 16px 18px;
+    line-height: 1.45;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    animation: bubblePopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes bubblePopIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* --- STYLE 1: CLEAN WHITE BUBBLE (NORMAL) --- */
+  .bubble-white {
+    background: #ffffff;
+    color: #0f172a;
+    border: 3px solid #1e293b;
   }
 
   /* --- STYLE 2: JAGGED SHOUT BUBBLE (ANGRY / ATTACK) --- */
   .bubble-shout {
-    background: #fff1f2;
+    background: #fef2f2;
     color: #450a0a;
     border: 3px solid #dc2626;
     border-radius: 12px;
-    padding: 16px 18px;
-    position: relative;
-    box-shadow: 0 0 30px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.3);
     clip-path: polygon(
       0% 8%, 4% 0%, 12% 6%, 20% 0%, 28% 5%, 36% 0%, 45% 6%, 55% 0%, 65% 5%, 75% 0%, 85% 6%, 95% 0%, 100% 8%,
       96% 25%, 100% 40%, 95% 55%, 100% 70%, 96% 85%, 100% 92%,
@@ -260,423 +249,311 @@
 
   /* --- STYLE 3: OBSIDIAN DARK AURA BUBBLE (ARISE / EPIC) --- */
   .bubble-dark {
-    background: linear-gradient(135deg, #090614 0%, #1e1035 100%);
+    background: #09090f;
     color: #f8fafc;
-    border: 2px solid #a855f7;
-    border-radius: 22px;
-    padding: 16px 18px;
-    position: relative;
-    box-shadow: 0 0 35px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2);
+    border: 2.5px solid #a855f7;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.35);
   }
 
-  /* ORGANIC DIRECTIONAL TAILS */
-  .bubble-tail {
+  /* DIRECTIONAL COMIC TAILS */
+  .comic-tail {
     position: absolute;
+    bottom: -15px;
     width: 0;
     height: 0;
     border-style: solid;
   }
 
-  /* Left Speaker tail pointing Left */
-  .bubble-for-left-speaker .bubble-tail {
-    left: -14px;
-    top: 26px;
-    border-width: 9px 15px 9px 0;
-    border-color: transparent rgba(255,255,255,0.98) transparent transparent;
+  /* Tail pointing down-left toward left character */
+  .tail-to-left {
+    left: 28px;
+    border-width: 16px 14px 0 0;
+    border-color: #1e293b transparent transparent transparent;
   }
-  .bubble-for-left-speaker .bubble-dark .bubble-tail {
-    border-color: transparent #a855f7 transparent transparent;
-  }
-
-  /* Right Speaker tail pointing Right */
-  .bubble-for-right-speaker .bubble-tail {
-    right: -14px;
-    top: 26px;
-    border-width: 9px 0 9px 15px;
-    border-color: transparent transparent transparent rgba(255,255,255,0.98);
-  }
-  .bubble-for-right-speaker .bubble-dark .bubble-tail {
-    border-color: transparent transparent transparent #a855f7;
+  .tail-to-left::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: -1px;
+    border-width: 13px 11px 0 0;
+    border-color: #ffffff transparent transparent transparent;
   }
 
-  .speaker-title-tag {
+  /* Tail pointing down-right toward right character */
+  .tail-to-right {
+    right: 28px;
+    border-width: 16px 0 0 14px;
+    border-color: #1e293b transparent transparent transparent;
+  }
+  .tail-to-right::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    right: -1px;
+    border-width: 13px 0 0 11px;
+    border-color: #ffffff transparent transparent transparent;
+  }
+
+  .bubble-dark .tail-to-left { border-color: #a855f7 transparent transparent transparent; }
+  .bubble-dark .tail-to-left::after { border-color: #09090f transparent transparent transparent; }
+  .bubble-dark .tail-to-right { border-color: #a855f7 transparent transparent transparent; }
+  .bubble-dark .tail-to-right::after { border-color: #09090f transparent transparent transparent; }
+
+  .speaker-name-header {
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin-bottom: 5px;
-    display: inline-block;
+    margin-bottom: 6px;
+    display: block;
   }
 
-  .bubble-normal .speaker-title-tag { color: #0284c7; }
-  .bubble-shout .speaker-title-tag { color: #dc2626; font-size: 12px; }
-  .bubble-dark .speaker-title-tag { color: #38bdf8; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
+  .bubble-white .speaker-name-header { color: #b45309; }
+  .bubble-shout .speaker-name-header { color: #dc2626; font-size: 12px; }
+  .bubble-dark .speaker-name-header { color: #38bdf8; }
 
-  .bubble-text-content {
+  .dialogue-text-body {
     font-size: 15px;
-    font-weight: 700;
-    line-height: 1.45;
-    letter-spacing: -0.15px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
   }
 
-  .bubble-text-content mark {
+  .dialogue-text-body mark {
     background: #fca5a5;
     color: #991b1b;
-    padding: 1px 5px;
+    padding: 1px 4px;
     border-radius: 4px;
     font-weight: 900;
   }
 
-  .bubble-dark .bubble-text-content mark {
+  .bubble-dark .dialogue-text-body mark {
     background: #a855f7;
     color: #ffffff;
-    box-shadow: 0 0 10px #c084fc;
+    box-shadow: 0 0 8px #c084fc;
   }
 
-  /* ═══════════════════════════════════════════════════
-     SYSTEM QUEST / NARRATION CARD
-     ═══════════════════════════════════════════════════ */
-  .system-quest-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 86%;
-    max-width: 440px;
-    z-index: 40;
+  /* BOTTOM NAVIGATION HINT */
+  .bottom-instruction-hint {
+    position: relative;
+    z-index: 100;
     text-align: center;
-    animation: questPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes questPop {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  }
-
-  .quest-card {
-    background: rgba(6, 15, 30, 0.94);
-    border: 2px solid #00f0ff;
-    border-radius: 20px;
-    padding: 20px 24px;
-    box-shadow: 0 0 45px rgba(0, 240, 255, 0.45), inset 0 0 20px rgba(0, 240, 255, 0.15);
-    backdrop-filter: blur(8px);
-  }
-
-  /* ═══════════════════════════════════════════════════
-     MINIMAL DISCREET FLOATING HUD (NO UGLY TOOLBAR!)
-     ═══════════════════════════════════════════════════ */
-  .top-floating-hud {
-    position: absolute;
-    top: 14px;
-    left: 16px;
-    right: 16px;
-    z-index: 50;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    pointer-events: none;
-  }
-
-  .hud-badge-soft {
     font-size: 11px;
-    font-weight: 800;
-    color: rgba(255, 255, 255, 0.75);
-    background: rgba(0, 0, 0, 0.45);
-    padding: 4px 12px;
-    border-radius: 999px;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .floating-tools {
-    display: flex;
-    gap: 6px;
-    pointer-events: all;
-  }
-
-  .hud-btn {
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #f8fafc;
-    font-size: 11.5px;
-    font-weight: 800;
-    padding: 6px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-  }
-  .hud-btn:hover {
-    background: rgba(30, 41, 59, 0.85);
-  }
-  .hud-btn.active {
-    background: #0284c7;
-    border-color: #38bdf8;
-  }
-
-  .bottom-tap-hint {
-    position: absolute;
-    bottom: 16px;
-    left: 20px;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
-    z-index: 50;
+    font-weight: 700;
+    color: #64748b;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    letter-spacing: 0.4px;
   }
 
-  /* ═══════════════════════════════════════════════════
-     LANDSCAPE 16:9 ROTATED MODE (ZERO OVERLAP)
-     ═══════════════════════════════════════════════════ */
+  /* LANDSCAPE / ROTATED VIEW: CHARACTERS HAVE EVEN MORE ROOM */
   @media (orientation: landscape) {
-    .actor-container {
-      width: 35% !important;
-      max-width: 340px !important;
-      height: 92vh !important;
+    .character-actor {
+      width: 28%;
+      max-width: 220px;
+      height: 65vh;
     }
-    .speech-bubble-anchor {
-      max-width: 44% !important;
-      top: 24% !important;
+    .comic-bubble {
+      max-width: 480px;
     }
   }
 
-  /* Mobile narrow screen adjustments */
-  @media (max-width: 480px) {
-    .speech-bubble-anchor { max-width: 62%; }
-    .bubble-text-content { font-size: 14px; }
+  @media (max-width: 400px) {
+    .character-actor {
+      height: 44vh;
+    }
+    .dialogue-text-body {
+      font-size: 13.5px;
+    }
   }
 </style>
 </head>
-<body class="view-full-body">
+<body>
 
-<div id="stageApp" onclick="handleTapAdvance(event)">
-  <!-- DYNAMIC BACKGROUND -->
-  <div class="dynamic-bg mood-calm" id="stageBg"></div>
-
-  <!-- FLOATING PARTICLES CANVAS -->
-  <canvas class="particle-canvas" id="particleCanvas"></canvas>
-
-  <!-- CINEMA VIGNETTE -->
-  <div class="cinema-vignette"></div>
-
-  <!-- TOP DISCREET CONTROLS (MINIMAL & IMMERSIVE) -->
-  <div class="top-floating-hud">
-    <div class="hud-badge-soft" id="turnIndicator">Scene 1 / 6</div>
+<div id="mainStage" onclick="handleStageTap(event)">
+  <!-- TOP STATUS BAR -->
+  <div class="top-bar">
+    <div class="scene-pill" id="turnLabel">Scene 1 / 5</div>
     
-    <div class="floating-tools">
-      <!-- 1. TOGGLE FULL-BODY VS BUST VIEW -->
-      <button type="button" class="hud-btn" id="viewToggleBtn" onclick="event.stopPropagation(); toggleBodyView();" title="Toggle Full-body vs Bust Zoom">
-        <span id="viewModeLabel">👤 Bust Zoom</span>
+    <div class="top-actions">
+      <!-- AUTO PLAY BUTTON -->
+      <button type="button" class="action-pill-btn" id="autoBtn" onclick="event.stopPropagation(); toggleAutoPlay();">
+        <span id="autoBtnText">▶ Auto</span>
       </button>
 
-      <!-- 2. AUTO-PLAY TOGGLE -->
-      <button type="button" class="hud-btn" id="autoPlayBtn" onclick="event.stopPropagation(); toggleAutoPlay();">
-        <span id="autoLabel">▶ Auto</span>
-      </button>
-
-      <!-- 3. RESTART -->
-      <button type="button" class="hud-btn" onclick="event.stopPropagation(); restartScene();">
+      <!-- RESTART BUTTON -->
+      <button type="button" class="action-pill-btn" onclick="event.stopPropagation(); restartStory();">
         <span>↺</span>
       </button>
     </div>
   </div>
 
-  <!-- LIVING CHARACTER LAYER (FULL BODY CUTOUT FLOATING ON AIR) -->
-  <div class="actor-container actor-left breathing" id="actorContainer">
-    <img src="assets/characters/anime_girl_body.png" alt="Character Cutout" id="actorImg">
-    <div class="actor-blend-fade"></div>
-
-    <!-- MINI BABY CHIBI REACTION STICKER (PLACEHOLDER ANCHOR) -->
-    <div class="chibi-sticker-anchor" id="chibiAnchor">
-      <div class="mini-chibi-pill">
-        <span class="chibi-avatar-circle" id="chibiEmoji">✨</span>
-        <span id="chibiText">[Chibi Sticker]</span>
+  <!-- SPEECH BUBBLE AREA (TOP/CENTER PORTION) -->
+  <div class="dialogue-wrapper align-left" id="bubbleWrapper">
+    <div class="comic-bubble bubble-white" id="comicBubble">
+      <div class="comic-tail tail-to-left" id="bubbleTail"></div>
+      <span class="speaker-name-header" id="speakerLabel">Barbarian</span>
+      <div class="dialogue-text-body" id="speechText">
+        Can I get two Star Bonus Snacks in a row?
       </div>
     </div>
   </div>
 
-  <!-- MANGA SPEECH BUBBLE ANCHOR -->
-  <div class="speech-bubble-anchor bubble-for-left-speaker" id="bubbleAnchor">
-    <div class="bubble-normal" id="speechBubble">
-      <div class="bubble-tail"></div>
-      <span class="speaker-title-tag" id="speakerLabel">Cha Hae-In</span>
-      <div class="bubble-text-content" id="dialogueText">
-        The Dungeon readings are fluctuating. An irregular mana core is active inside.
-      </div>
-    </div>
+  <!-- BOTTOM INSTRUCTION HINT -->
+  <div class="bottom-instruction-hint" id="bottomHint">
+    Tap anywhere to advance dialogue • or press Auto
   </div>
 
-  <!-- SYSTEM QUEST OVERLAY (DROPS IN WHEN ACTIVE) -->
-  <div class="system-quest-overlay" id="questOverlay" style="display:none;">
-    <div class="quest-card">
-      <div style="font-size:10.5px; font-weight:900; color:#00f0ff; letter-spacing:2px; margin-bottom:8px;">❖ URGENT SYSTEM QUEST</div>
-      <div style="font-size:14.5px; font-weight:800; color:#ffffff; line-height:1.45;" id="questContent">
-        SURVIVAL MISSION: Clear the S-Rank Dungeon gate before the barrier collapses!
+  <!-- CHARACTERS ARENA (MEDIUM SIZE, TRANSPARENT CUTOUTS ON AIR) -->
+  <div class="characters-arena">
+    <!-- LEFT CHARACTER (BARBARIAN) -->
+    <div class="character-actor actor-left is-speaking" id="actorLeft">
+      <div class="chibi-sticker-spot">
+        <span class="chibi-avatar-badge" id="leftChibiEmoji">✨</span>
+        <span id="leftChibiLabel">[Chibi: Confident]</span>
       </div>
+      <img src="assets/characters/clean_barbarian.png" alt="Barbarian" id="leftImg">
+    </div>
+
+    <!-- RIGHT CHARACTER (BARBARIAN KING) -->
+    <div class="character-actor actor-right is-listening" id="actorRight">
+      <div class="chibi-sticker-spot">
+        <span class="chibi-avatar-badge" id="rightChibiEmoji">👑</span>
+        <span id="rightChibiLabel">[Chibi: Serious]</span>
+      </div>
+      <img src="assets/characters/clean_knight.png" alt="Barbarian King" id="rightImg">
     </div>
   </div>
-
-  <!-- BOTTOM HINT -->
-  <div class="bottom-tap-hint" id="tapHint">Tap anywhere to advance • or press Auto</div>
 </div>
 
 <script>
-  /* ═══════════════════════════════════════════════════
-     STORY SCRIPT WITH MIXED BUBBLE STYLES & MOODS
-     ═══════════════════════════════════════════════════ */
-  const storyScript = [
+  /* ═════════════════════════════════════════════════════
+     EXACT STORY SCRIPT MATCHING YOUR REFERENCE IMAGES
+     ═════════════════════════════════════════════════════ */
+  const dialogueStory = [
     {
       turn: 1,
       speaker: 'left',
-      name: 'Cha Hae-In',
-      img: 'assets/characters/anime_girl_body.png',
-      mood: 'calm',
-      bubbleStyle: 'normal',
+      name: 'Barbarian',
+      bubbleStyle: 'white',
       chibiEmoji: '✨',
-      chibiText: '[Your Chibi: Confident]',
-      text: 'The Dungeon readings are fluctuating. An irregular mana core is active inside.'
+      chibiLabel: '[Chibi: Confident]',
+      text: 'Can I get two Star Bonus Snacks in a row?'
     },
     {
       turn: 2,
       speaker: 'right',
       name: 'Barbarian King',
-      img: 'assets/characters/knight_cutout.png',
-      mood: 'warm',
-      bubbleStyle: 'normal',
-      chibiEmoji: '🛡️',
-      chibiText: '[Your Chibi: Smirk]',
-      text: 'Good. A hunter who runs from danger has no business holding a blade.'
+      bubbleStyle: 'white',
+      chibiEmoji: '👑',
+      chibiLabel: '[Chibi: Serious]',
+      text: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.'
     },
     {
       turn: 3,
-      speaker: 'system',
-      name: 'SYSTEM',
-      mood: 'tense',
-      bubbleStyle: 'quest',
-      questText: '⚡ SYSTEM ALERT: The Dungeon entrance has collapsed! Time remaining: 180s'
+      speaker: 'left',
+      name: 'Barbarian',
+      bubbleStyle: 'white',
+      chibiEmoji: '🤔',
+      chibiLabel: '[Chibi: Puzzled]',
+      text: 'Wait... so does that mean I should use my active snack right now before opening the chest?'
     },
     {
       turn: 4,
       speaker: 'right',
       name: 'Barbarian King',
-      img: 'assets/characters/knight_cutout.png',
-      mood: 'tense',
       bubbleStyle: 'shout',
       chibiEmoji: '💢',
-      chibiText: '[Your Chibi: Angry]',
-      text: 'AN ENTRANCE COLLAPSE?! <mark>WE ARE TRAPPED HERE WITH THE BOSS?!</mark>'
+      chibiLabel: '[Chibi: Angry]',
+      text: 'EXACTLY! <mark>USE IT IMMEDIATELY</mark> OR YOU WASTE THE ENTIRE REWARD POOL!'
     },
     {
       turn: 5,
       speaker: 'left',
-      name: 'Cha Hae-In',
-      img: 'assets/characters/anime_girl_body.png',
-      mood: 'tense',
-      bubbleStyle: 'normal',
-      chibiEmoji: '😱',
-      chibiText: '[Your Chibi: Shocked]',
-      text: 'Wait... look below his feet. That dark shadow mist rising... it is taking human form!'
-    },
-    {
-      turn: 6,
-      speaker: 'left',
-      name: 'Cha Hae-In',
-      img: 'assets/characters/anime_girl_body.png',
-      mood: 'epic',
+      name: 'Barbarian',
       bubbleStyle: 'dark',
       chibiEmoji: '😈',
-      chibiText: '[Your Chibi: Arise]',
-      text: 'The Shadow Monarch has answered. Rise from the abyss of death... <mark>ARISE.</mark>'
+      chibiLabel: '[Chibi: Arise]',
+      text: 'Understood, my King. In that case, I will unleash its power and <mark>ARISE.</mark>'
     }
   ];
 
-  let currentIdx = 0;
-  let isAutoPlay = false;
+  let currentStep = 0;
+  let isAutoRunning = false;
   let autoTimer = null;
-  let isBustMode = false;
 
-  /* RENDER SCENE TURN */
-  function renderTurn(index) {
+  function renderDialogueStep(index) {
     if (index < 0) index = 0;
-    if (index >= storyScript.length) index = storyScript.length - 1;
-    currentIdx = index;
+    if (index >= dialogueStory.length) index = dialogueStory.length - 1;
+    currentStep = index;
 
-    const data = storyScript[index];
-    document.getElementById('turnIndicator').textContent = `Scene ${index + 1} / ${storyScript.length}`;
+    const data = dialogueStory[index];
+    document.getElementById('turnLabel').textContent = `Scene ${index + 1} / ${dialogueStory.length}`;
 
-    const bg = document.getElementById('stageBg');
-    bg.className = `dynamic-bg mood-${data.mood || 'calm'}`;
+    const isLeft = data.speaker === 'left';
+    const actorLeft = document.getElementById('actorLeft');
+    const actorRight = document.getElementById('actorRight');
+    const bubbleWrapper = document.getElementById('bubbleWrapper');
+    const bubble = document.getElementById('comicBubble');
+    const tail = document.getElementById('bubbleTail');
 
-    const actorCont = document.getElementById('actorContainer');
-    const bubbleAnchor = document.getElementById('bubbleAnchor');
-    const questOverlay = document.getElementById('questOverlay');
+    // Update Speaker Active / Listening focus
+    if (isLeft) {
+      actorLeft.className = 'character-actor actor-left is-speaking';
+      actorRight.className = 'character-actor actor-right is-listening';
+      bubbleWrapper.className = 'dialogue-wrapper align-left';
+      tail.className = 'comic-tail tail-to-left';
 
-    // System Alert Handling
-    if (data.speaker === 'system') {
-      questOverlay.style.display = 'block';
-      document.getElementById('questContent').textContent = data.questText;
-      actorCont.style.opacity = '0.35';
-      bubbleAnchor.style.opacity = '0';
-      return;
+      document.getElementById('leftChibiEmoji').textContent = data.chibiEmoji || '✨';
+      document.getElementById('leftChibiLabel').textContent = data.chibiLabel || '[Chibi Sticker]';
+    } else {
+      actorRight.className = 'character-actor actor-right is-speaking';
+      actorLeft.className = 'character-actor actor-left is-listening';
+      bubbleWrapper.className = 'dialogue-wrapper align-right';
+      tail.className = 'comic-tail tail-to-right';
+
+      document.getElementById('rightChibiEmoji').textContent = data.chibiEmoji || '✨';
+      document.getElementById('rightChibiLabel').textContent = data.chibiLabel || '[Chibi Sticker]';
     }
 
-    questOverlay.style.display = 'none';
-    actorCont.style.opacity = '1';
-    bubbleAnchor.style.opacity = '1';
-
-    // Position Character and Bubble
-    const isLeft = data.speaker === 'left';
-    actorCont.className = `actor-container ${isLeft ? 'actor-left' : 'actor-right'} breathing`;
-    document.getElementById('actorImg').src = data.img;
-
-    bubbleAnchor.className = `speech-bubble-anchor ${isLeft ? 'bubble-for-left-speaker' : 'bubble-for-right-speaker'}`;
-
-    // Apply Speech Bubble Style (Normal / Shout / Dark)
-    const bubbleEl = document.getElementById('speechBubble');
-    bubbleEl.className = data.bubbleStyle === 'shout' ? 'bubble-shout' :
-                         (data.bubbleStyle === 'dark' ? 'bubble-dark' : 'bubble-normal');
+    // Apply bubble style (white / shout / dark)
+    if (data.bubbleStyle === 'shout') {
+      bubble.className = 'comic-bubble bubble-shout';
+    } else if (data.bubbleStyle === 'dark') {
+      bubble.className = 'comic-bubble bubble-dark';
+    } else {
+      bubble.className = 'comic-bubble bubble-white';
+    }
 
     document.getElementById('speakerLabel').textContent = data.name;
-    document.getElementById('dialogueText').innerHTML = data.text;
-
-    // Mini Baby Chibi Sticker Placeholder
-    document.getElementById('chibiEmoji').textContent = data.chibiEmoji || '✨';
-    document.getElementById('chibiText').textContent = data.chibiText || '[Your Chibi Sticker]';
+    document.getElementById('speechText').innerHTML = data.text;
   }
 
-  /* TOGGLE FULL BODY VS BUST ZOOM */
-  function toggleBodyView() {
-    isBustMode = !isBustMode;
-    const body = document.body;
-    const label = document.getElementById('viewModeLabel');
-    const btn = document.getElementById('viewToggleBtn');
-
-    if (isBustMode) {
-      body.className = 'view-bust';
-      label.textContent = '🧍 Full Body';
-      btn.classList.add('active');
+  function handleStageTap(e) {
+    if (e.target.closest('.top-actions')) return;
+    if (currentStep < dialogueStory.length - 1) {
+      renderDialogueStep(currentStep + 1);
     } else {
-      body.className = 'view-full-body';
-      label.textContent = '👤 Bust Zoom';
-      btn.classList.remove('active');
+      renderDialogueStep(0);
     }
   }
 
-  /* AUTO-PLAY CONTROLLER */
-  function toggleAutoPlay() {
-    isAutoPlay = !isAutoPlay;
-    const btn = document.getElementById('autoPlayBtn');
-    const label = document.getElementById('autoLabel');
-    const hint = document.getElementById('tapHint');
+  function restartStory() {
+    if (isAutoRunning) toggleAutoPlay();
+    renderDialogueStep(0);
+  }
 
-    if (isAutoPlay) {
-      label.textContent = '⏸ Pause';
+  function toggleAutoPlay() {
+    isAutoRunning = !isAutoRunning;
+    const btn = document.getElementById('autoBtn');
+    const text = document.getElementById('autoBtnText');
+    const hint = document.getElementById('bottomHint');
+
+    if (isAutoRunning) {
+      text.textContent = '⏸ Pause';
       btn.classList.add('active');
       hint.style.opacity = '0';
-      startAutoCycle();
+      runAutoCycle();
     } else {
-      label.textContent = '▶ Auto';
+      text.textContent = '▶ Auto';
       btn.classList.remove('active');
       hint.style.opacity = '1';
       if (autoTimer) clearTimeout(autoTimer);
@@ -684,89 +561,37 @@
     }
   }
 
-  function startAutoCycle() {
-    if (!isAutoPlay) return;
-    const data = storyScript[currentIdx];
-    const textLen = (data.text || data.questText || '').length;
-    const delay = Math.max(2400, Math.min(textLen * 50, 5200));
+  function runAutoCycle() {
+    if (!isAutoRunning) return;
+    const data = dialogueStory[currentStep];
+    const textLen = (data.text || '').length;
+    // Realistic reading pace (min 2.4s, max 4.8s)
+    const delay = Math.max(2400, Math.min(textLen * 45, 4800));
 
     autoTimer = setTimeout(() => {
-      if (!isAutoPlay) return;
-      if (currentIdx < storyScript.length - 1) {
-        renderTurn(currentIdx + 1);
-        startAutoCycle();
+      if (!isAutoRunning) return;
+      if (currentStep < dialogueStory.length - 1) {
+        renderDialogueStep(currentStep + 1);
+        runAutoCycle();
       } else {
-        renderTurn(0);
-        startAutoCycle();
+        renderDialogueStep(0);
+        runAutoCycle();
       }
     }, delay);
   }
 
-  function handleTapAdvance(e) {
-    if (e.target.closest('.floating-tools')) return;
-    if (currentIdx < storyScript.length - 1) {
-      renderTurn(currentIdx + 1);
-    } else {
-      renderTurn(0);
-    }
-  }
-
-  function restartScene() {
-    if (isAutoPlay) toggleAutoPlay();
-    renderTurn(0);
-  }
-
-  /* FLOATING DUST PARTICLES ENGINE */
-  function initParticles() {
-    const canvas = document.getElementById('particleCanvas');
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-
-    window.addEventListener('resize', () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    });
-
-    const particles = Array.from({ length: 28 }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: Math.random() * 1.8 + 0.6,
-      speedY: Math.random() * 0.4 + 0.15,
-      alpha: Math.random() * 0.35 + 0.1
-    }));
-
-    function loop() {
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = '#ffffff';
-      particles.forEach(p => {
-        p.y -= p.speedY;
-        if (p.y < -5) { p.y = h + 5; p.x = Math.random() * w; }
-        ctx.globalAlpha = p.alpha;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      requestAnimationFrame(loop);
-    }
-    loop();
-  }
-
-  // Keybindings
+  // Keyboard navigation
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' || e.code === 'ArrowRight') {
       e.preventDefault();
-      handleTapAdvance(e);
+      handleStageTap(e);
     } else if (e.code === 'KeyA') {
       toggleAutoPlay();
-    } else if (e.code === 'KeyV') {
-      toggleBodyView();
     }
   });
 
-  // Init
-  initParticles();
-  renderTurn(0);
+  // Initial render
+  renderDialogueStep(0);
 </script>
 </body>
 </html>
