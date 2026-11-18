@@ -58,6 +58,33 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="stylesheet" href="style.css?v=3.0">
+
+<!-- Prevent and remove any Netlify badge / HUD iframe -->
+<style>
+#nl-badge-frame, #nl-hud-frame, iframe[id^="nl-"], iframe[title*="Netlify" i], iframe[src*="netlify" i], .netlify-badge, #netlify-badge, #netlify-drawer, .netlify-feedback-drawer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -99999px !important;
+  top: -99999px !important;
+  z-index: -99999 !important;
+}
+</style>
+<script>
+  try {
+    localStorage.setItem('nl-hud:public:v1', JSON.stringify({ state: 'hidden' }));
+    localStorage.setItem('nl-hud:owner:v1', JSON.stringify({ state: 'hidden' }));
+  } catch(e) {}
+  const netlifyBadgeRemover = new MutationObserver(() => {
+    const el = document.getElementById('nl-badge-frame') || document.getElementById('nl-hud-frame') || document.querySelector('iframe[title*="Netlify" i]') || document.querySelector('iframe[id^="nl-"]');
+    if (el) el.remove();
+  });
+  netlifyBadgeRemover.observe(document.documentElement, { childList: true, subtree: true });
+</script>
 </head>
 <body>
 

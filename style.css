@@ -6834,6 +6834,33 @@
     gap: 10px;
   }
 
+  /* === HIDE NETLIFY INJECTED BADGE / COLLABORATION HUD TOOLBAR === */
+  #nl-badge-frame,
+  #nl-hud-frame,
+  iframe[id^="nl-"],
+  iframe[title*="Netlify" i],
+  iframe[src*="netlify" i],
+  .netlify-badge,
+  #netlify-badge,
+  .netlify-feedback-drawer,
+  #netlify-drawer,
+  [data-netlify-deploy-id],
+  [data-netlify-site-id] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    max-width: 0 !important;
+    max-height: 0 !important;
+    position: absolute !important;
+    left: -99999px !important;
+    top: -99999px !important;
+    clip-path: inset(100%) !important;
+    z-index: -99999 !important;
+  }
+
 
 
 
