@@ -1,0 +1,49 @@
+# Manhwa Chat Hub — Anime & Webtoon Chat Story Studio
+
+> Manhwa Chat Hub is a free, interactive web studio designed for creators, webtoon writers, and YouTubers/TikTokers to generate, direct, and record animated anime and manhwa chat stories. It provides pixel-perfect authentic interfaces for WhatsApp, ChatGPT, and Google Gemini with cinematic camera controls, character expression sprites, sound FX, and Solo Leveling system quest alerts.
+
+## Live Access & Source Code
+- Web Application: https://ranadixitdd.github.io/chat-hub/
+- GitHub Repository: https://github.com/ranadixitdd/chat-hub
+
+---
+
+## Core Capabilities
+1. **Multi-Interface Multiverse Story Engine:**
+   - Seamlessly switch between WhatsApp Squad Group Chat, ChatGPT 4o AI conversation, and Google Gemini interface within the same story.
+   - Dynamic left/right speaker alignment with dedicated POV user support.
+
+2. **Manhwa & Anime Storytelling Features:**
+   - **Solo Leveling Holographic Quests:** Neon sci-fi quest popups triggered with `[QUEST: mission description]` or `/quest`.
+   - **Multi-Sprite Facial Expression Wardrobe:** Characters dynamically change profile avatars based on emotion tags (`[Nobita:shock]`, `[Doraemon:angry]`, `[Nobita:cry]`).
+   - **Sticker & Meme Vault:** Built-in comic reaction stickers, Flork stickers, and custom uploads paired with synchronized sound effects.
+   - **Visual Comic Sound Effects (SFX):** Integrated sound engine featuring anime chimes, dramatic hits, pops, vine thuds, and character-tuned audio pitch synthesis.
+
+3. **Cinematic Auto-Play & Video Recording Mode:**
+   - Built-in Cinema Player with auto punch-zooms, realistic typing bubbles, reading delays, and custom playback speeds (0.5x, 1x, 1.5x, 2x).
+   - "Pure Chat View" hides all studio buttons for pristine screen recording on OBS, iPhone Screen Recorder, or Android Capture for YouTube Shorts, Instagram Reels, and TikTok.
+
+4. **Zero-Friction Offline Storage:**
+   - Fully client-side with unlimited IndexedDB persistence, auto-save, and one-click JSON backup export and restore.
+
+---
+
+## Screenplay Script Format for AI Prompting
+AI models (ChatGPT, Claude, Gemini) can format scripts for Manhwa Chat Hub using this syntax:
+
+```text
+[SCENE: WhatsApp Group]
+[Doraemon:normal]: Hey Nobita, what are you doing right now?
+[Nobita:cry]: Doraemon! Gian is chasing me again!!
+[QUEST: ⚡ URGENT SURVIVAL MISSION: Evade Gian for 5 minutes without 4D gadgets!]
+[Nobita:shock]: What?! A System Quest just appeared on my phone?!
+[Doraemon:laugh]: [STICKER: Dorayaki Feast]
+[Doraemon:smug]: Looks like you are on your own, Nobita!
+```
+
+---
+
+## Developer & Creator Information
+- Creator: Rana Dixit
+- License: Open Source (MIT)
+- Tech Stack: Pure Vanilla HTML5, Modern CSS3, JavaScript (ES6+), IndexedDB, Web Audio API
