@@ -3,595 +3,843 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Character Dialogue — Pure Focus</title>
+<title>Dialogue Stage</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap');
 
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #000;
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  user-select: none; -webkit-user-select: none;
+}
 
-  html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    /* PURE SOLID NEUTRAL BACKGROUND — NO GRADIENTS, NO PARTICLES, NO VIGNETTES */
-    background: #0f1117;
-    color: #f8fafc;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    user-select: none;
-  }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FULL-SCREEN STAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+}
 
-  /* ═════════════════════════════════════════════════════
-     MAIN SCREEN CANVAS
-     ═════════════════════════════════════════════════════ */
-  #mainStage {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px 16px;
-    cursor: pointer;
-  }
-
-  /* TOP MINIMAL STATUS & CONTROLS */
-  .top-bar {
-    position: relative;
-    z-index: 100;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  .scene-pill {
-    font-size: 11px;
-    font-weight: 800;
-    color: #94a3b8;
-    background: #181d28;
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1px solid #283142;
-    letter-spacing: 0.5px;
-  }
-
-  .top-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .action-pill-btn {
-    background: #181d28;
-    border: 1px solid #283142;
-    color: #f1f5f9;
-    font-size: 11.5px;
-    font-weight: 800;
-    padding: 6px 14px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-  .action-pill-btn:hover {
-    background: #232b3b;
-    border-color: #3b475e;
-  }
-  .action-pill-btn.active {
-    background: #3b82f6;
-    border-color: #60a5fa;
-    color: #ffffff;
-  }
-
-  /* ═════════════════════════════════════════════════════
-     STAGE ARENA: THE TWO CHARACTERS STANDING DIRECTLY ON SCREEN
-     (EXACTLY LIKE USER REFERENCE: BARBARIAN & KNIGHT)
-     ═════════════════════════════════════════════════════ */
-  .characters-arena {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: 0 4% 35px 4%;
-    pointer-events: none;
-  }
-
-  /* MEDIUM SIZE CHARACTER BOXES — NEVER COVERING THE FULL SCREEN */
-  .character-actor {
-    position: relative;
-    width: 44%;
-    max-width: 250px;
-    height: 48vh;
-    max-height: 380px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1), opacity 0.25s ease, filter 0.25s ease;
-  }
-
-  /* 100% CLEAN TRANSPARENT PNG CUTOUT — NO BOX, NO BORDER */
-  .character-actor img {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    display: block;
-    user-select: none;
-    -webkit-user-drag: none;
-    filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.9));
-  }
-
-  /* ACTIVE SPEAKER STATE */
-  .character-actor.is-speaking {
-    opacity: 1;
-    transform: scale(1.05) translateY(-6px);
-    filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.95));
-  }
-
-  /* INACTIVE LISTENER (SOFTENED SO VIEWER FOCUSES ON SPEAKER) */
-  .character-actor.is-listening {
-    opacity: 0.45;
-    transform: scale(0.96);
-    filter: grayscale(0.25) brightness(0.85);
-  }
-
-  /* MINI BABY CHIBI STICKER ANCHOR (NEAR HEAD) */
-  .chibi-sticker-spot {
-    position: absolute;
-    top: 0;
-    background: #ffffff;
-    color: #0f172a;
-    border: 1.5px dashed #38bdf8;
-    border-radius: 999px;
-    padding: 3px 8px;
-    font-size: 10px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    white-space: nowrap;
-    opacity: 0;
-    transform: scale(0.8);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .actor-left .chibi-sticker-spot {
-    right: -10px;
-  }
-  .actor-right .chibi-sticker-spot {
-    left: -10px;
-  }
-
-  .character-actor.is-speaking .chibi-sticker-spot {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .chibi-avatar-badge {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #fef08a;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    border: 1px solid #1e293b;
-  }
-
-  /* ═════════════════════════════════════════════════════
-     AUTHENTIC SPEECH BUBBLES — CLEAN & PRECISELY POSITIONED
-     (POSITIONED IN THE UPPER HALF OF THE SCREEN, CONNECTING
-      WITH A DIRECTIONAL TAIL STRAIGHT TO THE CHARACTER)
-     ═════════════════════════════════════════════════════ */
-  .dialogue-wrapper {
-    position: relative;
-    z-index: 50;
-    width: 100%;
-    margin-top: 15px;
-    min-height: 140px;
-    display: flex;
-    pointer-events: none;
-  }
-
-  /* Bubble alignment */
-  .dialogue-wrapper.align-left {
-    justify-content: flex-start;
-  }
-  .dialogue-wrapper.align-right {
-    justify-content: flex-end;
-  }
-
-  .comic-bubble {
-    position: relative;
-    width: 82%;
-    max-width: 360px;
-    border-radius: 20px;
-    padding: 16px 18px;
-    line-height: 1.45;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
-    animation: bubblePopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes bubblePopIn {
-    from { opacity: 0; transform: translateY(8px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  /* --- STYLE 1: CLEAN WHITE BUBBLE (NORMAL) --- */
-  .bubble-white {
-    background: #ffffff;
-    color: #0f172a;
-    border: 3px solid #1e293b;
-  }
-
-  /* --- STYLE 2: JAGGED SHOUT BUBBLE (ANGRY / ATTACK) --- */
-  .bubble-shout {
-    background: #fef2f2;
-    color: #450a0a;
-    border: 3px solid #dc2626;
-    border-radius: 12px;
-    box-shadow: 0 0 25px rgba(220, 38, 38, 0.3);
-    clip-path: polygon(
-      0% 8%, 4% 0%, 12% 6%, 20% 0%, 28% 5%, 36% 0%, 45% 6%, 55% 0%, 65% 5%, 75% 0%, 85% 6%, 95% 0%, 100% 8%,
-      96% 25%, 100% 40%, 95% 55%, 100% 70%, 96% 85%, 100% 92%,
-      95% 100%, 85% 94%, 75% 100%, 65% 95%, 55% 100%, 45% 94%, 35% 100%, 25% 95%, 15% 100%, 5% 94%, 0% 92%,
-      4% 75%, 0% 60%, 5% 45%, 0% 30%, 4% 15%
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BACKGROUND — FILLS ENTIRE SCREEN, BLURRED
+   (Mimics the village/sky in the reference image)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#bg {
+  position: absolute;
+  inset: -6px; /* larger so blur doesn't show white edges */
+  z-index: 0;
+  background:
+    /* Sky gradient — matches the warm game-village feel */
+    linear-gradient(
+      180deg,
+      #7ecef5 0%,      /* bright sky blue */
+      #aeddf8 25%,     /* lighter mid sky */
+      #c8e8e0 45%,     /* horizon haze */
+      #b5c9a0 60%,     /* distant treetops */
+      #8aaa70 75%,     /* ground foliage */
+      #6b8a50 90%,     /* dark ground */
+      #4a6035 100%
     );
-  }
+  background-size: cover;
+  background-position: center;
+  /* Clouds via radial gradients */
+  background-image:
+    radial-gradient(ellipse 180px 90px at 20% 15%, rgba(255,255,255,0.75) 0%, transparent 100%),
+    radial-gradient(ellipse 220px 100px at 55% 10%, rgba(255,255,255,0.65) 0%, transparent 100%),
+    radial-gradient(ellipse 150px 70px at 80% 18%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(ellipse 100px 50px at 68% 8%,  rgba(255,255,255,0.45) 0%, transparent 100%),
+    linear-gradient(180deg, #7ecef5 0%, #aeddf8 25%, #c8e8e0 45%, #b5c9a0 60%, #8aaa70 75%, #6b8a50 90%, #4a6035 100%);
+  filter: blur(4px);
+  transform: scale(1.07);
+}
 
-  /* --- STYLE 3: OBSIDIAN DARK AURA BUBBLE (ARISE / EPIC) --- */
-  .bubble-dark {
-    background: #09090f;
-    color: #f8fafc;
-    border: 2.5px solid #a855f7;
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.35);
-  }
+/* Optional: when user sets a real bg image via JS */
+#bg.has-photo {
+  filter: blur(5px) brightness(0.72) saturate(1.1);
+}
 
-  /* DIRECTIONAL COMIC TAILS */
-  .comic-tail {
-    position: absolute;
-    bottom: -15px;
-    width: 0;
-    height: 0;
-    border-style: solid;
-  }
+/* Subtle vignette on top of bg — darkens edges so characters pop */
+#bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 100% at 50% 50%,
+      transparent 30%,
+      rgba(0,0,0,0.35) 100%
+    );
+}
 
-  /* Tail pointing down-left toward left character */
-  .tail-to-left {
-    left: 28px;
-    border-width: 16px 14px 0 0;
-    border-color: #1e293b transparent transparent transparent;
-  }
-  .tail-to-left::after {
-    content: '';
-    position: absolute;
-    bottom: 3px;
-    left: -1px;
-    border-width: 13px 11px 0 0;
-    border-color: #ffffff transparent transparent transparent;
-  }
+/* Ground shadow line at very bottom — anchors characters */
+#ground-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 20%;
+  z-index: 1;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+  pointer-events: none;
+}
 
-  /* Tail pointing down-right toward right character */
-  .tail-to-right {
-    right: 28px;
-    border-width: 16px 0 0 14px;
-    border-color: #1e293b transparent transparent transparent;
-  }
-  .tail-to-right::after {
-    content: '';
-    position: absolute;
-    bottom: 3px;
-    right: -1px;
-    border-width: 13px 0 0 11px;
-    border-color: #ffffff transparent transparent transparent;
-  }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CHARACTER IMAGES
+   — Very tall, bottom-anchored, slightly off-screen at edges
+   — This is the KEY layout difference from before
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#charLeft,
+#charRight {
+  position: absolute;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  transition:
+    transform  0.4s cubic-bezier(0.2, 0.9, 0.4, 1),
+    opacity    0.35s ease,
+    filter     0.35s ease;
+}
 
-  .bubble-dark .tail-to-left { border-color: #a855f7 transparent transparent transparent; }
-  .bubble-dark .tail-to-left::after { border-color: #09090f transparent transparent transparent; }
-  .bubble-dark .tail-to-right { border-color: #a855f7 transparent transparent transparent; }
-  .bubble-dark .tail-to-right::after { border-color: #09090f transparent transparent transparent; }
+/* Left character — anchored at LEFT, bleeds off left edge */
+#charLeft {
+  left: -4%;
+  height: 90vh;
+  max-height: 820px;
+  /* drop-shadow for richness */
+  filter: drop-shadow(6px 0 30px rgba(0,0,0,0.6))
+          drop-shadow(0 20px 40px rgba(0,0,0,0.8));
+  transform-origin: bottom left;
+}
 
-  .speaker-name-header {
-    font-size: 11px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 6px;
-    display: block;
-  }
+/* Right character — anchored at RIGHT, bleeds off right edge */
+#charRight {
+  right: -4%;
+  height: 90vh;
+  max-height: 820px;
+  filter: drop-shadow(-6px 0 30px rgba(0,0,0,0.6))
+          drop-shadow(0 20px 40px rgba(0,0,0,0.8));
+  transform-origin: bottom right;
+}
 
-  .bubble-white .speaker-name-header { color: #b45309; }
-  .bubble-shout .speaker-name-header { color: #dc2626; font-size: 12px; }
-  .bubble-dark .speaker-name-header { color: #38bdf8; }
+#charLeft  img,
+#charRight img {
+  height: 100%;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  object-position: bottom center;
+  -webkit-user-drag: none;
+}
 
-  .dialogue-text-body {
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.2px;
-  }
+/* ACTIVE / SPEAKING CHARACTER — slightly forward, brighter */
+#charLeft.speaking {
+  transform: scale(1.04) translateX(8px);
+  opacity: 1;
+  filter: drop-shadow(10px 0 36px rgba(0,0,0,0.7))
+          drop-shadow(0 24px 48px rgba(0,0,0,0.9))
+          brightness(1.08);
+}
+#charRight.speaking {
+  transform: scale(1.04) translateX(-8px);
+  opacity: 1;
+  filter: drop-shadow(-10px 0 36px rgba(0,0,0,0.7))
+          drop-shadow(0 24px 48px rgba(0,0,0,0.9))
+          brightness(1.08);
+}
 
-  .dialogue-text-body mark {
-    background: #fca5a5;
-    color: #991b1b;
-    padding: 1px 4px;
-    border-radius: 4px;
-    font-weight: 900;
-  }
+/* LISTENING CHARACTER — slightly dimmed and pushed back */
+#charLeft.listening {
+  transform: scale(0.95) translateX(-6px);
+  opacity: 0.5;
+  filter: drop-shadow(4px 0 20px rgba(0,0,0,0.5)) brightness(0.75) grayscale(0.15);
+}
+#charRight.listening {
+  transform: scale(0.95) translateX(6px);
+  opacity: 0.5;
+  filter: drop-shadow(-4px 0 20px rgba(0,0,0,0.5)) brightness(0.75) grayscale(0.15);
+}
 
-  .bubble-dark .dialogue-text-body mark {
-    background: #a855f7;
-    color: #ffffff;
-    box-shadow: 0 0 8px #c084fc;
-  }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SPEECH BUBBLES
+   — Floating OVER the middle of the screen (not in a fixed strip)
+   — LEFT speaker → bubble appears upper-RIGHT (doesn't cover right char's face)
+   — RIGHT speaker → bubble appears lower-LEFT (doesn't cover left char's face)
+   This is EXACTLY what the reference image shows.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bubble-wrap {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+  display: none;
+  animation: bubblePop 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.bubble-wrap.visible { display: block; }
 
-  /* BOTTOM NAVIGATION HINT */
-  .bottom-instruction-hint {
-    position: relative;
-    z-index: 100;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    pointer-events: none;
-    letter-spacing: 0.4px;
-  }
+@keyframes bubblePop {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
-  /* LANDSCAPE / ROTATED VIEW: CHARACTERS HAVE EVEN MORE ROOM */
-  @media (orientation: landscape) {
-    .character-actor {
-      width: 28%;
-      max-width: 220px;
-      height: 65vh;
-    }
-    .comic-bubble {
-      max-width: 480px;
-    }
-  }
+/* Position: LEFT char speaks → bubble upper-RIGHT area */
+#bubbleA {
+  top: 6%;
+  left: 26%;    /* leaves space for left character */
+  right: 3%;
+}
 
-  @media (max-width: 400px) {
-    .character-actor {
-      height: 44vh;
-    }
-    .dialogue-text-body {
-      font-size: 13.5px;
-    }
-  }
+/* Position: RIGHT char speaks → bubble lower-LEFT area */
+#bubbleB {
+  top: 46%;
+  left: 3%;
+  right: 26%;   /* leaves space for right character */
+}
+
+/* THE BUBBLE BOX */
+.bubble-box {
+  position: relative;
+  background: #ffffff;
+  border: 2.5px solid #111111;
+  border-radius: 20px;
+  padding: 18px 20px 20px;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.55),
+    0 2px 8px  rgba(0,0,0,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.9);
+}
+
+/* ── ORNAMENTAL GOLD CORNERS (matching reference) ── */
+/* Top-Left corner */
+.bubble-box::before {
+  content: '';
+  position: absolute;
+  top: 5px; left: 5px;
+  width: 32px; height: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 29 L3 9 Q3 3 9 3 L29 3' fill='none' stroke='%23b8730a' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M5 27 L5 11 Q5 5 11 5 L27 5' fill='none' stroke='%23f0a500' stroke-width='1.4' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='9' r='3.2' fill='%23f0a500' stroke='%23b8730a' stroke-width='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2' fill='%23b8730a'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+/* Top-Right corner */
+.bubble-box::after {
+  content: '';
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 32px; height: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 29 L3 9 Q3 3 9 3 L29 3' fill='none' stroke='%23b8730a' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M5 27 L5 11 Q5 5 11 5 L27 5' fill='none' stroke='%23f0a500' stroke-width='1.4' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='9' r='3.2' fill='%23f0a500' stroke='%23b8730a' stroke-width='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2' fill='%23b8730a'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: scaleX(-1);
+  pointer-events: none;
+  z-index: 2;
+}
+/* Bottom-Left corner */
+.corner-bl {
+  position: absolute;
+  bottom: 5px; left: 5px;
+  width: 32px; height: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 29 L3 9 Q3 3 9 3 L29 3' fill='none' stroke='%23b8730a' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M5 27 L5 11 Q5 5 11 5 L27 5' fill='none' stroke='%23f0a500' stroke-width='1.4' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='9' r='3.2' fill='%23f0a500' stroke='%23b8730a' stroke-width='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2' fill='%23b8730a'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: scaleY(-1);
+  pointer-events: none;
+  z-index: 2;
+}
+/* Bottom-Right corner */
+.corner-br {
+  position: absolute;
+  bottom: 5px; right: 5px;
+  width: 32px; height: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 29 L3 9 Q3 3 9 3 L29 3' fill='none' stroke='%23b8730a' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M5 27 L5 11 Q5 5 11 5 L27 5' fill='none' stroke='%23f0a500' stroke-width='1.4' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='9' r='3.2' fill='%23f0a500' stroke='%23b8730a' stroke-width='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2' fill='%23b8730a'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: scale(-1, -1);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── BUBBLE TAIL (pointing toward the speaker character) ── */
+/* bubbleA (left speaker) → tail points DOWN-LEFT */
+#bubbleA .bubble-tail {
+  position: absolute;
+  bottom: -20px;
+  left: 28px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 22px 18px 0 0;
+  border-color: #111111 transparent transparent transparent;
+}
+#bubbleA .bubble-tail::after {
+  content: '';
+  position: absolute;
+  top: -21px; left: 1px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 19px 15px 0 0;
+  border-color: #ffffff transparent transparent transparent;
+}
+
+/* bubbleB (right speaker) → tail points DOWN-RIGHT */
+#bubbleB .bubble-tail {
+  position: absolute;
+  bottom: -20px;
+  right: 28px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 22px 0 0 18px;
+  border-color: #111111 transparent transparent transparent;
+}
+#bubbleB .bubble-tail::after {
+  content: '';
+  position: absolute;
+  top: -21px; right: 1px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 19px 0 0 15px;
+  border-color: #ffffff transparent transparent transparent;
+}
+
+/* ── BUBBLE TEXT STYLES ── */
+.bubble-text {
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  font-size: clamp(14px, 4vw, 17px);
+  font-weight: 900;
+  color: #111111;
+  line-height: 1.5;
+  text-align: center;
+  letter-spacing: -0.2px;
+  /* Prevents orphan words */
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Text highlight — matches the pink "waiting" word in reference */
+.bubble-text mark {
+  background: #f87171;
+  color: #7f1d1d;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 900;
+  font-style: normal;
+}
+.bubble-text mark.gold  { background: #fbbf24; color: #78350f; }
+.bubble-text mark.blue  { background: #60a5fa; color: #1e3a5f; }
+.bubble-text mark.green { background: #4ade80; color: #14532d; }
+
+/* ── BUBBLE VARIANTS ── */
+/* Shout (anger / epic) */
+.bubble-box.shout {
+  background: #fff9f9;
+  border-color: #dc2626;
+  box-shadow: 0 0 24px rgba(220,38,38,0.4), 0 8px 24px rgba(0,0,0,0.5);
+}
+.bubble-box.shout .bubble-text { color: #3b0000; }
+.bubble-box.shout .bubble-tail { border-color: #dc2626 transparent transparent transparent; }
+.bubble-box.shout .bubble-tail::after { border-color: #fff9f9 transparent transparent transparent; }
+
+/* Dark / epic */
+.bubble-box.dark {
+  background: #0d0d1a;
+  border-color: #a855f7;
+  box-shadow: 0 0 32px rgba(168,85,247,0.5), 0 8px 32px rgba(0,0,0,0.7);
+}
+.bubble-box.dark .bubble-text { color: #f1f5f9; }
+.bubble-box.dark .bubble-tail { border-color: #a855f7 transparent transparent transparent; }
+.bubble-box.dark .bubble-tail::after { border-color: #0d0d1a transparent transparent transparent; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HUD — MINIMAL, OVERLAID (semi-transparent, not a full bar)
+   Fades out during auto-play
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+#hud.faded { opacity: 0; }
+
+.hud-pill {
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  letter-spacing: 0.5px;
+  pointer-events: auto;
+}
+
+.hud-actions { display: flex; gap: 7px; }
+
+.hud-btn {
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.9);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  pointer-events: auto;
+  letter-spacing: 0.3px;
+}
+.hud-btn:active { transform: scale(0.92); }
+.hud-btn.on { background: rgba(250,180,0,0.85); border-color: #ffd700; color: #1a0d00; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PROGRESS DOTS — bottom center, minimal
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#dots {
+  position: absolute;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  left: 0; right: 0;
+  z-index: 150;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+#dots.faded { opacity: 0; }
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.25s ease;
+}
+.dot.active {
+  background: #fbbf24;
+  width: 18px;
+  border-radius: 999px;
+  border-color: rgba(251,191,36,0.4);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   END CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#endCard {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(14px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 32px;
+}
+#endCard.show { display: flex; }
+#endCard h2 {
+  font-size: clamp(26px, 8vw, 40px);
+  font-weight: 900;
+  color: #fbbf24;
+  text-shadow: 0 2px 14px rgba(251,191,36,0.6);
+  letter-spacing: 1px;
+}
+#endCard p {
+  font-size: 14px; font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  max-width: 260px; line-height: 1.6;
+}
+#endCard button {
+  margin-top: 8px;
+  background: #fbbf24; color: #1a0d00;
+  border: none; font-family: inherit;
+  font-size: 14px; font-weight: 900;
+  padding: 13px 34px; border-radius: 999px;
+  cursor: pointer; letter-spacing: 0.5px;
+  box-shadow: 0 4px 18px rgba(251,191,36,0.45);
+  transition: all 0.15s ease;
+}
+#endCard button:active { transform: scale(0.94); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TAP FLASH (click feedback)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.tap-flash {
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(255,255,255,0.07);
+  pointer-events: none;
+  animation: flashOut 0.2s ease-out forwards;
+}
+@keyframes flashOut {
+  from { opacity: 1; } to { opacity: 0; }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESPONSIVE TWEAKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Tall phones (most modern mobiles) */
+@media (min-height: 750px) {
+  #charLeft, #charRight { height: 88vh; }
+}
+/* Small/short phones */
+@media (max-height: 650px) {
+  #charLeft, #charRight { height: 82vh; }
+  #bubbleA { top: 4%; }
+  #bubbleB { top: 44%; }
+  .bubble-text { font-size: 13px; }
+}
+/* Landscape tablets */
+@media (orientation: landscape) and (min-width: 700px) {
+  #charLeft, #charRight { height: 92vh; }
+  #bubbleA { left: 30%; top: 5%; }
+  #bubbleB { right: 30%; top: 44%; }
+  .bubble-text { font-size: 16px; }
+}
+
 </style>
 </head>
 <body>
 
-<div id="mainStage" onclick="handleStageTap(event)">
-  <!-- TOP STATUS BAR -->
-  <div class="top-bar">
-    <div class="scene-pill" id="turnLabel">Scene 1 / 5</div>
-    
-    <div class="top-actions">
-      <!-- AUTO PLAY BUTTON -->
-      <button type="button" class="action-pill-btn" id="autoBtn" onclick="event.stopPropagation(); toggleAutoPlay();">
-        <span id="autoBtnText">▶ Auto</span>
-      </button>
+<!-- ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+     STAGE
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div id="stage" onclick="handleTap(event)">
 
-      <!-- RESTART BUTTON -->
-      <button type="button" class="action-pill-btn" onclick="event.stopPropagation(); restartStory();">
-        <span>↺</span>
-      </button>
+  <!-- BACKGROUND -->
+  <div id="bg"></div>
+  <div id="ground-shadow"></div>
+
+  <!-- HUD (minimal, fades during auto) -->
+  <div id="hud">
+    <div class="hud-pill" id="sceneLabel">Scene 1 / 5</div>
+    <div class="hud-actions">
+      <button class="hud-btn" id="autoBtn"
+        onclick="event.stopPropagation(); toggleAuto();">▶ Auto</button>
+      <button class="hud-btn"
+        onclick="event.stopPropagation(); restart();">↺</button>
     </div>
   </div>
 
-  <!-- SPEECH BUBBLE AREA (TOP/CENTER PORTION) -->
-  <div class="dialogue-wrapper align-left" id="bubbleWrapper">
-    <div class="comic-bubble bubble-white" id="comicBubble">
-      <div class="comic-tail tail-to-left" id="bubbleTail"></div>
-      <span class="speaker-name-header" id="speakerLabel">Barbarian</span>
-      <div class="dialogue-text-body" id="speechText">
-        Can I get two Star Bonus Snacks in a row?
-      </div>
+  <!-- BUBBLE A — LEFT character speaks (floats upper-right) -->
+  <div class="bubble-wrap" id="bubbleA">
+    <div class="bubble-box" id="bubbleBoxA">
+      <span class="corner-bl"></span>
+      <span class="corner-br"></span>
+      <div class="bubble-tail"></div>
+      <div class="bubble-text" id="textA"></div>
     </div>
   </div>
 
-  <!-- BOTTOM INSTRUCTION HINT -->
-  <div class="bottom-instruction-hint" id="bottomHint">
-    Tap anywhere to advance dialogue • or press Auto
-  </div>
-
-  <!-- CHARACTERS ARENA (MEDIUM SIZE, TRANSPARENT CUTOUTS ON AIR) -->
-  <div class="characters-arena">
-    <!-- LEFT CHARACTER (BARBARIAN) -->
-    <div class="character-actor actor-left is-speaking" id="actorLeft">
-      <div class="chibi-sticker-spot">
-        <span class="chibi-avatar-badge" id="leftChibiEmoji">✨</span>
-        <span id="leftChibiLabel">[Chibi: Confident]</span>
-      </div>
-      <img src="assets/characters/clean_barbarian.png" alt="Barbarian" id="leftImg">
-    </div>
-
-    <!-- RIGHT CHARACTER (BARBARIAN KING) -->
-    <div class="character-actor actor-right is-listening" id="actorRight">
-      <div class="chibi-sticker-spot">
-        <span class="chibi-avatar-badge" id="rightChibiEmoji">👑</span>
-        <span id="rightChibiLabel">[Chibi: Serious]</span>
-      </div>
-      <img src="assets/characters/clean_knight.png" alt="Barbarian King" id="rightImg">
+  <!-- BUBBLE B — RIGHT character speaks (floats lower-left) -->
+  <div class="bubble-wrap" id="bubbleB">
+    <div class="bubble-box" id="bubbleBoxB">
+      <span class="corner-bl"></span>
+      <span class="corner-br"></span>
+      <div class="bubble-tail"></div>
+      <div class="bubble-text" id="textB"></div>
     </div>
   </div>
+
+  <!-- LEFT CHARACTER -->
+  <div id="charLeft" class="speaking">
+    <img src="assets/characters/clean_barbarian.png"
+         alt="Left Character" id="imgLeft" draggable="false">
+  </div>
+
+  <!-- RIGHT CHARACTER -->
+  <div id="charRight" class="listening">
+    <img src="assets/characters/clean_knight.png"
+         alt="Right Character" id="imgRight" draggable="false">
+  </div>
+
+  <!-- PROGRESS DOTS -->
+  <div id="dots"></div>
+
+</div><!-- /stage -->
+
+<!-- END CARD -->
+<div id="endCard">
+  <h2>✨ Scene Complete</h2>
+  <p>That's the end of this chapter.</p>
+  <button onclick="restart()">Watch Again ↺</button>
 </div>
 
 <script>
-  /* ═════════════════════════════════════════════════════
-     EXACT STORY SCRIPT MATCHING YOUR REFERENCE IMAGES
-     ═════════════════════════════════════════════════════ */
-  const dialogueStory = [
-    {
-      turn: 1,
-      speaker: 'left',
-      name: 'Barbarian',
-      bubbleStyle: 'white',
-      chibiEmoji: '✨',
-      chibiLabel: '[Chibi: Confident]',
-      text: 'Can I get two Star Bonus Snacks in a row?'
-    },
-    {
-      turn: 2,
-      speaker: 'right',
-      name: 'Barbarian King',
-      bubbleStyle: 'white',
-      chibiEmoji: '👑',
-      chibiLabel: '[Chibi: Serious]',
-      text: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.'
-    },
-    {
-      turn: 3,
-      speaker: 'left',
-      name: 'Barbarian',
-      bubbleStyle: 'white',
-      chibiEmoji: '🤔',
-      chibiLabel: '[Chibi: Puzzled]',
-      text: 'Wait... so does that mean I should use my active snack right now before opening the chest?'
-    },
-    {
-      turn: 4,
-      speaker: 'right',
-      name: 'Barbarian King',
-      bubbleStyle: 'shout',
-      chibiEmoji: '💢',
-      chibiLabel: '[Chibi: Angry]',
-      text: 'EXACTLY! <mark>USE IT IMMEDIATELY</mark> OR YOU WASTE THE ENTIRE REWARD POOL!'
-    },
-    {
-      turn: 5,
-      speaker: 'left',
-      name: 'Barbarian',
-      bubbleStyle: 'dark',
-      chibiEmoji: '😈',
-      chibiLabel: '[Chibi: Arise]',
-      text: 'Understood, my King. In that case, I will unleash its power and <mark>ARISE.</mark>'
+/* ══════════════════════════════════════════════════════════════
+   CHARACTER EXPRESSIONS
+   Map expression names → PNG paths.
+   Add more as you create/collect character art.
+══════════════════════════════════════════════════════════════ */
+const CHARS = {
+  left: {
+    expressions: {
+      default:  'assets/characters/clean_barbarian.png',
+      happy:    'assets/characters/anime_boy_happy.png',
+      angry:    'assets/characters/anime_boy_angry.png',
+      surprise: 'assets/characters/anime_boy_surprise.png',
+      shadow:   'assets/characters/anime_boy_shadow.png',
     }
-  ];
-
-  let currentStep = 0;
-  let isAutoRunning = false;
-  let autoTimer = null;
-
-  function renderDialogueStep(index) {
-    if (index < 0) index = 0;
-    if (index >= dialogueStory.length) index = dialogueStory.length - 1;
-    currentStep = index;
-
-    const data = dialogueStory[index];
-    document.getElementById('turnLabel').textContent = `Scene ${index + 1} / ${dialogueStory.length}`;
-
-    const isLeft = data.speaker === 'left';
-    const actorLeft = document.getElementById('actorLeft');
-    const actorRight = document.getElementById('actorRight');
-    const bubbleWrapper = document.getElementById('bubbleWrapper');
-    const bubble = document.getElementById('comicBubble');
-    const tail = document.getElementById('bubbleTail');
-
-    // Update Speaker Active / Listening focus
-    if (isLeft) {
-      actorLeft.className = 'character-actor actor-left is-speaking';
-      actorRight.className = 'character-actor actor-right is-listening';
-      bubbleWrapper.className = 'dialogue-wrapper align-left';
-      tail.className = 'comic-tail tail-to-left';
-
-      document.getElementById('leftChibiEmoji').textContent = data.chibiEmoji || '✨';
-      document.getElementById('leftChibiLabel').textContent = data.chibiLabel || '[Chibi Sticker]';
-    } else {
-      actorRight.className = 'character-actor actor-right is-speaking';
-      actorLeft.className = 'character-actor actor-left is-listening';
-      bubbleWrapper.className = 'dialogue-wrapper align-right';
-      tail.className = 'comic-tail tail-to-right';
-
-      document.getElementById('rightChibiEmoji').textContent = data.chibiEmoji || '✨';
-      document.getElementById('rightChibiLabel').textContent = data.chibiLabel || '[Chibi Sticker]';
-    }
-
-    // Apply bubble style (white / shout / dark)
-    if (data.bubbleStyle === 'shout') {
-      bubble.className = 'comic-bubble bubble-shout';
-    } else if (data.bubbleStyle === 'dark') {
-      bubble.className = 'comic-bubble bubble-dark';
-    } else {
-      bubble.className = 'comic-bubble bubble-white';
-    }
-
-    document.getElementById('speakerLabel').textContent = data.name;
-    document.getElementById('speechText').innerHTML = data.text;
-  }
-
-  function handleStageTap(e) {
-    if (e.target.closest('.top-actions')) return;
-    if (currentStep < dialogueStory.length - 1) {
-      renderDialogueStep(currentStep + 1);
-    } else {
-      renderDialogueStep(0);
+  },
+  right: {
+    expressions: {
+      default: 'assets/characters/clean_knight.png',
+      happy:   'assets/characters/anime_girl_happy.png',
+      pout:    'assets/characters/anime_girl_pout.png',
+      shock:   'assets/characters/anime_girl_shock.png',
     }
   }
+};
 
-  function restartStory() {
-    if (isAutoRunning) toggleAutoPlay();
-    renderDialogueStep(0);
-  }
+/* ══════════════════════════════════════════════════════════════
+   STORY SCRIPT
+   speaker: 'left' or 'right'
+   expression: key from CHARS above (optional, defaults to 'default')
+   style: 'normal' | 'shout' | 'dark'
+   text: HTML — wrap words in <mark> for pink highlight,
+         <mark class="gold"> for gold, <mark class="blue"> for blue
+   bg: optional URL for a background image for this scene
+══════════════════════════════════════════════════════════════ */
+const STORY = [
+  {
+    speaker: 'left',
+    expression: 'happy',
+    style: 'normal',
+    text: 'Can I get two Star Bonus Snacks in a row?',
+  },
+  {
+    speaker: 'right',
+    expression: 'default',
+    style: 'normal',
+    text: 'No. If a snack is already in your temporary storage, <mark>waiting</mark> or active, it\'s removed from the Snack Pack pool until you\'ve used it.',
+  },
+  {
+    speaker: 'left',
+    expression: 'surprise',
+    style: 'normal',
+    text: 'Wait — so I should <mark class="gold">use my active snack first</mark> before opening the chest?!',
+  },
+  {
+    speaker: 'right',
+    expression: 'pout',
+    style: 'shout',
+    text: 'EXACTLY! <mark>USE IT NOW</mark> OR YOU WASTE THE ENTIRE REWARD POOL!',
+  },
+  {
+    speaker: 'left',
+    expression: 'shadow',
+    style: 'dark',
+    text: 'Understood. Then I will unleash it right now — and <mark>ARISE.</mark>',
+  },
+];
 
-  function toggleAutoPlay() {
-    isAutoRunning = !isAutoRunning;
-    const btn = document.getElementById('autoBtn');
-    const text = document.getElementById('autoBtnText');
-    const hint = document.getElementById('bottomHint');
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+let step = 0;
+let isAuto = false;
+let autoTimer = null;
 
-    if (isAutoRunning) {
-      text.textContent = '⏸ Pause';
-      btn.classList.add('active');
-      hint.style.opacity = '0';
-      runAutoCycle();
-    } else {
-      text.textContent = '▶ Auto';
-      btn.classList.remove('active');
-      hint.style.opacity = '1';
-      if (autoTimer) clearTimeout(autoTimer);
-      autoTimer = null;
-    }
-  }
-
-  function runAutoCycle() {
-    if (!isAutoRunning) return;
-    const data = dialogueStory[currentStep];
-    const textLen = (data.text || '').length;
-    // Realistic reading pace (min 2.4s, max 4.8s)
-    const delay = Math.max(2400, Math.min(textLen * 45, 4800));
-
-    autoTimer = setTimeout(() => {
-      if (!isAutoRunning) return;
-      if (currentStep < dialogueStory.length - 1) {
-        renderDialogueStep(currentStep + 1);
-        runAutoCycle();
-      } else {
-        renderDialogueStep(0);
-        runAutoCycle();
-      }
-    }, delay);
-  }
-
-  // Keyboard navigation
-  window.addEventListener('keydown', e => {
-    if (e.code === 'Space' || e.code === 'ArrowRight') {
-      e.preventDefault();
-      handleStageTap(e);
-    } else if (e.code === 'KeyA') {
-      toggleAutoPlay();
-    }
+/* ══════════════════════════════════════════════════════════════
+   BUILD DOTS
+══════════════════════════════════════════════════════════════ */
+function buildDots() {
+  const c = document.getElementById('dots');
+  c.innerHTML = STORY.map((_, i) =>
+    `<div class="dot${i === 0 ? ' active' : ''}" id="dot${i}"></div>`
+  ).join('');
+}
+function updateDots(i) {
+  STORY.forEach((_, j) => {
+    const d = document.getElementById('dot' + j);
+    if (d) d.className = 'dot' + (j === i ? ' active' : '');
   });
+}
 
-  // Initial render
-  renderDialogueStep(0);
+/* ══════════════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════════════ */
+function render(i) {
+  if (i < 0) i = 0;
+  if (i >= STORY.length) { showEnd(); return; }
+  step = i;
+
+  const s = STORY[i];
+  const isLeft = s.speaker === 'left';
+
+  /* Scene label */
+  document.getElementById('sceneLabel').textContent =
+    `Scene ${i + 1} / ${STORY.length}`;
+
+  /* Background */
+  if (s.bg) {
+    const bg = document.getElementById('bg');
+    bg.style.backgroundImage = `url('${s.bg}')`;
+    bg.classList.add('has-photo');
+  }
+
+  /* ── Show/hide bubbles ── */
+  const wrapA = document.getElementById('bubbleA');
+  const wrapB = document.getElementById('bubbleB');
+  const boxA  = document.getElementById('bubbleBoxA');
+  const boxB  = document.getElementById('bubbleBoxB');
+  const textA = document.getElementById('textA');
+  const textB = document.getElementById('textB');
+
+  /* Hide both first (clear animation) */
+  wrapA.classList.remove('visible');
+  wrapB.classList.remove('visible');
+
+  /* Force reflow for re-trigger of animation */
+  void wrapA.offsetWidth;
+  void wrapB.offsetWidth;
+
+  if (isLeft) {
+    /* LEFT speaks → show bubbleA (upper-right position) */
+    boxA.className = 'bubble-box ' + (s.style !== 'normal' ? s.style : '');
+    textA.innerHTML = s.text;
+    wrapA.classList.add('visible');
+  } else {
+    /* RIGHT speaks → show bubbleB (lower-left position) */
+    boxB.className = 'bubble-box ' + (s.style !== 'normal' ? s.style : '');
+    textB.innerHTML = s.text;
+    wrapB.classList.add('visible');
+  }
+
+  /* ── Character states ── */
+  const cL = document.getElementById('charLeft');
+  const cR = document.getElementById('charRight');
+  const iL = document.getElementById('imgLeft');
+  const iR = document.getElementById('imgRight');
+
+  if (isLeft) {
+    cL.className = 'speaking';
+    cR.className = 'listening';
+    // Swap expression image
+    const src = CHARS.left.expressions[s.expression || 'default']
+                || CHARS.left.expressions.default;
+    if (iL.getAttribute('src') !== src) iL.src = src;
+  } else {
+    cR.className = 'speaking';
+    cL.className = 'listening';
+    const src = CHARS.right.expressions[s.expression || 'default']
+                || CHARS.right.expressions.default;
+    if (iR.getAttribute('src') !== src) iR.src = src;
+  }
+
+  updateDots(i);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAP
+══════════════════════════════════════════════════════════════ */
+function handleTap(e) {
+  if (e.target.closest('.hud-actions')) return;
+  if (e.target.closest('#endCard'))     return;
+
+  // Tap flash
+  const f = document.createElement('div');
+  f.className = 'tap-flash';
+  document.body.appendChild(f);
+  f.addEventListener('animationend', () => f.remove());
+
+  if (step < STORY.length - 1) render(step + 1);
+  else showEnd();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AUTO PLAY
+══════════════════════════════════════════════════════════════ */
+function toggleAuto() {
+  isAuto = !isAuto;
+  const btn  = document.getElementById('autoBtn');
+  const hud  = document.getElementById('hud');
+  const dots = document.getElementById('dots');
+
+  if (isAuto) {
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('on');
+    hud.classList.add('faded');
+    dots.classList.add('faded');
+    runCycle();
+  } else {
+    btn.textContent = '▶ Auto';
+    btn.classList.remove('on');
+    hud.classList.remove('faded');
+    dots.classList.remove('faded');
+    clearTimeout(autoTimer);
+    autoTimer = null;
+  }
+}
+
+function runCycle() {
+  if (!isAuto) return;
+  const plainLen = STORY[step].text.replace(/<[^>]*>/g, '').length;
+  const delay = Math.max(2200, Math.min(plainLen * 50, 5500));
+  autoTimer = setTimeout(() => {
+    if (!isAuto) return;
+    if (step < STORY.length - 1) { render(step + 1); runCycle(); }
+    else { toggleAuto(); showEnd(); }
+  }, delay);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESTART & END
+══════════════════════════════════════════════════════════════ */
+function showEnd() {
+  if (isAuto) toggleAuto();
+  document.getElementById('endCard').classList.add('show');
+}
+
+function restart() {
+  if (isAuto) toggleAuto();
+  document.getElementById('endCard').classList.remove('show');
+  document.getElementById('hud').classList.remove('faded');
+  document.getElementById('dots').classList.remove('faded');
+  // Reset character images to defaults
+  document.getElementById('imgLeft').src  = CHARS.left.expressions.default;
+  document.getElementById('imgRight').src = CHARS.right.expressions.default;
+  render(0);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   KEYBOARD
+══════════════════════════════════════════════════════════════ */
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowRight') {
+    e.preventDefault(); handleTap(e);
+  } else if (e.code === 'ArrowLeft') {
+    e.preventDefault(); if (step > 0) render(step - 1);
+  } else if (e.code === 'KeyA') {
+    toggleAuto();
+  } else if (e.code === 'KeyR') {
+    restart();
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+buildDots();
+render(0);
 </script>
 </body>
 </html>
