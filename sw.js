@@ -1,8 +1,8 @@
-const CACHE_NAME = 'chathub-studio-v3.4.6';
+const CACHE_NAME = 'chathub-studio-v3.4.7';
 const SHELL_ASSETS = [
   './',
   './index.html',
-  './style.css?v=3.4.6',
+  './style.css?v=3.4.7',
   './storage.js?v=1.2',
   './sakuga-vfx/core.js?v=1.6',
   './app.js?v=3.4.6',

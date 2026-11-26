@@ -238,6 +238,7 @@
       top: calc(52px + env(safe-area-inset-top)) !important;
       right: max(8px, env(safe-area-inset-right)) !important;
       max-width: calc(100vw - 20px) !important;
+      max-height: calc(100dvh - 130px) !important;
       width: 250px !important;
     }
 
@@ -1121,11 +1122,27 @@
     border-radius: 14px;
     box-shadow: var(--comic-shadow-lg);
     width: 235px;
-    z-index: 100;
+    max-height: min(74dvh, calc(100% - 74px));
+    z-index: 200;
     display: none;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     animation: popIn 0.18s ease-out;
+  }
+
+  .dropdown-menu > * {
+    flex-shrink: 0;
+  }
+
+  .dropdown-menu::-webkit-scrollbar {
+    width: 4px;
+  }
+  .dropdown-menu::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.45);
+    border-radius: 999px;
   }
 
   .dropdown-menu.open {
