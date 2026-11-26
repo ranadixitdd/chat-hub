@@ -3244,7 +3244,7 @@ if (msg.type === 'quest') {
     const input = document.getElementById('chatMessageInput');
     if (input) {
       input.classList.remove('simulated-typing-active');
-      if (isCinemaPlaying) {
+      if (isCinemaPlaying && (input.value !== '' || input.style.height !== '')) {
         input.value = '';
         autoResizeComposerInput(input);
       }
@@ -3480,6 +3480,8 @@ if (msg.type === 'quest') {
       charId: char.id,
       text: burstObj.text,
       expr: burstObj.expr || 'angry',
+      sfx: burstObj.sfx || 'boom',
+      delayMs: 1350,
       replyToId: activeReplyMsgId || null,
       time: getNextStoryTime()
     };
@@ -5947,29 +5949,48 @@ if (msg.type === 'quest') {
       }
 
       if (nextMsg.type === 'sfx') {
-        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-        stream.appendChild(el);
-        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        scrollStreamBottomNow(stream);
+        const isInstantSfx = (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0);
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
-        if (soundEnabled) {
-          triggerSfxByName(nextMsg.sfx || 'punch', char.pitch || 1.05);
-        }
-        const bubbleEl = el.querySelector('.sfx-burst-bubble') || el.querySelector('.speech-bubble');
-        if (bubbleEl) {
-          bubbleEl.classList.remove('in-box-shock');
-          void bubbleEl.offsetWidth;
-          bubbleEl.classList.add('in-box-shock');
-          if (window.ChatHubVfx) {
+        const prevMsg = stepIndex > 0 ? fullQueue[stepIndex - 1] : null;
+        const defaultSfxPreDelay = prevMsg ? 260 : 0;
+        const sfxPreDelayMs = isInstantSfx
+          ? 0
+          : ((nextMsg.preDelayMs && nextMsg.preDelayMs > 0 ? nextMsg.preDelayMs : defaultSfxPreDelay) / cinemaSpeedMultiplier);
+
+        function triggerSfxStep() {
+          if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
+          if (isCinemaPaused) {
+            cinemaStepTimeout = scheduleCinemaTimeout(triggerSfxStep, 200, sessionId);
+            return;
+          }
+          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+          stream.appendChild(el);
+          if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
+          scrollStreamBottomNow(stream);
+          if (soundEnabled) {
+            triggerSfxByName(nextMsg.sfx || 'punch', char.pitch || 1.05);
+          }
+          const bubbleEl = el.querySelector('.sfx-burst-bubble') || el.querySelector('.speech-bubble');
+          if (bubbleEl) {
+            bubbleEl.classList.remove('in-box-shock');
             requestAnimationFrame(() => {
-              if (window.ChatHubVfx) {
+              if (!bubbleEl.isConnected) return;
+              bubbleEl.classList.add('in-box-shock');
+              if (window.ChatHubVfx && !isInstantSfx) {
                 window.ChatHubVfx.playBubbleVfx('sfx', nextMsg.expr || 'angry', bubbleEl, { text: nextMsg.text });
               }
             });
           }
+          stepIndex++;
+          const holdMs = isInstantSfx ? 60 : (Math.max(1100, nextMsg.delayMs || 1350) / cinemaSpeedMultiplier);
+          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, holdMs, sessionId);
         }
-        stepIndex++;
-        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || 650) / cinemaSpeedMultiplier, sessionId);
+
+        if (sfxPreDelayMs > 20) {
+          cinemaStepTimeout = scheduleCinemaTimeout(triggerSfxStep, sfxPreDelayMs, sessionId);
+        } else {
+          triggerSfxStep();
+        }
         return;
       }
 
@@ -6176,9 +6197,10 @@ if (msg.type === 'quest') {
 
           // Prior outgoing messages on right flip to double blue checkmarks (read)
           if (!isGpt && !isGemini) {
-            document.querySelectorAll('.msg-row.right .read-ticks').forEach(t => {
+            document.querySelectorAll('.msg-row.right .read-ticks:not([data-read])').forEach(t => {
               t.textContent = '✓✓';
               t.style.color = '#0284c7';
+              t.dataset.read = '1';
             });
           }
 
@@ -10091,7 +10113,7 @@ if (msg.type === 'quest') {
           expr: expr,
           sfx: soundType,
           preDelayMs: eventPreDelay,
-          delayMs: 650,
+          delayMs: 1350,
           screenShake: true,
           time: getNextStoryTime()
         });

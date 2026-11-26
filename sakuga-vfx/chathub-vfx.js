@@ -417,16 +417,16 @@
     });
   }
 
-  function comicStamp(text, x, y, { fontSize = 15, rot = -0.1, life = 0.85, bg, fg, clipChat = true } = {}) {
+  function comicStamp(text, x, y, { fontSize = 15, rot = -0.08, life = 1.25, bg, fg, clipChat = true } = {}) {
     const label = String(text || 'WHAM!').toUpperCase();
-    const s = new fx.Spring(0.25, 560, 16);
+    const s = new fx.Spring(0.35, 340, 20);
     s.to = 1;
     let lastT = 0;
 
     fx.add(life, (k, t) => {
       if (clipChat) clipToChatBounds();
       const g = fx.g;
-      const sc = Math.max(0, s.step(t - lastT) * (1 - inn(fx.clamp((k - 0.8) / 0.2))));
+      const sc = Math.max(0, s.step(t - lastT) * (1 - inn(fx.clamp((k - 0.84) / 0.16))));
       lastT = t;
       if (sc < 0.05) return;
 
@@ -435,10 +435,10 @@
       const pw = tw + 18;
       const ph = fontSize + 12;
 
-      const jx = Math.sin(t * 36) * (k < 0.25 ? 1.6 : 0.4);
-      const jy = Math.cos(t * 29) * (k < 0.25 ? 1.4 : 0.4);
+      const jx = k < 0.18 ? Math.sin(t * 24) * 1.4 : 0;
+      const jy = k < 0.18 ? Math.cos(t * 20) * 1.1 : 0;
       g.translate(x + jx, y + jy);
-      g.rotate(rot + Math.sin(t * 7) * 0.025);
+      g.rotate(rot + Math.sin(t * 3.5) * 0.015);
       g.scale(sc, sc);
 
       const plate = new Path2D();
@@ -475,16 +475,16 @@
   let lastStampAt = -1;
   let lastHeavySfxAt = -1;
 
-  function canSpawnStamp() {
+  function canSpawnStamp(minGap = 0.42) {
     const now = fx.now;
-    if (lastStampAt >= 0 && now - lastStampAt < 0.26) return false;
+    if (lastStampAt >= 0 && now - lastStampAt < minGap) return false;
     lastStampAt = now;
     return true;
   }
 
   function canSpawnHeavySfx() {
     const now = fx.now;
-    if (lastHeavySfxAt >= 0 && now - lastHeavySfxAt < 0.09) return false;
+    if (lastHeavySfxAt >= 0 && now - lastHeavySfxAt < 0.36) return false;
     lastHeavySfxAt = now;
     return true;
   }
@@ -622,78 +622,86 @@
     }
 
     if (kind === 'sfx') {
-      if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.24);
+      if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.22);
       const label = formatSfxStampLabel(meta.text || 'BOOM!');
       const lower = label.toLowerCase();
       const stampHalfW = Math.min(82, Math.max(44, label.length * 4.5 + 14));
       const sfxStampX = clampChatStampX(m.cx, stampHalfW);
-      const sfxStampY = clampChatStampY(m.topY - 16);
+      const sfxStampY = clampChatStampY(m.topY - 18);
+      const sideSfxX = clampChatStampX(m.innerEdgeX + m.inwardDir * 28, 42);
+      const sideSfxY = clampChatStampY(m.cy - 2);
 
-      // Spam guard: keep crisp spring + ticks + stamp when spamming rapidly
+      // Spam guard: avoid overlapping canvas stamps/bursts when SFX fire rapidly
       if (!canSpawnHeavySfx()) {
-        fx.ticks(m.cx, m.topY - 2, { dir: -Math.PI / 2, n: 3, r: 5, len: 12, fan: 0.48, life: 0.34 });
-        comicStamp(label, sfxStampX, sfxStampY, {
-          fontSize: label.length > 12 ? 12 : 14,
-          bg: /nani|arise|level|bam|pow|critical|k\.o|emotional|awaken|domain/.test(lower) ? fx.P.accent : fx.P.fill
-        });
+        fx.ticks(m.cx, m.topY - 2, { dir: -Math.PI / 2, n: 3, r: 5, len: 12, fan: 0.48, life: 0.46 });
+        if (canSpawnStamp(0.45)) {
+          comicStamp(label, sfxStampX, sfxStampY, {
+            fontSize: label.length > 12 ? 12 : 14,
+            life: 1.15,
+            bg: /nani|arise|level|bam|pow|critical|k\.o|emotional|awaken|domain/.test(lower) ? fx.P.accent : fx.P.fill
+          });
+        }
         return;
       }
 
       if (/clash|slash|cut|blade|blocked/.test(lower)) {
-        fx.slash(m.cx, m.cy, { len: Math.max(82, m.w * 0.85), ang: -0.45, thick: 11, life: 0.42 });
-        fx.slash(m.cx, m.cy, { len: Math.max(72, m.w * 0.72), ang: 2.65, thick: 8, life: 0.42 });
-        fx.shards(m.cx, m.cy, { n: 5, speed: 190, size: 5.5, arc: 6.28, grav: 250, life: 0.62 });
-        fx.sfx('zuza', clampChatStampX(m.innerEdgeX, 46), clampChatStampY(m.topY - 24), { size: 76, rot: -0.1, life: 0.72, ...fx.dotted() });
+        fx.slash(m.cx, m.cy, { len: Math.max(82, m.w * 0.85), ang: -0.45, thick: 11, life: 0.65 });
+        fx.slash(m.cx, m.cy, { len: Math.max(72, m.w * 0.72), ang: 2.65, thick: 8, life: 0.65 });
+        fx.shards(m.cx, m.cy, { n: 5, speed: 155, size: 5.5, arc: 6.28, grav: 210, life: 0.85 });
+        fx.sfx('zuza', sideSfxX, sideSfxY, { size: 62, rot: -0.08, life: 1.05, ...fx.dotted() });
       } else if (/bruh|chad|boing|bwahaha|sheesh|cap|rip/.test(lower)) {
-        fx.wob(m.innerEdgeX, m.cy, { dir: m.inwardDir, r: 11, life: 0.42 });
-        fx.puff(m.cx - m.w * 0.32, m.bottomY, { size: 7, n: 2, vx: -16, vy: -10, life: 0.48 });
-        fx.puff(m.cx + m.w * 0.32, m.bottomY, { size: 7, n: 2, vx: 16, vy: -10, life: 0.48 });
-        fx.kira(m.innerEdgeX, m.topY + 4, { r: 10, life: 0.56 });
-        fx.ticks(m.cx, m.topY - 4, { dir: -Math.PI / 2, n: 4, r: 6, len: 12, fan: 0.55, life: 0.38 });
-        fx.sfx('pon', clampChatStampX(m.innerEdgeX, 44), clampChatStampY(m.topY - 22), { size: 74, rot: -0.08, life: 0.7, ...fx.hollow() });
+        fx.wob(m.innerEdgeX, m.cy, { dir: m.inwardDir, r: 11, life: 0.62 });
+        fx.puff(m.cx - m.w * 0.32, m.bottomY, { size: 7, n: 2, vx: -14, vy: -9, life: 0.72 });
+        fx.puff(m.cx + m.w * 0.32, m.bottomY, { size: 7, n: 2, vx: 14, vy: -9, life: 0.72 });
+        fx.kira(m.innerEdgeX, m.topY + 4, { r: 10, life: 0.78 });
+        fx.ticks(m.cx, m.topY - 4, { dir: -Math.PI / 2, n: 4, r: 6, len: 12, fan: 0.55, life: 0.55 });
+        fx.sfx('pon', sideSfxX, sideSfxY, { size: 60, rot: -0.06, life: 1.05, ...fx.hollow() });
       } else if (/waaahh|emotional|heartbreak|shiver/.test(lower)) {
-        tears(m.b.left + window.scrollX + 10, m.bottomY - 6, { dir: -1, n: 2, life: 0.65 });
-        tears(m.b.right + window.scrollX - 10, m.bottomY - 6, { dir: 1, n: 2, life: 0.65 });
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(52, m.w * 0.66), ry: Math.max(38, m.h * 0.85), life: 0.42, clipOutEl: bubbleEl });
+        tears(m.b.left + window.scrollX + 10, m.bottomY - 6, { dir: -1, n: 2, life: 0.9 });
+        tears(m.b.right + window.scrollX - 10, m.bottomY - 6, { dir: 1, n: 2, life: 0.9 });
+        halftoneBurst(m.cx, m.cy, { rx: Math.max(52, m.w * 0.66), ry: Math.max(38, m.h * 0.85), life: 0.68, clipOutEl: bubbleEl });
       } else if (/whoosh|yeet|nigerundayo/.test(lower)) {
-        fx.lines(m.outerEdgeX, m.cy, { n: 7, dir: m.isRight ? 0 : Math.PI, len: 54, spread: 14, life: 0.36 });
-        fx.puff(m.outerEdgeX, m.cy + 4, { size: 8, n: 3, vx: m.inwardDir * 24, vy: -8, life: 0.48 });
-        fx.sfx('shu', clampChatStampX(m.innerEdgeX, 44), clampChatStampY(m.topY - 22), { size: 76, rot: -0.1, life: 0.68, ...fx.hollow() });
+        fx.lines(m.outerEdgeX, m.cy, { n: 7, dir: m.isRight ? 0 : Math.PI, len: 54, spread: 14, life: 0.56 });
+        fx.puff(m.outerEdgeX, m.cy + 4, { size: 8, n: 3, vx: m.inwardDir * 20, vy: -7, life: 0.72 });
+        fx.sfx('shu', sideSfxX, sideSfxY, { size: 62, rot: -0.08, life: 1.0, ...fx.hollow() });
       } else if (/nani|wait what|gulp|omae|panic|plot twist|stare|menacing|ゴゴゴ/.test(lower)) {
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(54, m.w * 0.7), ry: Math.max(40, m.h * 0.9), life: 0.44, clipOutEl: bubbleEl });
-        lightning(m.innerEdgeX, m.cy, { len: 40, dir: -Math.PI / 2, life: 0.4 });
-        fx.shards(m.cx, m.cy, { n: 4, speed: 165, size: 5, arc: 6.28, grav: 230, life: 0.58 });
+        halftoneBurst(m.cx, m.cy, { rx: Math.max(54, m.w * 0.7), ry: Math.max(40, m.h * 0.9), life: 0.72, clipOutEl: bubbleEl });
+        lightning(m.innerEdgeX, m.cy, { len: 40, dir: -Math.PI / 2, life: 0.62 });
+        fx.shards(m.cx, m.cy, { n: 4, speed: 140, size: 5, arc: 6.28, grav: 190, life: 0.82 });
         if (/menacing|ゴゴゴ/.test(lower)) {
-          angerVein(clampChatStampX(m.innerEdgeX, 18), clampChatStampY(m.topY + 4), { size: 13, life: 0.85 });
-          fx.sfx('gogo', clampChatStampX(m.cx, 50), clampChatStampY(m.topY - 26), { size: 86, rot: -0.08, life: 0.82, ...fx.hollow() });
+          angerVein(clampChatStampX(m.innerEdgeX, 18), clampChatStampY(m.topY + 4), { size: 13, life: 1.1 });
+          fx.sfx('gogo', sideSfxX, sideSfxY - 6, { size: 70, rot: -0.06, life: 1.15, ...fx.hollow() });
         } else {
-          fx.sfx('kachi', clampChatStampX(m.innerEdgeX, 44), clampChatStampY(m.topY - 22), { size: 74, rot: -0.08, life: 0.68, ...fx.hollow() });
+          fx.sfx('kachi', sideSfxX, sideSfxY, { size: 60, rot: -0.06, life: 1.0, ...fx.hollow() });
         }
       } else if (/awaken|domain|100%|sharingan|system|arise|level up|bankai|plus ultra/.test(lower)) {
-        lightning(m.b.left + window.scrollX + 10, m.cy + 12, { len: 44, dir: -Math.PI / 2, life: 0.44 });
-        lightning(m.b.right + window.scrollX - 10, m.cy - 12, { len: 44, dir: Math.PI / 2, life: 0.44 });
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.72), ry: Math.max(40, m.h * 0.9), life: 0.44, clipOutEl: bubbleEl });
-        fx.kira(m.innerEdgeX, m.topY + 4, { r: 11, life: 0.62 });
-        fx.sfx('don', clampChatStampX(m.innerEdgeX, 46), clampChatStampY(m.topY - 22), { size: 78, rot: -0.1, life: 0.75 });
+        lightning(m.b.left + window.scrollX + 10, m.cy + 12, { len: 44, dir: -Math.PI / 2, life: 0.68 });
+        lightning(m.b.right + window.scrollX - 10, m.cy - 12, { len: 44, dir: Math.PI / 2, life: 0.68 });
+        halftoneBurst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.72), ry: Math.max(40, m.h * 0.9), life: 0.72, clipOutEl: bubbleEl });
+        fx.kira(m.innerEdgeX, m.topY + 4, { r: 11, life: 0.88 });
+        fx.sfx('don', sideSfxX, sideSfxY, { size: 64, rot: -0.08, life: 1.08 });
       } else {
         // Combat / Impact default (BAM!!, POW!!, ORA ORA!!, SMACK!!, BONK!!, CRITICAL HIT!!, K.O.!!)
-        fx.burst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.74), ry: Math.max(44, m.h * 0.9), spikes: 13, life: 0.4, clipOutEl: bubbleEl });
-        fx.shards(m.cx, m.cy, { n: 5, speed: 190, size: 6, arc: 6.28, grav: 250, life: 0.62 });
-        fx.ticks(m.cx, m.topY - 2, { dir: -Math.PI / 2, n: 4, r: 6, len: 13, fan: 0.55, life: 0.36 });
-        fx.sfx('don', clampChatStampX(m.innerEdgeX, 46), clampChatStampY(m.topY - 22), { size: 78, rot: -0.1, life: 0.74 });
+        fx.burst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.74), ry: Math.max(44, m.h * 0.9), spikes: 13, life: 0.64, clipOutEl: bubbleEl });
+        fx.shards(m.cx, m.cy, { n: 5, speed: 155, size: 6, arc: 6.28, grav: 210, life: 0.86 });
+        fx.ticks(m.cx, m.topY - 2, { dir: -Math.PI / 2, n: 4, r: 6, len: 13, fan: 0.55, life: 0.56 });
+        fx.sfx('don', sideSfxX, sideSfxY, { size: 64, rot: -0.08, life: 1.08 });
       }
 
-      comicStamp(label, sfxStampX, sfxStampY, {
-        fontSize: label.length > 12 ? 12 : 14,
-        bg: /nani|arise|level|bam|pow|critical|k\.o|emotional|awaken|domain/.test(lower) ? fx.P.accent : fx.P.fill
-      });
+      if (canSpawnStamp(0.28)) {
+        comicStamp(label, sfxStampX, sfxStampY, {
+          fontSize: label.length > 12 ? 12 : 14,
+          life: 1.25,
+          bg: /nani|arise|level|bam|pow|critical|k\.o|emotional|awaken|domain/.test(lower) ? fx.P.accent : fx.P.fill
+        });
+      }
       return;
     }
 
     if (kind === 'sticker') {
       if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.18);
       // Expanding rounded-square shockwave hugging the square sticker card shape (no round circle!)
-      const cr = parseFloat(getComputedStyle(bubbleEl).borderRadius) || 18;
+      const cr = (fx.rectOf && fx.rectOf(bubbleEl)?.cr) || 18;
       squareRing(m.cx, m.cy, { w: m.w, h: m.h, cr, life: 0.44, strokeW: 3.6, expand: 28 });
       fx.kira(m.b.left + window.scrollX + 12, m.topY + 4, { r: 9, life: 0.54 });
       fx.kira(m.b.right + window.scrollX - 12, m.topY + 4, { r: 9, life: 0.54 });

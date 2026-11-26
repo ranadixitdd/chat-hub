@@ -32,7 +32,7 @@ let calm = reduce.matches; reduce.addEventListener?.('change', (e) => { calm = e
 // The front layer is one fixed canvas over the whole page. A component can also have a back layer: a canvas inside it, behind the control.
 // Effects are placed in page coordinates, so they scroll with their control.
 let g = null, dpr = 1, tickId = 0, rectCache = new WeakMap();
-const MAX_LIVE = 72;
+const getMaxLive = () => (innerWidth <= 768 ? 44 : 68);
 const front = { c: null, g: null, live: [], dirty: false }, layers = [front];
 function rectOf(el) {
   if (!el || !el.isConnected) return null;
@@ -52,7 +52,7 @@ function ensureFront() {
   front.c = Object.assign(document.createElement('canvas'), { className: 'sakuga-fx' }); front.c.setAttribute('aria-hidden', 'true');
   document.body.append(front.c); front.g = front.c.getContext('2d'); size();
 }
-function size() { dpr = Math.min(2, devicePixelRatio || 1); if (front.c) { front.c.width = innerWidth * dpr; front.c.height = innerHeight * dpr; } }
+function size() { dpr = Math.min(innerWidth <= 768 ? 1.5 : 2, devicePixelRatio || 1); if (front.c) { front.c.width = Math.round(innerWidth * dpr); front.c.height = Math.round(innerHeight * dpr); } }
 addEventListener('resize', size);
 function backLayer(canvas) { const L = { c: canvas, g: canvas.getContext('2d'), live: [], dirty: false }; layers.push(L); return L; }
 const add = (life, draw, L) => {
@@ -60,8 +60,9 @@ const add = (life, draw, L) => {
   if (!calm) {
     L = L || front;
     if (L === front) ensureFront();
+    const cap = getMaxLive();
     if (isFinite(life)) {
-      while (L.live.length >= MAX_LIVE) {
+      while (L.live.length >= cap) {
         const idx = L.live.findIndex((item) => isFinite(item.life));
         if (idx === -1) break;
         L.live.splice(idx, 1);
@@ -244,12 +245,13 @@ function bake(name, fc, oc, dots) {
   x.fill(s.p); baked.set(key, c); return c;
 }
 // A word lands a size too big and wobbles while it stays. col: fill colour. edge: outline colour. dots: screentone letters.
-function sfx(name, x, y, { size = 64, rot = -0.14, life = 0.95, col, edge, dots } = {}) {
-  if (!word(name)) return; const s = new Spring(0.2, 520, 17); s.to = 1; let lastT = 0;
+function sfx(name, x, y, { size = 64, rot = -0.14, life = 1.05, col, edge, dots } = {}) {
+  if (!word(name)) return; const s = new Spring(0.32, 340, 20); s.to = 1; let lastT = 0;
   const c = bake(name, col || P.sfx[0], edge || P.sfx[1], !!dots), k0 = size / WORDS[name][0];
   add(life, (k, t) => {
     const sc = s.step(t - lastT) * (1 - inn(clamp((k - 0.86) / 0.14))) * k0; lastT = t;
-    g.translate(x + Math.sin(t * 31) * 0.8, y + Math.cos(t * 27) * 0.8); g.rotate(rot + Math.sin(t * 6) * 0.03);
+    const jAmp = k < 0.22 ? 0.85 : 0.12;
+    g.translate(x + Math.sin(t * 20) * jAmp, y + Math.cos(t * 17) * jAmp); g.rotate(rot + Math.sin(t * 3.5) * 0.018);
     g.drawImage(c, -c.width / 2 * sc, -c.height / 2 * sc, c.width * sc, c.height * sc);
   });
 }

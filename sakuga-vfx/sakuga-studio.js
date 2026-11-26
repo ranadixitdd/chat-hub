@@ -472,6 +472,7 @@
   }
 
   let lastStickerCardFxAt = -1;
+  let lastPrimaryImpactAt = -1;
 
   function onControlClick(el, e) {
     if (!enabled || isControlDisabled(el)) return;
@@ -507,6 +508,12 @@
     const clickY = (e && e.clientY) ? e.clientY + window.scrollY : c.y;
 
     if (kind === 'primary') {
+      const nowMs = performance.now();
+      if (lastPrimaryImpactAt >= 0 && nowMs - lastPrimaryImpactAt < 220) {
+        fx.ticks(c.x, c.y - c.h / 2 - 4, { dir: -Math.PI / 2, n: 3, r: 4, len: 12, fan: 0.5, life: 0.3 });
+        return;
+      }
+      lastPrimaryImpactAt = nowMs;
       // Beat 2: 1-frame ink/card inversion + behind-button spiky burst + shards + corner puffs + ドン!
       el.classList.add('sakuga-impact-invert');
       fx.later(165, () => el.classList.remove('sakuga-impact-invert'));
@@ -704,23 +711,32 @@
      7. SAKUGA INPUTS & TEXTAREAS (Focus ticks + Caret dust puffs & chips)
      ------------------------------------------------------------------------ */
   const measureCtx = document.createElement('canvas').getContext('2d');
+  const textStyleCache = new WeakMap();
 
   function getCaretCoordinates(el) {
     const b = el.getBoundingClientRect();
-    const cs = getComputedStyle(el);
-    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    let cached = textStyleCache.get(el);
+    if (!cached || cached.w !== b.width) {
+      const cs = getComputedStyle(el);
+      cached = {
+        w: b.width,
+        font: `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`,
+        padLeft: parseFloat(cs.paddingLeft) || 12,
+        padTop: parseFloat(cs.paddingTop) || 8,
+        lineHeight: parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 14) * 1.35
+      };
+      textStyleCache.set(el, cached);
+    }
+    measureCtx.font = cached.font;
     const pos = el.selectionStart ?? el.value.length;
     const textBefore = el.type === 'password' ? '•'.repeat(pos) : (el.value || '').slice(0, pos);
     const linesArr = textBefore.split('\n');
     const lastLine = linesArr[linesArr.length - 1] || '';
-    const padLeft = parseFloat(cs.paddingLeft) || 12;
-    const padTop = parseFloat(cs.paddingTop) || 8;
-    const lineHeight = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 14) * 1.35;
     const textW = measureCtx.measureText(lastLine).width;
 
-    const x = b.left + window.scrollX + padLeft + Math.min(Math.max(12, b.width - padLeft - 18), textW - el.scrollLeft);
+    const x = b.left + window.scrollX + cached.padLeft + Math.min(Math.max(12, b.width - cached.padLeft - 18), textW - el.scrollLeft);
     const yOffset = el.tagName === 'TEXTAREA'
-      ? Math.min(b.height - 10, padTop + (linesArr.length - 0.35) * lineHeight - el.scrollTop)
+      ? Math.min(b.height - 10, cached.padTop + (linesArr.length - 0.35) * cached.lineHeight - el.scrollTop)
       : b.height * 0.65;
     const y = b.top + window.scrollY + Math.max(12, yOffset);
     return { x, y };

@@ -83,7 +83,6 @@
     border: 4px solid #334155;
     transition: max-width 0.35s cubic-bezier(0.25, 1, 0.5, 1), height 0.35s ease, border-radius 0.3s ease, aspect-ratio 0.35s ease, transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), filter 0.3s ease;
     transform-origin: center center;
-    will-change: transform, filter;
     backface-visibility: hidden;
   }
 
@@ -570,8 +569,7 @@
       padding: 0 !important;
       align-items: flex-end !important;
       background: rgba(15, 23, 42, 0.75) !important;
-      backdrop-filter: blur(4px) !important;
-    }
+      }
 
     .modal-window,
     .modal-window.studio-modal-wide,
@@ -1195,12 +1193,13 @@
   }
 
   .sfx-burst-bubble.in-box-shock {
-    animation: inBoxShockSfx 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+    animation: inBoxShockSfx 0.46s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @keyframes inBoxShockSfx {
-    0% { transform: rotate(-1.5deg) scale(0.94); }
-    50% { transform: rotate(-1.5deg) scale(1.04); }
+    0% { transform: rotate(-1.5deg) scale(0.86); }
+    40% { transform: rotate(-1.5deg) scale(1.06); }
+    72% { transform: rotate(-1.5deg) scale(0.985); }
     100% { transform: rotate(-1.5deg) scale(1); }
   }
 
@@ -1321,7 +1320,7 @@
     position: relative;
     cursor: pointer;
     user-select: none;
-    animation: questGlitchIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), questAuraGlow 2s infinite alternate !important;
+    animation: questGlitchIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), questAuraGlow 1.8s ease-in-out 3 alternate !important;
     color: #e0f7ff;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
@@ -1365,7 +1364,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    animation: neonQuestPulse 1.8s infinite alternate;
+    animation: neonQuestPulse 1.8s ease-in-out 3 alternate;
   }
 
   @keyframes neonQuestPulse {
@@ -1454,7 +1453,7 @@
     padding: 2px 7px;
     border-radius: 999px;
     letter-spacing: 0.5px;
-    animation: choicePulse 1.5s infinite;
+    animation: choicePulse 1.5s ease-in-out 4;
   }
 
   @keyframes choicePulse {
@@ -1538,6 +1537,10 @@
     gap: 9px;
     max-width: 90%;
     position: relative;
+    padding: 2px 4px;
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 76px;
   }
 
   .msg-row.grouped-followup {
@@ -2483,7 +2486,6 @@
     flex-direction: column;
     gap: 8px;
     max-height: 290px;
-    backdrop-filter: blur(12px);
     animation: popoverDropUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -3158,8 +3160,6 @@
     border-radius: 18px;
     padding: 10px 14px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
     width: 280px;
     max-width: 90vw;
     box-sizing: border-box;
@@ -3238,8 +3238,6 @@
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
     padding: 4px 6px;
     border-radius: 40px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     max-width: 100%;
     box-sizing: border-box;
     justify-content: center;
@@ -3463,8 +3461,6 @@
     padding: 4px 10px;
     border-radius: 14px;
     cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     display: none;
     align-items: center;
     gap: 4px;
@@ -3603,9 +3599,7 @@
     inset: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    background: rgba(7, 11, 20, 0.88) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
+    background: rgba(7, 11, 20, 0.92) !important;
     z-index: 9999;
     display: none;
     align-items: center;
@@ -3930,9 +3924,7 @@
     z-index: 120;
     display: flex;
     align-items: center;
-    background: rgba(15, 23, 42, 0.92);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(15, 23, 42, 0.95);
     border: 1.5px solid rgba(255, 255, 255, 0.16);
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
     border-radius: 30px;
@@ -4314,7 +4306,6 @@
     display: flex !important;
     background: rgba(13, 17, 23, 0.96) !important;
     border-bottom: 1.5px solid rgba(16, 163, 127, 0.3) !important;
-    backdrop-filter: blur(10px) !important;
   }
   .phone-wrapper.app-chatgpt .gpt-model-pill {
     background: rgba(16, 163, 127, 0.12) !important;
@@ -4337,7 +4328,6 @@
     background: rgba(13, 17, 23, 0.96) !important;
     border-top: 1.5px solid rgba(16, 163, 127, 0.25) !important;
     padding: 8px 12px !important;
-    backdrop-filter: blur(8px) !important;
   }
   .phone-wrapper.app-chatgpt .wa-text-input {
     background: #161b22 !important;
@@ -4484,7 +4474,6 @@
     display: flex !important;
     background: rgba(15, 20, 30, 0.96) !important;
     border-bottom: 1.5px solid #1e293b !important;
-    backdrop-filter: blur(8px) !important;
   }
   .phone-wrapper.app-gemini .gemini-model-pill {
     background: rgba(14, 165, 233, 0.12) !important;
@@ -4503,7 +4492,6 @@
     background: rgba(15, 20, 30, 0.96) !important;
     border-top: 1.5px solid #1e293b !important;
     padding: 8px 12px !important;
-    backdrop-filter: blur(8px) !important;
   }
   .phone-wrapper.app-gemini .wa-text-input {
     background: #17202e !important;
@@ -6130,8 +6118,7 @@
     border-radius: 20px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 0 1.5px #38bdf8;
     padding: 3px 6px;
-    background: rgba(15, 23, 42, 0.96);
-    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.97);
     max-width: fit-content;
   }
   .phone-wrapper.deck-layout-floating .director-deck .deck-compact-row {
