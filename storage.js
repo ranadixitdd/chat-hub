@@ -363,11 +363,13 @@
       // Async write to IndexedDB
       idbPut(STORE_STATE, { key, value: strVal, updatedAt: Date.now() });
 
-      // Fallback write to localStorage (wrapped in try-catch so 5MB quota errors never break the app)
-      try {
-        localStorage.setItem(key, strVal);
-      } catch (quotaExceeded) {
-        // Quota safely swallowed - IndexedDB holds the authoritative data!
+      // Fallback write to localStorage only for compact keys (prevents multi-MB QuotaExceeded stalls on UI thread)
+      if (strVal.length <= 1500000 || !window.indexedDB) {
+        try {
+          localStorage.setItem(key, strVal);
+        } catch (quotaExceeded) {
+          // Quota safely swallowed - IndexedDB holds the authoritative data!
+        }
       }
       return true;
     },

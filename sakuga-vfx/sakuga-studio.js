@@ -523,14 +523,14 @@
       const rx = isWide ? Math.min(c.w * 0.56, 155) : Math.max(54, Math.max(c.w, c.h) * 0.92);
       const ry = isWide ? Math.max(56, c.h * 1.45) : Math.max(54, Math.max(c.w, c.h) * 0.92);
 
-      fx.burst(bx, c.y, { rx, ry, spikes: 17, life: 0.44, clipOutEl: el });
-      fx.shards(bx, c.y, { n: 9, speed: 220, size: 7, life: 0.85, arc: 6.28, grav: 280 });
+      fx.burst(bx, c.y, { rx, ry, spikes: 13, life: 0.4, clipOutEl: el });
+      fx.shards(bx, c.y, { n: 5, speed: 200, size: 6.5, life: 0.75, arc: 6.28, grav: 260 });
 
       const hw = Math.min(c.w / 2 + 4, 88);
       const hh = Math.min(c.h / 2 + 4, 24);
-      for (const [dx, dy] of [[-1, -0.7], [1, -0.8], [-1, 0.8], [1, 0.9]]) {
+      for (const [dx, dy] of [[-1, -0.7], [1, 0.9]]) {
         fx.puff(bx + dx * hw * 0.65, c.y + dy * hh, {
-          size: fx.rnd(8, 12), n: 4, vx: dx * 34, vy: dy * 22 - 6, life: fx.rnd(0.65, 0.9)
+          size: fx.rnd(8, 11), n: 3, vx: dx * 32, vy: dy * 20 - 6, life: fx.rnd(0.6, 0.85)
         });
       }
 
@@ -753,17 +753,15 @@
     fx.ticks(c.x - 8, c.y - 2, { dir: -1.05, n: 3, r: 4, len: 13, fan: 0.38, life: 0.42 });
   }
 
+  let lastTextDustAt = 0;
+
   function handleTextInput(el) {
-    if (!enabled) return;
-    const st = getSpringState(el, { k: 720, d: 18, wide: 0.06 });
-    st.s.x = 0.985;
-    activateSpring(st);
-    if (fx.calm) return;
+    if (!enabled || fx.calm) return;
+    const nowMs = performance.now();
+    if (nowMs - lastTextDustAt < 55) return;
+    lastTextDustAt = nowMs;
     const pt = getCaretCoordinates(el);
-    fx.puff(pt.x, pt.y, { size: fx.rnd(4, 6), n: 2, vy: -20, vx: fx.rnd(-10, 10), life: 0.38 });
-    if (Math.random() < 0.32) {
-      fx.shards(pt.x, pt.y - 4, { n: 2, speed: 105, size: 3, life: 0.45 });
-    }
+    fx.puff(pt.x, pt.y, { size: fx.rnd(4, 5.5), n: 2, vy: -18, vx: fx.rnd(-8, 8), life: 0.34 });
   }
 
   /* ------------------------------------------------------------------------

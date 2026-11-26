@@ -52,7 +52,7 @@ function ensureFront() {
   front.c = Object.assign(document.createElement('canvas'), { className: 'sakuga-fx' }); front.c.setAttribute('aria-hidden', 'true');
   document.body.append(front.c); front.g = front.c.getContext('2d'); size();
 }
-function size() { dpr = Math.min(innerWidth <= 768 ? 1.5 : 2, devicePixelRatio || 1); if (front.c) { front.c.width = Math.round(innerWidth * dpr); front.c.height = Math.round(innerHeight * dpr); } }
+function size() { dpr = Math.min(1.5, devicePixelRatio || 1); if (front.c) { front.c.width = Math.round(innerWidth * dpr); front.c.height = Math.round(innerHeight * dpr); } }
 addEventListener('resize', size);
 function backLayer(canvas) { const L = { c: canvas, g: canvas.getContext('2d'), live: [], dirty: false }; layers.push(L); return L; }
 const add = (life, draw, L) => {

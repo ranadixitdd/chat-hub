@@ -1,13 +1,13 @@
-const CACHE_NAME = 'chathub-studio-v3.4.5';
+const CACHE_NAME = 'chathub-studio-v3.4.6';
 const SHELL_ASSETS = [
   './',
   './index.html',
-  './style.css?v=3.4.5',
-  './storage.js?v=1.1',
-  './sakuga-vfx/core.js?v=1.5',
-  './app.js?v=3.4.5',
-  './sakuga-vfx/sakuga-studio.js?v=1.4',
-  './sakuga-vfx/chathub-vfx.js?v=1.6',
+  './style.css?v=3.4.6',
+  './storage.js?v=1.2',
+  './sakuga-vfx/core.js?v=1.6',
+  './app.js?v=3.4.6',
+  './sakuga-vfx/sakuga-studio.js?v=1.5',
+  './sakuga-vfx/chathub-vfx.js?v=1.7',
   './manifest.json',
   './assets/icon.svg'
 ];

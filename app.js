@@ -29,7 +29,7 @@
     try {
       const strVal = typeof value === 'string' ? value : JSON.stringify(value);
       if (window.ChatHubStorage && typeof window.ChatHubStorage.set === 'function') {
-        window.ChatHubStorage.set(key, strVal);
+        return window.ChatHubStorage.set(key, strVal);
       }
       try {
         localStorage.setItem(key, strVal);
@@ -1844,7 +1844,7 @@ function playSciFiChimeSound() {
      ===================================================================== */
   let pendingSaveStudioTimer = null;
 
-  function scheduleSaveStudioState(delayMs = 450) {
+  function scheduleSaveStudioState(delayMs = 950) {
     if (pendingSaveStudioTimer) clearTimeout(pendingSaveStudioTimer);
     pendingSaveStudioTimer = setTimeout(() => {
       pendingSaveStudioTimer = null;
@@ -1893,9 +1893,10 @@ function playSciFiChimeSound() {
         if (currentStoryId && Array.isArray(savedStories)) {
           const idx = savedStories.findIndex(s => s.id === currentStoryId);
           if (idx >= 0) {
-            savedStories[idx].messages = JSON.parse(JSON.stringify(messages || []));
-            savedStories[idx].storyScenes = JSON.parse(JSON.stringify(storyScenes || {}));
-            savedStories[idx].characters = JSON.parse(JSON.stringify(characters || []));
+            const deepCopy = (v) => (typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
+            savedStories[idx].messages = deepCopy(messages || []);
+            savedStories[idx].storyScenes = deepCopy(storyScenes || {});
+            savedStories[idx].characters = deepCopy(characters || []);
             savedStories[idx].updatedAt = Date.now();
             safeSetStorage(STORIES_LIB_KEY, JSON.stringify(savedStories));
             window.ChatHubStorage.saveStory(savedStories[idx]);
@@ -3195,6 +3196,12 @@ if (msg.type === 'quest') {
     if (!el) return null;
     stream.appendChild(el);
     scrollStreamBottomNow(stream);
+    requestAnimationFrame(() => scrollStreamBottomNow(stream));
+    el.querySelectorAll('img').forEach((img) => {
+      if (!img.complete) {
+        img.addEventListener('load', () => scrollStreamBottomNow(stream), { once: true });
+      }
+    });
     return el;
   }
 
@@ -3357,7 +3364,7 @@ if (msg.type === 'quest') {
       <span class="typing-text-label">${escapeHtml(char.name)} is typing...</span>
     `;
     stream.appendChild(typingRow);
-    stream.scrollTop = stream.scrollHeight;
+    scrollStreamBottomNow(stream);
 
     const statusEl = document.getElementById('headerGroupStatus');
     if (statusEl && effectiveSide === 'left') {
@@ -3517,10 +3524,17 @@ if (msg.type === 'quest') {
     const drawer = document.getElementById('stickerDrawer');
     const btn = document.getElementById('stickerToggleBtn');
     const aBtn = document.getElementById('attachToggleBtn');
+    const stream = document.getElementById('chatStream');
+    const wasNearBottom = stream ? (stream.scrollHeight - stream.scrollTop - stream.clientHeight < 90) : false;
     const isOpen = drawer.classList.toggle('open');
     if (btn) btn.classList.toggle('active', isOpen);
     if (aBtn && !isOpen) aBtn.classList.remove('active');
-    if (isOpen) renderDrawerContent();
+    if (isOpen) {
+      renderDrawerContent();
+      if (wasNearBottom && stream) {
+        setTimeout(() => scrollStreamBottomNow(stream), 300);
+      }
+    }
   }
 
   function triggerAttachFileInput() {
@@ -3652,8 +3666,8 @@ if (msg.type === 'quest') {
 
     messages.push(newMsg);
     clearActiveReply();
-    saveStudioState();
-    renderChatStream();
+    scheduleSaveStudioState();
+    appendMessageRowToStream(newMsg);
 
     if (isAudio && (newMsg.audioUrl)) {
       playCustomAudio(newMsg.audioUrl);

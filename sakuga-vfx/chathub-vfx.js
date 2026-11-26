@@ -326,38 +326,24 @@
     });
   }
 
-  function halftoneBurst(x, y, { rx = 74, ry = 46, life = 0.46, clipOutEl, clipChat = true } = {}) {
-    const dots = Array.from({ length: 14 }, (_, i) => ({
-      a: (i / 14) * fx.TAU + fx.rnd(-0.12, 0.12),
-      dist: fx.rnd(0.95, 1.38),
-      r: fx.rnd(3.2, 6.2)
+  function halftoneBurst(x, y, { rx = 74, ry = 46, life = 0.46, clipChat = true } = {}) {
+    const dots = Array.from({ length: 12 }, (_, i) => ({
+      a: (i / 12) * fx.TAU + fx.rnd(-0.12, 0.12),
+      dist: fx.rnd(1.04, 1.38),
+      r: fx.rnd(3.2, 5.8)
     }));
     const spikes = Array.from({ length: 10 }, (_, i) => ({
       a: (i / 10) * fx.TAU + fx.rnd(-0.14, 0.14),
-      l: fx.rnd(1.15, 1.55)
+      l: fx.rnd(1.18, 1.54)
     }));
     fx.add(life, (k) => {
       const g = fx.g;
       if (clipChat) clipToChatBounds();
-      if (clipOutEl) {
-        const b = fx.rectOf ? fx.rectOf(clipOutEl) : (clipOutEl.isConnected ? clipOutEl.getBoundingClientRect() : null);
-        if (b && b.width > 0 && b.height > 0) {
-          const cr = b.cr !== undefined ? b.cr : Math.min(b.width / 2, b.height / 2, parseFloat(getComputedStyle(clipOutEl).borderRadius) || 10);
-          const mask = new Path2D();
-          mask.rect(window.scrollX - 40, window.scrollY - 40, innerWidth + 80, innerHeight + 80);
-          if (typeof mask.roundRect === 'function') {
-            mask.roundRect(b.left + window.scrollX + 1, b.top + window.scrollY + 1, Math.max(0, b.width - 2), Math.max(0, b.height - 2), Math.max(0, cr - 1));
-          } else {
-            mask.rect(b.left + window.scrollX + 1, b.top + window.scrollY + 1, Math.max(0, b.width - 2), Math.max(0, b.height - 2));
-          }
-          g.clip(mask, 'evenodd');
-        }
-      }
       const expand = out(fx.clamp(k / 0.35));
       const die = 1 - inn(fx.clamp((k - 0.45) / 0.55));
-      // Radial ink & accent spikes
+      // Radial ink & accent spikes starting outside bubble perimeter (no heavy stencil clip needed)
       for (const s of spikes) {
-        const r0 = 0.72 * expand;
+        const r0 = 0.88 * expand;
         const r1 = s.l * expand;
         const sx0 = x + Math.cos(s.a) * rx * r0;
         const sy0 = y + Math.sin(s.a) * ry * r0;
