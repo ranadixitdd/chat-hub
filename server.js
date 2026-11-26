@@ -48,14 +48,35 @@ function getLocalIpAddresses() {
   return addresses;
 }
 
-function sendJson(res, statusCode, data) {
+const BLOCKED_TOP_ENTRIES = new Set([
+  '.git', '.github', 'backups', 'stories', 'scripts', 'scratch', 'node_modules',
+  'server.js', 'package.json', 'package-lock.json', 'agents.md', 'netlify.toml', 'vercel.json'
+]);
+
+function isAllowedLocalOrigin(origin) {
+  if (!origin) return true;
+  if (origin === 'null') return false;
+  try {
+    const u = new URL(origin);
+    const h = u.hostname;
+    if (h === 'localhost' || h === '127.0.0.1' || h === '::1') return true;
+    if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h)) return true;
+  } catch (e) {}
+  return false;
+}
+
+function sendJson(res, statusCode, data, origin = '') {
   const payload = JSON.stringify(data);
-  res.writeHead(statusCode, {
+  const headers = {
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-  });
+  };
+  if (origin && isAllowedLocalOrigin(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Vary'] = 'Origin';
+  }
+  res.writeHead(statusCode, headers);
   res.end(payload);
 }
 
@@ -84,10 +105,15 @@ function parseJsonBody(req, limit = 50 * 1024 * 1024) {
 }
 
 async function handleApiRequest(req, res, reqPath) {
+  const origin = req.headers.origin || '';
+  if (origin && !isAllowedLocalOrigin(origin)) {
+    return sendJson(res, 403, { ok: false, error: 'Cross-origin API access denied' });
+  }
+  const reply = (code, data) => sendJson(res, code, data, origin);
   try {
     // 1. GET /api/status - Server health & capabilities check
     if (req.method === 'GET' && reqPath === '/api/status') {
-      return sendJson(res, 200, {
+      return reply(200, {
         ok: true,
         node: true,
         serverTime: new Date().toISOString(),
@@ -120,7 +146,7 @@ async function handleApiRequest(req, res, reqPath) {
         }
       }
       stories.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-      return sendJson(res, 200, { ok: true, count: stories.length, stories });
+      return reply(200, { ok: true, count: stories.length, stories });
     }
 
     // 3. POST /api/stories - Save/update story to disk
@@ -128,7 +154,7 @@ async function handleApiRequest(req, res, reqPath) {
       const body = await parseJsonBody(req);
       const story = body.story || body;
       if (!story || typeof story !== 'object') {
-        return sendJson(res, 400, { ok: false, error: 'Invalid story payload' });
+        return reply(400, { ok: false, error: 'Invalid story payload' });
       }
       const rawId = story.id || ('story_' + Date.now());
       const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -136,7 +162,7 @@ async function handleApiRequest(req, res, reqPath) {
       story.updatedAt = Date.now();
       const filePath = path.join(STORIES_DIR, `${safeId}.json`);
       fs.writeFileSync(filePath, JSON.stringify(story, null, 2), 'utf-8');
-      return sendJson(res, 200, {
+      return reply(200, {
         ok: true,
         id: safeId,
         title: story.title,
@@ -151,11 +177,11 @@ async function handleApiRequest(req, res, reqPath) {
       const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]/g, '_');
       const filePath = path.join(STORIES_DIR, `${safeId}.json`);
       if (!fs.existsSync(filePath)) {
-        return sendJson(res, 404, { ok: false, error: 'Story not found on disk' });
+        return reply(404, { ok: false, error: 'Story not found on disk' });
       }
       const raw = fs.readFileSync(filePath, 'utf-8');
       const story = JSON.parse(raw);
-      return sendJson(res, 200, { ok: true, story });
+      return reply(200, { ok: true, story });
     }
 
     // 5. DELETE /api/stories/:id - Delete story file from disk
@@ -166,7 +192,7 @@ async function handleApiRequest(req, res, reqPath) {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      return sendJson(res, 200, { ok: true, deleted: safeId });
+      return reply(200, { ok: true, deleted: safeId });
     }
 
     // 6. POST /api/backup - Save complete studio backup snapshot
@@ -175,7 +201,7 @@ async function handleApiRequest(req, res, reqPath) {
       const filename = `chathub_backup_${Date.now()}.json`;
       const filePath = path.join(BACKUPS_DIR, filename);
       fs.writeFileSync(filePath, JSON.stringify(body, null, 2), 'utf-8');
-      return sendJson(res, 200, {
+      return reply(200, {
         ok: true,
         filename,
         message: 'Full backup saved to disk',
@@ -194,31 +220,43 @@ async function handleApiRequest(req, res, reqPath) {
           createdAt: stat.birthtimeMs || stat.mtimeMs
         };
       }).sort((a, b) => b.createdAt - a.createdAt);
-      return sendJson(res, 200, { ok: true, backups });
+      return reply(200, { ok: true, backups });
     }
 
     // Unmatched API endpoint
-    return sendJson(res, 404, { ok: false, error: `Endpoint ${req.method} ${reqPath} not found` });
+    return reply(404, { ok: false, error: `Endpoint ${req.method} ${reqPath} not found` });
   } catch (err) {
     console.error('API Error:', err);
-    return sendJson(res, 500, { ok: false, error: err.message || 'Internal API Error' });
+    return reply(500, { ok: false, error: err.message || 'Internal API Error' });
   }
 }
 
 const server = http.createServer((req, res) => {
   // CORS Preflight for any route
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
+    const origin = req.headers.origin || '';
+    const headers = {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400'
-    });
+    };
+    if (origin && isAllowedLocalOrigin(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers['Vary'] = 'Origin';
+    }
+    res.writeHead(204, headers);
     res.end();
     return;
   }
 
-  let reqPath = decodeURI(req.url.split('?')[0]);
+  let reqPath;
+  try {
+    reqPath = decodeURIComponent((req.url || '/').split('?')[0]);
+  } catch (e) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('400 Bad Request');
+    return;
+  }
 
   // Handle REST API routes
   if (reqPath.startsWith('/api/')) {
@@ -232,8 +270,24 @@ const server = http.createServer((req, res) => {
       : '/manhwa_chat_studio_clean.html';
   }
 
-  const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
-  const filePath = path.join(BASE_DIR, safePath);
+  const normalizedPosix = path.posix.normalize('/' + reqPath.replace(/\\/g, '/'));
+  const relPath = normalizedPosix.replace(/^\/+/, '');
+  const segments = relPath.split('/').filter(Boolean);
+  if (
+    segments.some(seg => seg === '..' || seg.startsWith('.')) ||
+    (segments.length > 0 && BLOCKED_TOP_ENTRIES.has(segments[0].toLowerCase()))
+  ) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('403 Forbidden');
+    return;
+  }
+
+  const filePath = path.resolve(BASE_DIR, relPath);
+  if (filePath !== BASE_DIR && !filePath.startsWith(BASE_DIR + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('403 Forbidden');
+    return;
+  }
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {

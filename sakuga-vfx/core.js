@@ -31,20 +31,51 @@ let calm = reduce.matches; reduce.addEventListener?.('change', (e) => { calm = e
 // ───────── layers ─────────
 // The front layer is one fixed canvas over the whole page. A component can also have a back layer: a canvas inside it, behind the control.
 // Effects are placed in page coordinates, so they scroll with their control.
-let g = null, dpr = 1;
+let g = null, dpr = 1, tickId = 0, rectCache = new WeakMap();
+const MAX_LIVE = 72;
 const front = { c: null, g: null, live: [], dirty: false }, layers = [front];
+function rectOf(el) {
+  if (!el || !el.isConnected) return null;
+  let entry = rectCache.get(el);
+  if (entry && entry.tick === tickId) return entry.val;
+  const b = el.getBoundingClientRect();
+  let cr = 8;
+  if (b.width > 0 && b.height > 0) {
+    cr = Math.min(b.width / 2, b.height / 2, parseFloat(getComputedStyle(el).borderRadius) || 8);
+  }
+  const val = { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height, cr };
+  rectCache.set(el, { tick: tickId, val });
+  return val;
+}
 function ensureFront() {
   if (front.c || !document.body) return;
   front.c = Object.assign(document.createElement('canvas'), { className: 'sakuga-fx' }); front.c.setAttribute('aria-hidden', 'true');
   document.body.append(front.c); front.g = front.c.getContext('2d'); size();
 }
-function size() { dpr = Math.min(2.5, devicePixelRatio || 1); if (front.c) { front.c.width = innerWidth * dpr; front.c.height = innerHeight * dpr; } }
+function size() { dpr = Math.min(2, devicePixelRatio || 1); if (front.c) { front.c.width = innerWidth * dpr; front.c.height = innerHeight * dpr; } }
 addEventListener('resize', size);
 function backLayer(canvas) { const L = { c: canvas, g: canvas.getContext('2d'), live: [], dirty: false }; layers.push(L); return L; }
-const add = (life, draw, L) => { const p = { t: 0, life, draw }; if (!calm) { L = L || front; if (L === front) ensureFront(); L.live.push(p); start(); } return p; };
+const add = (life, draw, L) => {
+  const p = { t: 0, life, draw };
+  if (!calm) {
+    L = L || front;
+    if (L === front) ensureFront();
+    if (isFinite(life)) {
+      while (L.live.length >= MAX_LIVE) {
+        const idx = L.live.findIndex((item) => isFinite(item.life));
+        if (idx === -1) break;
+        L.live.splice(idx, 1);
+      }
+    }
+    L.live.push(p);
+    start();
+  }
+  return p;
+};
 // an effect with no end: it draws every frame until its handle is marked dead. layer puts it on a component's back layer.
 const persist = (draw, layer) => add(Infinity, draw, layer);
 function tick(dt) {
+  tickId++;
   for (const L of layers) {
     if (!L.c || (!L.live.length && !L.dirty)) continue;
     let ox = scrollX, oy = scrollY;
@@ -80,21 +111,21 @@ function loop(ms) {
   if (!frames.size && !timers.length && layers.every((L) => !L.live.length && !L.dirty)) { running = false; return; }
   requestAnimationFrame(loop);
 }
-function start() { if (running) return; running = true; last = performance.now(); requestAnimationFrame(loop); }
+function start() { if (running) return; tickId++; running = true; last = performance.now(); requestAnimationFrame(loop); }
 
 // ───────── the effects ─────────
 // circles drawn as one shape: outline, shadow tone, then the light side slid up and to the left
 function blob(cs, lw = 1.5, _, { lx = -1, arcs = false, deep = 1 } = {}) {
   const u = new Path2D(); for (const [x, y, r] of cs) if (r > 0.3) { u.moveTo(x + r, y); u.arc(x, y, r, 0, TAU); }
   g.save(); g.lineWidth = lw * 2; g.strokeStyle = P.line; g.stroke(u); g.restore();
-  g.save(); g.clip(u); g.fillStyle = P.shade; g.fillRect(-1e4, -1e4, 2e4, 2e4); const r = cs[0] ? cs[0][2] : 8;
+  g.save(); g.clip(u); g.fillStyle = P.shade; g.fill(u); const r = cs[0] ? cs[0][2] : 8;
   g.save(); g.translate(lx * r * 0.2 * deep, -r * 0.26 * deep); g.fillStyle = P.fill; g.fill(u); g.restore();
   if (arcs) { g.strokeStyle = P.line; g.lineWidth = lw * 0.75; g.beginPath(); for (const [x, y, rr] of cs) if (rr > 3) { g.moveTo(x + Math.cos(-2.7) * rr, y + Math.sin(-2.7) * rr); g.arc(x, y, rr, -2.7, -0.5); } g.stroke(); }   // the cumulus lines inside the cloud
   g.restore();
 }
 function shape(path, lw = 1.5, off = 3, fill = P.fill) {
   g.save(); g.lineWidth = lw * 2; g.strokeStyle = P.line; g.stroke(path); g.restore();
-  g.save(); g.clip(path); g.fillStyle = P.shade; g.fillRect(-1e4, -1e4, 2e4, 2e4); g.translate(-off * 0.7, -off); g.fillStyle = fill; g.fill(path); g.restore();
+  g.save(); g.clip(path); g.fillStyle = P.shade; g.fill(path); g.translate(-off * 0.7, -off); g.fillStyle = fill; g.fill(path); g.restore();
 }
 // a puff of smoke: lobes swell out with a little overshoot, roll, and shrink away
 function puff(x, y, { n = 5, size = 13, vx = 0, vy = -18, life = 0.8, spread = 1 } = {}) {
@@ -111,13 +142,12 @@ function burst(x, y, { r = 44, rx, ry, spikes = 13, life = 0.34, layer, clipOutE
   const j = Array.from({ length: spikes * 2 }, (_, i) => (i % 2 ? rnd(0.34, 0.5) : rnd(0.75, 1.15))), rot = rnd(TAU), pins = Array.from({ length: 8 }, (_, i) => ({ a: i / 8 * TAU + rnd(0.5), l: rnd(1.25, 1.75), w: rnd(0.03, 0.055) }));
   const star = (SX, SY, turn, inner = 1) => { const p = new Path2D(); j.forEach((m, i) => { const a = rot + turn + (i / j.length) * TAU, mm = (i % 2 ? m * inner : m); p[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * SX * mm, y + Math.sin(a) * SY * mm); }); p.closePath(); return p; };
   add(life, (k) => {
-    if (clipOutEl && clipOutEl.isConnected) {
-      const b = clipOutEl.getBoundingClientRect();
-      if (b.width > 0 && b.height > 0) {
-        const cr = Math.min(b.width / 2, b.height / 2, parseFloat(getComputedStyle(clipOutEl).borderRadius) || 8);
+    if (clipOutEl) {
+      const b = rectOf(clipOutEl);
+      if (b && b.width > 0 && b.height > 0) {
         const mask = new Path2D();
         mask.rect(scrollX - 40, scrollY - 40, innerWidth + 80, innerHeight + 80);
-        if (typeof mask.roundRect === 'function') mask.roundRect(b.left + scrollX + 1, b.top + scrollY + 1, Math.max(0, b.width - 2), Math.max(0, b.height - 2), Math.max(0, cr - 1));
+        if (typeof mask.roundRect === 'function') mask.roundRect(b.left + scrollX + 1, b.top + scrollY + 1, Math.max(0, b.width - 2), Math.max(0, b.height - 2), Math.max(0, b.cr - 1));
         else mask.rect(b.left + scrollX + 1, b.top + scrollY + 1, Math.max(0, b.width - 2), Math.max(0, b.height - 2));
         g.clip(mask, 'evenodd');
       }
@@ -181,7 +211,7 @@ function donut(x, y, { r = 20, vx = 30, vy = -50, life = 1, tilt = -0.25 } = {})
   const ph = rnd(TAU);
   add(life, (k, t) => { const s = back(clamp(t / 0.22)) * (1 - inn(clamp((k - 0.6) / 0.4))), px = x + vx * out(k) * life, py = y + vy * out(k) * life, hole = 0.42 + 0.22 * k, p = new Path2D(); if (s < 0.03) return;
     for (const [m, bump] of [[1, 0.09], [hole, 0.05]]) for (let i = 0; i <= 48; i++) { const a = i / 48 * TAU, rr = r * s * m * (1 + bump * Math.sin(a * 9 + ph + t * 2)), ex = Math.cos(a) * rr, ey = Math.sin(a) * rr * 0.52; p[i ? 'lineTo' : 'moveTo'](px + ex * Math.cos(tilt) - ey * Math.sin(tilt), py + ex * Math.sin(tilt) + ey * Math.cos(tilt)); }
-    g.save(); g.lineWidth = 3; g.strokeStyle = P.line; g.stroke(p); g.restore(); g.save(); g.clip(p, 'evenodd'); g.fillStyle = P.shade; g.fillRect(-1e4, -1e4, 2e4, 2e4); g.translate(r * 0.06, -r * 0.2); g.fillStyle = P.fill; g.fill(p, 'evenodd'); g.restore(); });
+    g.save(); g.lineWidth = 3; g.strokeStyle = P.line; g.stroke(p); g.restore(); g.save(); g.clip(p, 'evenodd'); g.fillStyle = P.shade; g.fill(p, 'evenodd'); g.translate(r * 0.06, -r * 0.2); g.fillStyle = P.fill; g.fill(p, 'evenodd'); g.restore(); });
 }
 // wobble marks: the two little arcs beside something that has just stopped
 function wob(x, y, { dir = 1, r = 16, life = 0.45 } = {}) {
@@ -267,6 +297,6 @@ const api = window.SakugaFX = {
   TAU, clamp, lerp, rnd, Spring,
   advance, later, persist, add, onFrame, blob, shape, get g() { return g; },
   puff, burst, shards, ring, splash, slash, lines, ticks, donut, wob, kira, sfx, hollow, dotted,
-  at, esc, squashy, Base, define,
+  at, rectOf, esc, squashy, Base, define,
 };
 })();

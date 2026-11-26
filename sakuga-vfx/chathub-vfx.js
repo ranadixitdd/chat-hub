@@ -173,13 +173,25 @@
   /* ------------------------------------------------------------------------
      2. PHONE FRAME CLIP HELPER (Keeps Chat VFX Crisp Inside Chat Frame)
      ------------------------------------------------------------------------ */
-  function clipToChatBounds() {
+  let chatBoundsCache = { now: -1, rect: null };
+
+  function getChatBoundsRect() {
+    if (chatBoundsCache.now === fx.now && chatBoundsCache.rect) return chatBoundsCache.rect;
     const wrapper = document.getElementById('phoneWrapper');
     const stream = document.getElementById('chatStream');
     const target = stream || wrapper;
-    if (!target || !target.isConnected) return;
-    const r = target.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return;
+    if (!target || !target.isConnected) {
+      chatBoundsCache = { now: fx.now, rect: null };
+      return null;
+    }
+    const r = fx.rectOf ? fx.rectOf(target) : target.getBoundingClientRect();
+    chatBoundsCache = { now: fx.now, rect: (r && r.width > 0 && r.height > 0) ? r : null };
+    return chatBoundsCache.rect;
+  }
+
+  function clipToChatBounds() {
+    const r = getChatBoundsRect();
+    if (!r) return;
     const g = fx.g;
     const path = new Path2D();
     path.rect(r.left + window.scrollX - 6, r.top + window.scrollY - 6, r.width + 12, r.height + 12);
@@ -327,10 +339,10 @@
     fx.add(life, (k) => {
       const g = fx.g;
       if (clipChat) clipToChatBounds();
-      if (clipOutEl && clipOutEl.isConnected) {
-        const b = clipOutEl.getBoundingClientRect();
-        if (b.width > 0 && b.height > 0) {
-          const cr = Math.min(b.width / 2, b.height / 2, parseFloat(getComputedStyle(clipOutEl).borderRadius) || 10);
+      if (clipOutEl) {
+        const b = fx.rectOf ? fx.rectOf(clipOutEl) : (clipOutEl.isConnected ? clipOutEl.getBoundingClientRect() : null);
+        if (b && b.width > 0 && b.height > 0) {
+          const cr = b.cr !== undefined ? b.cr : Math.min(b.width / 2, b.height / 2, parseFloat(getComputedStyle(clipOutEl).borderRadius) || 10);
           const mask = new Path2D();
           mask.rect(window.scrollX - 40, window.scrollY - 40, innerWidth + 80, innerHeight + 80);
           if (typeof mask.roundRect === 'function') {
@@ -375,6 +387,33 @@
         g.fill();
         g.stroke();
       }
+    });
+  }
+
+  function squareRing(x, y, { w = 120, h = 120, cr = 18, life = 0.44, strokeW = 3.8, expand = 30, clipChat = true } = {}) {
+    fx.add(life, (k) => {
+      if (clipChat) clipToChatBounds();
+      const g = fx.g;
+      const e = out(k);
+      const die = 1 - inn(fx.clamp((k - 0.35) / 0.65));
+      const lw = strokeW * die;
+      if (lw < 0.25) return;
+      const pad = expand * e;
+      const cw = w + pad * 2;
+      const ch = h + pad * 2;
+      const rad = Math.min(cw / 2, ch / 2, cr + pad * 0.32);
+      const p = new Path2D();
+      if (typeof p.roundRect === 'function') {
+        p.roundRect(x - cw / 2, y - ch / 2, cw, ch, rad);
+      } else {
+        p.rect(x - cw / 2, y - ch / 2, cw, ch);
+      }
+      g.strokeStyle = fx.P.ink;
+      g.lineWidth = lw + 2.4;
+      g.stroke(p);
+      g.strokeStyle = fx.P.accent;
+      g.lineWidth = Math.max(0.8, lw);
+      g.stroke(p);
     });
   }
 
@@ -434,6 +473,7 @@
      4. LIVE CHAT-BUBBLE & STORY PLAYBACK VFX ENGINE
      ------------------------------------------------------------------------ */
   let lastStampAt = -1;
+  let lastHeavySfxAt = -1;
 
   function canSpawnStamp() {
     const now = fx.now;
@@ -442,18 +482,21 @@
     return true;
   }
 
+  function canSpawnHeavySfx() {
+    const now = fx.now;
+    if (lastHeavySfxAt >= 0 && now - lastHeavySfxAt < 0.09) return false;
+    lastHeavySfxAt = now;
+    return true;
+  }
+
   function getBubbleMetrics(el) {
     if (!el || !el.isConnected) return null;
     const stream = document.getElementById('chatStream');
-    let b = el.getBoundingClientRect();
-    if (stream && (b.width <= 0 || b.height <= 0 || b.top >= stream.getBoundingClientRect().bottom - 12)) {
-      stream.scrollTop = stream.scrollHeight;
-      b = el.getBoundingClientRect();
-    }
+    const b = el.getBoundingClientRect();
     if (b.width <= 0 || b.height <= 0) return null;
     if (stream) {
       const sr = stream.getBoundingClientRect();
-      if (b.bottom < sr.top || b.top > sr.bottom) return null;
+      if (sr && (b.bottom < sr.top - 12 || b.top > sr.bottom + 24)) return null;
     }
     const row = el.closest('.msg-row');
     const isRight = row ? row.classList.contains('right') : false;
@@ -468,6 +511,66 @@
       innerEdgeX, outerEdgeX, topY, bottomY,
       inwardDir: isRight ? -1 : 1
     };
+  }
+
+  const STICKER_STAMP_MAP = {
+    ROFL: 'HAHA!!',
+    WAAH: 'WAAAH!',
+    RAGE: 'RAGE!!',
+    SHOCK: 'NANI?!',
+    LOVE: 'UWU!',
+    SALUTE: 'RESPECT!',
+    DEAD: 'R.I.P!!',
+    PARTY: 'HYPE!!',
+    CLOWN: 'BRUH...',
+    CHAD: 'GIGA CHAD',
+    FIRE: 'LIT!!',
+    STARE: 'STARE...',
+    PLEASE: 'PLSSS!',
+    COLD: 'BRRR!',
+    BLOWN: 'WOAH!!',
+    SLAY: 'SLAY!!',
+    COOL: 'CLEAN!',
+    SECRET: 'SHHH!',
+    SLEEPY: 'ZZZ...',
+    DROOL: 'YUM!!',
+    CRINGE: 'OOF!',
+    MELT: 'DED...',
+    HYPE: "LET'S GO!",
+    THINK: 'HMM...?',
+    DEVIL: 'EVIL!!',
+    SPOOKY: 'BOO!!',
+    BOLT: 'ZAP!!',
+    HEART: 'DOKI!',
+    CAKE: 'SWEET!',
+    BOMB: 'BOOM!!',
+    CROWN: 'KING!!',
+    PUNCH: 'SMASH!!'
+  };
+
+  function formatStickerStampLabel(rawLabel, exprLower) {
+    const clean = String(rawLabel || '').trim();
+    const upper = clean.toUpperCase();
+    if (upper && STICKER_STAMP_MAP[upper]) return STICKER_STAMP_MAP[upper];
+
+    const looksLikeFilename =
+      !clean ||
+      clean.length <= 1 ||
+      /\.(png|jpe?g|gif|webp|mp4|webm|svg)$/i.test(clean) ||
+      /^(img|vid|dsc|pxl|screenshot|sticker|media|image)[_\-\s]?\d*/i.test(clean);
+
+    if (!looksLikeFilename) {
+      const trimmed = upper.slice(0, 12);
+      return /[!?\.]$/.test(trimmed) ? trimmed : `${trimmed}!`;
+    }
+
+    if (exprLower === 'love' || exprLower === 'blush') return 'DOKI!';
+    if (exprLower === 'angry' || exprLower === 'rage' || exprLower === 'mad') return 'RAGE!!';
+    if (exprLower === 'shock' || exprLower === 'scared' || exprLower === 'surprised') return 'NANI?!';
+    if (exprLower === 'cry' || exprLower === 'sad') return 'WAAAH!';
+    if (exprLower === 'laugh') return 'HAHA!!';
+    if (exprLower === 'cool' || exprLower === 'smug') return 'CLEAN!';
+    return 'NICE!!';
   }
 
   function formatSfxStampLabel(rawText) {
@@ -519,50 +622,68 @@
     }
 
     if (kind === 'sfx') {
-      if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.22);
+      if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.24);
       const label = formatSfxStampLabel(meta.text || 'BOOM!');
       const lower = label.toLowerCase();
+      const stampHalfW = Math.min(82, Math.max(44, label.length * 4.5 + 14));
+      const sfxStampX = clampChatStampX(m.cx, stampHalfW);
+      const sfxStampY = clampChatStampY(m.topY - 16);
 
-      if (/clash|slash|cut|blade|blocked/.test(lower)) {
-        fx.slash(m.cx, m.cy, { len: Math.max(84, m.w * 0.85), ang: -0.45, thick: 12, life: 0.44 });
-        fx.slash(m.cx, m.cy, { len: Math.max(76, m.w * 0.75), ang: 2.65, thick: 9, life: 0.44 });
-        fx.shards(m.cx, m.cy, { n: 8, speed: 200, size: 6, arc: 6.28, grav: 260, life: 0.7 });
-      } else if (/bruh|chad|boing|bwahaha|sheesh|cap|rip/.test(lower)) {
-        fx.wob(m.innerEdgeX, m.cy, { dir: m.inwardDir, r: 11, life: 0.44 });
-        fx.puff(m.cx - m.w * 0.35, m.bottomY, { size: 7.5, n: 3, vx: -18, vy: -12, life: 0.55 });
-        fx.puff(m.cx + m.w * 0.35, m.bottomY, { size: 7.5, n: 3, vx: 18, vy: -12, life: 0.55 });
-        fx.kira(m.innerEdgeX, m.topY + 4, { r: 11, life: 0.62 });
-        fx.ticks(m.cx, m.topY - 4, { dir: -Math.PI / 2, n: 4, r: 6, len: 13, fan: 0.55, life: 0.4 });
-      } else if (/waaahh|emotional|heartbreak|shiver/.test(lower)) {
-        tears(m.b.left + window.scrollX + 10, m.bottomY - 6, { dir: -1, n: 3, life: 0.7 });
-        tears(m.b.right + window.scrollX - 10, m.bottomY - 6, { dir: 1, n: 3, life: 0.7 });
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(54, m.w * 0.68), ry: Math.max(40, m.h * 0.9), life: 0.44, clipOutEl: bubbleEl });
-      } else if (/whoosh|yeet|nigerundayo/.test(lower)) {
-        fx.lines(m.outerEdgeX, m.cy, { n: 8, dir: m.isRight ? 0 : Math.PI, len: 58, spread: 16, life: 0.38 });
-        fx.puff(m.outerEdgeX, m.cy + 4, { size: 9, n: 4, vx: m.inwardDir * 28, vy: -8, life: 0.55 });
-        fx.shards(m.cx, m.cy, { n: 5, speed: 160, size: 5, arc: 2.8, dir: m.isRight ? Math.PI : 0, life: 0.55 });
-      } else if (/nani|wait what|gulp|omae|panic|plot twist|stare|menacing|ゴゴゴ/.test(lower)) {
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(58, m.w * 0.72), ry: Math.max(42, m.h * 0.95), life: 0.48, clipOutEl: bubbleEl });
-        lightning(m.innerEdgeX, m.cy, { len: 42, dir: -Math.PI / 2, life: 0.42 });
-        fx.shards(m.cx, m.cy, { n: 6, speed: 170, size: 5.5, arc: 6.28, grav: 240, life: 0.65 });
-        if (/menacing|ゴゴゴ/.test(lower)) {
-          angerVein(clampChatStampX(m.innerEdgeX, 18), clampChatStampY(m.topY + 4), { size: 13, life: 0.9 });
-          fx.sfx('gogo', clampChatStampX(m.cx, 54), clampChatStampY(m.topY - 26), { size: 92, rot: -0.08, life: 0.85, ...fx.hollow() });
-        }
-      } else if (/awaken|domain|100%|sharingan|system|arise|level up|bankai|plus ultra/.test(lower)) {
-        lightning(m.b.left + window.scrollX + 10, m.cy + 12, { len: 48, dir: -Math.PI / 2, life: 0.46 });
-        lightning(m.b.right + window.scrollX - 10, m.cy - 12, { len: 48, dir: Math.PI / 2, life: 0.46 });
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(60, m.w * 0.76), ry: Math.max(44, m.h * 0.95), life: 0.48, clipOutEl: bubbleEl });
-        fx.kira(m.innerEdgeX, m.topY + 4, { r: 12, life: 0.68 });
-      } else {
-        // Combat / Impact default (BAM!!, POW!!, ORA ORA!!, SMACK!!, BONK!!, CRITICAL HIT!!, K.O.!!)
-        halftoneBurst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.72), ry: Math.max(42, m.h * 0.9), life: 0.46, clipOutEl: bubbleEl });
-        fx.burst(m.cx, m.cy, { rx: Math.max(58, m.w * 0.78), ry: Math.max(46, m.h * 0.95), spikes: 15, life: 0.42, clipOutEl: bubbleEl });
-        fx.shards(m.cx, m.cy, { n: 8, speed: 200, size: 6.5, arc: 6.28, grav: 260, life: 0.72 });
+      // Spam guard: keep crisp spring + ticks + stamp when spamming rapidly
+      if (!canSpawnHeavySfx()) {
+        fx.ticks(m.cx, m.topY - 2, { dir: -Math.PI / 2, n: 3, r: 5, len: 12, fan: 0.48, life: 0.34 });
+        comicStamp(label, sfxStampX, sfxStampY, {
+          fontSize: label.length > 12 ? 12 : 14,
+          bg: /nani|arise|level|bam|pow|critical|k\.o|emotional|awaken|domain/.test(lower) ? fx.P.accent : fx.P.fill
+        });
+        return;
       }
 
-      const stampHalfW = Math.min(82, Math.max(44, label.length * 4.5 + 14));
-      comicStamp(label, clampChatStampX(m.cx, stampHalfW), clampChatStampY(m.topY - 14), {
+      if (/clash|slash|cut|blade|blocked/.test(lower)) {
+        fx.slash(m.cx, m.cy, { len: Math.max(82, m.w * 0.85), ang: -0.45, thick: 11, life: 0.42 });
+        fx.slash(m.cx, m.cy, { len: Math.max(72, m.w * 0.72), ang: 2.65, thick: 8, life: 0.42 });
+        fx.shards(m.cx, m.cy, { n: 5, speed: 190, size: 5.5, arc: 6.28, grav: 250, life: 0.62 });
+        fx.sfx('zuza', clampChatStampX(m.innerEdgeX, 46), clampChatStampY(m.topY - 24), { size: 76, rot: -0.1, life: 0.72, ...fx.dotted() });
+      } else if (/bruh|chad|boing|bwahaha|sheesh|cap|rip/.test(lower)) {
+        fx.wob(m.innerEdgeX, m.cy, { dir: m.inwardDir, r: 11, life: 0.42 });
+        fx.puff(m.cx - m.w * 0.32, m.bottomY, { size: 7, n: 2, vx: -16, vy: -10, life: 0.48 });
+        fx.puff(m.cx + m.w * 0.32, m.bottomY, { size: 7, n: 2, vx: 16, vy: -10, life: 0.48 });
+        fx.kira(m.innerEdgeX, m.topY + 4, { r: 10, life: 0.56 });
+        fx.ticks(m.cx, m.topY - 4, { dir: -Math.PI / 2, n: 4, r: 6, len: 12, fan: 0.55, life: 0.38 });
+        fx.sfx('pon', clampChatStampX(m.innerEdgeX, 44), clampChatStampY(m.topY - 22), { size: 74, rot: -0.08, life: 0.7, ...fx.hollow() });
+      } else if (/waaahh|emotional|heartbreak|shiver/.test(lower)) {
+        tears(m.b.left + window.scrollX + 10, m.bottomY - 6, { dir: -1, n: 2, life: 0.65 });
+        tears(m.b.right + window.scrollX - 10, m.bottomY - 6, { dir: 1, n: 2, life: 0.65 });
+        halftoneBurst(m.cx, m.cy, { rx: Math.max(52, m.w * 0.66), ry: Math.max(38, m.h * 0.85), life: 0.42, clipOutEl: bubbleEl });
+      } else if (/whoosh|yeet|nigerundayo/.test(lower)) {
+        fx.lines(m.outerEdgeX, m.cy, { n: 7, dir: m.isRight ? 0 : Math.PI, len: 54, spread: 14, life: 0.36 });
+        fx.puff(m.outerEdgeX, m.cy + 4, { size: 8, n: 3, vx: m.inwardDir * 24, vy: -8, life: 0.48 });
+        fx.sfx('shu', clampChatStampX(m.innerEdgeX, 44), clampChatStampY(m.topY - 22), { size: 76, rot: -0.1, life: 0.68, ...fx.hollow() });
+      } else if (/nani|wait what|gulp|omae|panic|plot twist|stare|menacing|ゴゴゴ/.test(lower)) {
+        halftoneBurst(m.cx, m.cy, { rx: Math.max(54, m.w * 0.7), ry: Math.max(40, m.h * 0.9), life: 0.44, clipOutEl: bubbleEl });
+        lightning(m.innerEdgeX, m.cy, { len: 40, dir: -Math.PI / 2, life: 0.4 });
+        fx.shards(m.cx, m.cy, { n: 4, speed: 165, size: 5, arc: 6.28, grav: 230, life: 0.58 });
+        if (/menacing|ゴゴゴ/.test(lower)) {
+          angerVein(clampChatStampX(m.innerEdgeX, 18), clampChatStampY(m.topY + 4), { size: 13, life: 0.85 });
+          fx.sfx('gogo', clampChatStampX(m.cx, 50), clampChatStampY(m.topY - 26), { size: 86, rot: -0.08, life: 0.82, ...fx.hollow() });
+        } else {
+          fx.sfx('kachi', clampChatStampX(m.innerEdgeX, 44), clampChatStampY(m.topY - 22), { size: 74, rot: -0.08, life: 0.68, ...fx.hollow() });
+        }
+      } else if (/awaken|domain|100%|sharingan|system|arise|level up|bankai|plus ultra/.test(lower)) {
+        lightning(m.b.left + window.scrollX + 10, m.cy + 12, { len: 44, dir: -Math.PI / 2, life: 0.44 });
+        lightning(m.b.right + window.scrollX - 10, m.cy - 12, { len: 44, dir: Math.PI / 2, life: 0.44 });
+        halftoneBurst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.72), ry: Math.max(40, m.h * 0.9), life: 0.44, clipOutEl: bubbleEl });
+        fx.kira(m.innerEdgeX, m.topY + 4, { r: 11, life: 0.62 });
+        fx.sfx('don', clampChatStampX(m.innerEdgeX, 46), clampChatStampY(m.topY - 22), { size: 78, rot: -0.1, life: 0.75 });
+      } else {
+        // Combat / Impact default (BAM!!, POW!!, ORA ORA!!, SMACK!!, BONK!!, CRITICAL HIT!!, K.O.!!)
+        fx.burst(m.cx, m.cy, { rx: Math.max(56, m.w * 0.74), ry: Math.max(44, m.h * 0.9), spikes: 13, life: 0.4, clipOutEl: bubbleEl });
+        fx.shards(m.cx, m.cy, { n: 5, speed: 190, size: 6, arc: 6.28, grav: 250, life: 0.62 });
+        fx.ticks(m.cx, m.topY - 2, { dir: -Math.PI / 2, n: 4, r: 6, len: 13, fan: 0.55, life: 0.36 });
+        fx.sfx('don', clampChatStampX(m.innerEdgeX, 46), clampChatStampY(m.topY - 22), { size: 78, rot: -0.1, life: 0.74 });
+      }
+
+      comicStamp(label, sfxStampX, sfxStampY, {
         fontSize: label.length > 12 ? 12 : 14,
         bg: /nani|arise|level|bam|pow|critical|k\.o|emotional|awaken|domain/.test(lower) ? fx.P.accent : fx.P.fill
       });
@@ -571,25 +692,27 @@
 
     if (kind === 'sticker') {
       if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.18);
-      // Square halftone burst matches the square sticker card shape (no round ring)
-      halftoneBurst(m.cx, m.cy, { rx: Math.max(44, m.w * 0.5), ry: Math.max(44, m.h * 0.5), life: 0.42, clipOutEl: bubbleEl });
-      fx.shards(m.cx, m.cy, { n: 6, speed: 170, size: 5, arc: 6.28, grav: 240, life: 0.65 });
-      fx.kira(m.innerEdgeX, m.topY + 4, { r: 11, life: 0.6 });
-      fx.puff(m.b.left + window.scrollX + 12, m.bottomY, { size: 7, n: 3, vx: -20, vy: -10, life: 0.5 });
-      fx.puff(m.b.right + window.scrollX - 12, m.bottomY, { size: 7, n: 3, vx: 20, vy: -10, life: 0.5 });
+      // Expanding rounded-square shockwave hugging the square sticker card shape (no round circle!)
+      const cr = parseFloat(getComputedStyle(bubbleEl).borderRadius) || 18;
+      squareRing(m.cx, m.cy, { w: m.w, h: m.h, cr, life: 0.44, strokeW: 3.6, expand: 28 });
+      fx.kira(m.b.left + window.scrollX + 12, m.topY + 4, { r: 9, life: 0.54 });
+      fx.kira(m.b.right + window.scrollX - 12, m.topY + 4, { r: 9, life: 0.54 });
+      fx.ticks(m.innerEdgeX, m.topY - 2, { dir: m.isRight ? -2.2 : -0.9, n: 3, r: 6, len: 12, fan: 0.48, life: 0.36 });
       if (e === 'angry' || e === 'shock') {
         lightning(m.innerEdgeX, m.cy, { len: 36, dir: m.inwardDir > 0 ? -0.35 : Math.PI + 0.35, life: 0.38 });
-      }
-      if (e === 'love') {
+      } else if (e === 'love' || e === 'blush') {
         hearts(m.innerEdgeX, m.topY + 8, { n: 3, life: 0.8 });
+      } else if (e === 'cry' || e === 'sad') {
+        tears(m.b.left + window.scrollX + 10, m.bottomY - 6, { dir: -1, n: 2, life: 0.65 });
+        tears(m.b.right + window.scrollX - 10, m.bottomY - 6, { dir: 1, n: 2, life: 0.65 });
       }
       if (canSpawnStamp()) {
-        // Use sticker label/emoji if passed, otherwise derive from expression
-        const rawLabel = meta.stickerLabel || meta.stickerEmoji || '';
-        const stickerStamp = rawLabel.slice(0, 10).toUpperCase() ||
-          (e === 'love' ? 'UWU!' : e === 'angry' ? 'RAGE!!' : e === 'shock' ? 'NANI?!' :
-           e === 'cry' ? 'NOOO!' : e === 'laugh' ? 'HAHA!' : e === 'cool' ? 'YOOO!' : '!!!');
-        comicStamp(stickerStamp, stampX, stampY, { fontSize: stickerStamp.length > 6 ? 11 : 13 });
+        const stickerStamp = formatStickerStampLabel(meta.stickerLabel, e);
+        const stHalfW = Math.min(68, Math.max(38, stickerStamp.length * 4.2 + 12));
+        comicStamp(stickerStamp, clampChatStampX(m.cx + m.inwardDir * Math.min(28, m.w * 0.25), stHalfW), stampY, {
+          fontSize: stickerStamp.length > 8 ? 11.5 : 13,
+          bg: (e === 'angry' || e === 'shock' || e === 'love') ? fx.P.accent : fx.P.fill
+        });
       }
       return;
     }
@@ -648,6 +771,7 @@
     tears,
     angerVein,
     halftoneBurst,
+    squareRing,
     comicStamp
   };
   window.setChatHubVfxSkin = (id) => applyVfxSkin(id, false);

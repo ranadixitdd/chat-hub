@@ -471,6 +471,8 @@
     }
   }
 
+  let lastStickerCardFxAt = -1;
+
   function onControlClick(el, e) {
     if (!enabled || isControlDisabled(el)) return;
     const kind = classifyControl(el);
@@ -493,6 +495,13 @@
     activateSpring(st);
 
     if (fx.calm) return;
+
+    // Prevent double canvas-particle storms when rapidly spamming drawer SFX / sticker items
+    if (el.classList.contains('sticker-option-item')) {
+      const nowMs = performance.now();
+      if (lastStickerCardFxAt >= 0 && nowMs - lastStickerCardFxAt < 140) return;
+      lastStickerCardFxAt = nowMs;
+    }
 
     const clickX = (e && e.clientX) ? e.clientX + window.scrollX : c.x;
     const clickY = (e && e.clientY) ? e.clientY + window.scrollY : c.y;
@@ -577,6 +586,12 @@
       fx.ticks(c.x, c.y - c.h / 2 - 4, { dir: -Math.PI / 2, n: 3, r: 4, len: 14, fan: 0.48, life: 0.42 });
       fx.puff(c.x - dir * (c.w / 2 + 6), c.y, { size: 8, n: 4, vx: -dir * 22, vy: -10, life: 0.6 });
       fx.lines(c.x - dir * (c.w / 2), c.y, { n: 4, dir: dir > 0 ? Math.PI : 0, len: 32, spread: 10, life: 0.3 });
+      return;
+    }
+
+    if (kind === 'sfx-drawer') {
+      // Lightweight tactile pop on drawer card so main Manga SFX VFX spotlights cleanly in #chatStream
+      fx.ticks(c.x + c.w * 0.35, c.y - c.h * 0.35, { dir: -0.95, n: 2, r: 4, len: 10, fan: 0.4, life: 0.28 });
       return;
     }
 

@@ -1194,6 +1194,16 @@
     100% { transform: scale(1); }
   }
 
+  .sfx-burst-bubble.in-box-shock {
+    animation: inBoxShockSfx 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+  }
+
+  @keyframes inBoxShockSfx {
+    0% { transform: rotate(-1.5deg) scale(0.94); }
+    50% { transform: rotate(-1.5deg) scale(1.04); }
+    100% { transform: rotate(-1.5deg) scale(1); }
+  }
+
   /* In-Box Love Pulse */
   .speech-bubble.bubble-love,
   .in-box-pulse {
@@ -7038,13 +7048,33 @@
 
   .phone-wrapper.clean-record-mode .media-overlay-actions,
   .phone-wrapper.clean-record-mode .video-overlay-actions,
+  .phone-wrapper.clean-record-mode .video-full-btn,
   .phone-wrapper.pure-recording-mode .media-overlay-actions,
   .phone-wrapper.pure-recording-mode .video-overlay-actions,
+  .phone-wrapper.pure-recording-mode .video-full-btn,
   body.studio-recording-active .media-overlay-actions,
   body.studio-recording-active .video-overlay-actions,
+  body.studio-recording-active .video-full-btn,
   body.msg-select-mode .media-overlay-actions,
-  body.msg-select-mode .video-overlay-actions {
+  body.msg-select-mode .video-overlay-actions,
+  body.msg-select-mode .video-full-btn {
     display: none !important;
+  }
+
+  .video-full-btn {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.65);
+    color: #e2e8f0;
+    border-radius: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    cursor: pointer;
+    margin-right: auto;
+  }
+  .video-full-btn:hover {
+    background: #0284c7;
+    color: #ffffff;
   }
 
   /* === MULTI-SELECT BULK DELETE MODE === */

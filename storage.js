@@ -21,6 +21,8 @@
 
   // Synchronous in-memory memory bridge populated from localStorage initially
   const memCache = new Map();
+  const dirtyKeys = new Set();
+  let storageReady = false;
 
   // Populate cache from localStorage immediately so synchronous access has 0 latency
   try {
@@ -153,9 +155,10 @@
 
   // Migration: migrate existing localStorage items into IndexedDB
   async function migrateFromLocalStorage() {
+    let hydratedFromIdb = false;
     try {
       const db = await openDatabase();
-      if (!db) return;
+      if (!db) return false;
 
       const keysToCheck = [
         'manhwa_whatsapp_comic_studio_v3',
@@ -166,10 +169,15 @@
         'wh_cinema_spam_delay',
         'wh_cinema_cam_engine',
         'wh_chat_theme_style',
+        'wh_sound_enabled',
+        'wh_legacy_v1_migrated',
+        'wh_builtin_sticker_sounds',
+        'manhwa_script_library_custom',
         'chathub_active_app',
         'chathub_gpt_model',
         'chathub_gemini_model',
-        'chathub_director_deck_mode'
+        'chathub_director_deck_mode',
+        'chathub_director_layout'
       ];
 
       for (const k of keysToCheck) {
@@ -205,13 +213,17 @@
       // Load all IndexedDB app_state entries into memCache to keep them in sync
       const allStates = await idbGetAll(STORE_STATE);
       for (const entry of allStates) {
-        if (entry && entry.key) {
+        if (entry && entry.key && !dirtyKeys.has(entry.key)) {
+          const prev = memCache.get(entry.key);
+          if (prev !== entry.value) hydratedFromIdb = true;
           memCache.set(entry.key, entry.value);
         }
       }
     } catch (err) {
       console.warn('[Storage] Migration warning:', err);
     }
+    storageReady = true;
+    return hydratedFromIdb;
   }
 
   // Check if Node.js server REST API is online
@@ -345,6 +357,7 @@
     // Synchronous Write Interface with async background IndexedDB persistence
     set(key, value) {
       const strVal = typeof value === 'string' ? value : JSON.stringify(value);
+      if (!storageReady) dirtyKeys.add(key);
       memCache.set(key, strVal);
 
       // Async write to IndexedDB
@@ -361,6 +374,7 @@
 
     // Remove key
     remove(key) {
+      if (!storageReady) dirtyKeys.add(key);
       memCache.delete(key);
       idbDelete(STORE_STATE, key);
       try {
@@ -476,11 +490,12 @@
 
         // Merge all localStorage & memCache items to guarantee nothing is missed
         const knownStateKeys = [
-          'manhwa_cast_v2', 'wh_messages', 'manhwa_custom_stickers', 'manhwa_custom_sfx',
-          'manhwa_custom_backgrounds', 'manhwa_saved_stories_library', 'manhwa_script_library',
-          'chathub_active_app', 'wh_sound_enabled', 'wh_cinema_speed', 'wh_cinema_spam_delay',
-          'chathub_pov_character_id', 'chathub_director_deck_mode', 'chathub_director_layout',
-          'wh_group_info'
+          'manhwa_whatsapp_comic_studio_v3', 'manhwa_saved_stories_library',
+          'wh_current_story_title', 'wh_current_story_id', 'wh_sound_enabled',
+          'wh_cinema_speed', 'wh_cinema_spam_delay', 'wh_cinema_cam_engine',
+          'wh_chat_theme_style', 'wh_builtin_sticker_sounds', 'manhwa_script_library_custom',
+          'chathub_active_app', 'chathub_gpt_model', 'chathub_gemini_model',
+          'chathub_director_deck_mode', 'chathub_director_layout', 'wh_legacy_v1_migrated'
         ];
         for (const k of knownStateKeys) {
           if (stateObj[k] === undefined) {
@@ -616,10 +631,12 @@
 
   // Initialize on script execution
   openDatabase().then(async () => {
-    await migrateFromLocalStorage();
+    const hydratedFromIdb = await migrateFromLocalStorage();
     await checkServerStatus();
     updateStorageStatusUi();
-    window.dispatchEvent(new CustomEvent('chathub:storage-ready'));
+    window.dispatchEvent(new CustomEvent('chathub:storage-ready', {
+      detail: { hydratedFromIdb, dirtyKeys: Array.from(dirtyKeys) }
+    }));
   });
 
   // Re-check server status periodically (every 30 seconds)

@@ -815,14 +815,6 @@
 
     renderHubCastList();
 
-    const styleLabel = document.getElementById('globalStyleLabel');
-    const styleIcon = document.getElementById('globalStyleIcon');
-    if (styleLabel) styleLabel.textContent = (chatThemeStyle === 'comic') ? 'Comic Mode' : 'WhatsApp Mode';
-    if (styleIcon) styleIcon.textContent = (chatThemeStyle === 'comic') ? '🎨' : '💬';
-
-    const groupLabel = document.getElementById('globalGroupingLabel');
-    if (groupLabel) groupLabel.textContent = '🔗 Group: ' + (groupConsecutiveMessages ? 'ON' : 'OFF');
-
     const soundLabel = document.getElementById('globalSoundLabel');
     const soundIcon = document.getElementById('globalSoundIcon');
     if (soundLabel) soundLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
@@ -976,7 +968,7 @@
     const plugContainer = document.getElementById('gptPluginsList');
     if (plugContainer) {
       plugContainer.innerHTML = storyScenes.chatgptPlugins.map(pl => `
-        <div class="gpt-tool-item" onclick="showToast('🧩 Plugin: ${escapeHtml(pl.name)} Active')">
+        <div class="gpt-tool-item" onclick="activateGptPlugin('${pl.id}')">
           <span>${pl.icon || '🧩'}</span> <span>${escapeHtml(pl.name)}</span>
         </div>
       `).join('');
@@ -1113,6 +1105,18 @@
     showToast('🗑️ Project removed');
   }
 
+  function activateGptPlugin(pluginId) {
+    const p = storyScenes.chatgptPlugins.find(x => x.id === pluginId);
+    if (p) showToast('🧩 Plugin: ' + p.name + ' Active');
+  }
+  window.activateGptPlugin = activateGptPlugin;
+
+  function activateGeminiGem(gemId) {
+    const g = storyScenes.geminiGems.find(x => x.id === gemId);
+    if (g) showToast('💎 Gem Activated: ' + g.name);
+  }
+  window.activateGeminiGem = activateGeminiGem;
+
   function selectGptProject(projId) {
     const p = storyScenes.chatgptProjects.find(x => x.id === projId);
     if (p) showToast('📁 Loaded Project Context: ' + p.name);
@@ -1154,7 +1158,7 @@
     const gemsContainer = document.getElementById('geminiGemsList');
     if (gemsContainer) {
       gemsContainer.innerHTML = storyScenes.geminiGems.map(g => `
-        <div class="gemini-gem-item" style="justify-content:space-between;" onclick="showToast('💎 Gem Activated: ${escapeHtml(g.name)}')">
+        <div class="gemini-gem-item" style="justify-content:space-between;" onclick="activateGeminiGem('${g.id}')">
           <span style="display:flex; align-items:center; gap:8px;">
             <span>${g.icon || '💎'}</span> <span style="font-size:12px;">${escapeHtml(g.name)}</span>
           </span>
@@ -1485,6 +1489,8 @@ function playSciFiChimeSound() {
     } catch (_) {}
   }
 
+  let cachedPunchNoiseBuffer = null;
+
   function playPunchSound() {
     if (!soundEnabled) return;
     const ctx = ensureAudioCtx();
@@ -1501,12 +1507,15 @@ function playSciFiChimeSound() {
     osc.start(now);
     osc.stop(now + 0.18);
     try {
-      const bufferSize = Math.floor(ctx.sampleRate * 0.08);
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+      if (!cachedPunchNoiseBuffer || cachedPunchNoiseBuffer.sampleRate !== ctx.sampleRate) {
+        const bufferSize = Math.floor(ctx.sampleRate * 0.08);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+        cachedPunchNoiseBuffer = buffer;
+      }
       const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
+      noise.buffer = cachedPunchNoiseBuffer;
       const nGain = ctx.createGain();
       nGain.gain.setValueAtTime(0.35, now);
       nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
@@ -1701,6 +1710,22 @@ function playSciFiChimeSound() {
   window.seekAudioPosition = seekAudioPosition;
   window.stopCurrentAudio = stopCurrentAudio;
 
+  function playMessageAudio(msgId) {
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg) return;
+    const src = msg.audioUrl || msg.url || msg.data || '';
+    if (src) playCustomAudio(src, msgId, `audioBtn_${msgId}`);
+  }
+  window.playMessageAudio = playMessageAudio;
+
+  function playCustomAudioByClipId(clipId) {
+    const clip = customAudioClips.find(s => s.id === clipId);
+    if (clip && (clip.data || clip.audioUrl || clip.url)) {
+      playCustomAudio(clip.data || clip.audioUrl || clip.url);
+    }
+  }
+  window.playCustomAudioByClipId = playCustomAudioByClipId;
+
   function playCustomAudioById(soundId) {
     const clip = customAudioClips.find(s => s.id === soundId);
     if (clip && clip.data) {
@@ -1710,8 +1735,13 @@ function playSciFiChimeSound() {
     }
   }
 
+  let lastSynthSfxAt = 0;
+
   function triggerSfxByName(sfxKey, charPitch = 1.0) {
     if (!soundEnabled) return;
+    const nowMs = performance.now();
+    if (nowMs - lastSynthSfxAt < 65) return;
+    lastSynthSfxAt = nowMs;
     switch (sfxKey) {
       case 'punch': playPunchSound(); triggerScreenShake(); break;
       case 'sword': playSwordSlashSound(); triggerScreenShake(); break;
@@ -1734,22 +1764,21 @@ function playSciFiChimeSound() {
     return matches.length ? matches[matches.length - 1] : null;
   }
 
+  let lastExprAudioAt = 0;
+
   function triggerExpressionEffects(expr, charPitch = 1.0, bubbleEl = null, meta = {}) {
     const targetBubble = bubbleEl || getLastChatBubbleEl('.speech-bubble, .sticker-card');
 
     if (targetBubble) {
       if (expr === 'angry') {
         targetBubble.classList.remove('in-box-angry');
-        void targetBubble.offsetWidth;
-        targetBubble.classList.add('in-box-angry');
+        requestAnimationFrame(() => targetBubble.classList.add('in-box-angry'));
       } else if (expr === 'shock') {
         targetBubble.classList.remove('in-box-shock');
-        void targetBubble.offsetWidth;
-        targetBubble.classList.add('in-box-shock');
+        requestAnimationFrame(() => targetBubble.classList.add('in-box-shock'));
       } else if (expr === 'love') {
         targetBubble.classList.remove('in-box-pulse');
-        void targetBubble.offsetWidth;
-        targetBubble.classList.add('in-box-pulse');
+        requestAnimationFrame(() => targetBubble.classList.add('in-box-pulse'));
       }
     }
 
@@ -1768,7 +1797,10 @@ function playSciFiChimeSound() {
       window.ChatHubVfx.playBubbleVfx(vfxKind, expr, targetBubble, { text: vfxText, stickerLabel, stickerEmoji, ...meta });
     }
 
-    if (!soundEnabled) return;
+    if (!soundEnabled || meta.skipSound) return;
+    const nowMs = performance.now();
+    if (nowMs - lastExprAudioAt < 65) return;
+    lastExprAudioAt = nowMs;
     if (expr === 'cry') {
       playSadSlideSound();
     } else if (expr === 'laugh') {
@@ -1787,12 +1819,17 @@ function playSciFiChimeSound() {
   }
 
   let screenShakeTimer = null;
+  let lastScreenShakeAt = 0;
   function triggerScreenShake() {
+    const nowMs = performance.now();
+    if (nowMs - lastScreenShakeAt < 180) return;
+    lastScreenShakeAt = nowMs;
     const wrapper = document.getElementById('phoneWrapper');
     if (!wrapper) return;
     wrapper.classList.remove('screen-shake-active');
-    void wrapper.offsetWidth; // force instantaneous reflow for crisp re-trigger
-    wrapper.classList.add('screen-shake-active');
+    requestAnimationFrame(() => {
+      if (wrapper.isConnected) wrapper.classList.add('screen-shake-active');
+    });
     if (screenShakeTimer) clearTimeout(screenShakeTimer);
     screenShakeTimer = setTimeout(() => {
       wrapper.classList.remove('screen-shake-active');
@@ -1805,7 +1842,34 @@ function playSciFiChimeSound() {
   /* =====================================================================
      4. STATE PERSISTENCE (LOCAL STORAGE)
      ===================================================================== */
+  let pendingSaveStudioTimer = null;
+
+  function scheduleSaveStudioState(delayMs = 450) {
+    if (pendingSaveStudioTimer) clearTimeout(pendingSaveStudioTimer);
+    pendingSaveStudioTimer = setTimeout(() => {
+      pendingSaveStudioTimer = null;
+      saveStudioState();
+    }, delayMs);
+  }
+
+  function flushPendingStudioSave() {
+    if (pendingSaveStudioTimer) {
+      clearTimeout(pendingSaveStudioTimer);
+      pendingSaveStudioTimer = null;
+      saveStudioState();
+    }
+  }
+
+  window.addEventListener('pagehide', flushPendingStudioSave);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingStudioSave();
+  });
+
   function saveStudioState() {
+    if (pendingSaveStudioTimer) {
+      clearTimeout(pendingSaveStudioTimer);
+      pendingSaveStudioTimer = null;
+    }
     syncCurrentAppMessagesToStorage();
 
     const payload = {
@@ -1953,10 +2017,16 @@ function playSciFiChimeSound() {
       if (Array.isArray(parsed.customStickers)) {
         customStickers = parsed.customStickers;
         customStickers.forEach(item => {
-          if (!item.data && item.imageUrl) item.data = item.imageUrl;
-          if (!item.imageUrl && item.data) item.imageUrl = item.data;
-          if (!item.url) item.url = item.data || item.imageUrl || item.videoUrl || '';
-          if (!item.videoUrl && (item.isVideo || item.mediaType === 'video')) item.videoUrl = item.data || item.imageUrl || '';
+          const isVid = !!(item.isVideo || item.mediaType === 'video');
+          if (isVid) {
+            const src = item.videoUrl || item.data || item.imageUrl || item.url || '';
+            item.videoUrl = src;
+            item.imageUrl = src;
+          } else {
+            item.imageUrl = item.imageUrl || item.data || item.url || '';
+          }
+          delete item.data;
+          delete item.url;
           if (item.isSticker === undefined) {
             item.isSticker = (item.mediaType === 'sticker');
           }
@@ -1965,8 +2035,9 @@ function playSciFiChimeSound() {
       if (Array.isArray(parsed.customAudioClips)) {
         customAudioClips = parsed.customAudioClips;
         customAudioClips.forEach(item => {
-          if (!item.data && item.audioUrl) item.data = item.audioUrl;
-          if (!item.data && item.url) item.data = item.url;
+          item.data = item.data || item.audioUrl || item.url || '';
+          delete item.audioUrl;
+          delete item.url;
         });
       }
       if (typeof parsed.groupConsecutiveMessages === 'boolean') {
@@ -2037,13 +2108,6 @@ function playSciFiChimeSound() {
     wrapper.className = 'phone-wrapper ' + (groupProfile.aspectRatio || 'ratio-9-16') + (cleanRecordMode ? ' clean-record-mode' : '') + (chatThemeStyle === 'comic' ? ' theme-comic' : ' theme-realistic') + ' app-' + (activeAppMode || 'whatsapp') + (currentCamClass ? ' ' + currentCamClass : '');
 
     const currentRatio = groupProfile.aspectRatio || 'ratio-9-16';
-
-    const menu916 = document.getElementById('menuRatio916');
-    const menu169 = document.getElementById('menuRatio169');
-    const menuFull = document.getElementById('menuRatioFull');
-    if (menu916) menu916.innerHTML = (currentRatio === 'ratio-9-16' ? '✓ ' : '') + '📱 9:16 Shorts (Reels / TikTok)';
-    if (menu169) menu169.innerHTML = (currentRatio === 'ratio-16-9' ? '✓ ' : '') + '🖥️ 16:9 YouTube (Landscape)';
-    if (menuFull) menuFull.innerHTML = (currentRatio === 'ratio-full' ? '✓ ' : '') + '🔲 Full Screen (Edge-to-Edge)';
 
     const mod916 = document.getElementById('modalRatio916');
     const mod169 = document.getElementById('modalRatio169');
@@ -2290,12 +2354,18 @@ function playSciFiChimeSound() {
   window.setDirectorBarLayout = setDirectorBarLayout;
   window.cycleDirectorBarLayout = cycleDirectorBarLayout;
 
-  /* === FULLSCREEN VIDEO LIGHTBOX CONTROLLER === */
-  function openFullscreenVideo(url) {
+  /* === FULLSCREEN VIDEO & IMAGE LIGHTBOX CONTROLLERS === */
+  let activeLightboxMsgId = null;
+  let activeVideoLightboxMsgId = null;
+
+  function openFullscreenVideo(url, msgId = null) {
     const modal = document.getElementById('videoLightboxModal');
     const player = document.getElementById('lightboxVideoPlayer');
+    const actions = document.getElementById('lightboxVideoActions');
     if (!modal || !player || !url) return;
+    activeVideoLightboxMsgId = msgId || null;
     player.src = url;
+    if (actions) actions.style.display = activeVideoLightboxMsgId ? 'flex' : 'none';
     modal.style.display = 'flex';
     player.play().catch(() => {});
   }
@@ -2303,15 +2373,15 @@ function playSciFiChimeSound() {
   function closeFullscreenVideo() {
     const modal = document.getElementById('videoLightboxModal');
     const player = document.getElementById('lightboxVideoPlayer');
+    const actions = document.getElementById('lightboxVideoActions');
+    activeVideoLightboxMsgId = null;
     if (player) {
       player.pause();
       player.src = '';
     }
+    if (actions) actions.style.display = 'none';
     if (modal) modal.style.display = 'none';
   }
-
-  /* === FULLSCREEN IMAGE LIGHTBOX CONTROLLER === */
-  let activeLightboxMsgId = null;
 
   function openFullscreenImage(url, msgId = null) {
     const modal = document.getElementById('imageLightboxModal');
@@ -2333,6 +2403,24 @@ function playSciFiChimeSound() {
     if (actions) actions.style.display = 'none';
     if (modal) modal.style.display = 'none';
   }
+
+  function performLightboxMessageAction(kind, action) {
+    const isVideo = kind === 'video';
+    const msgId = isVideo ? activeVideoLightboxMsgId : activeLightboxMsgId;
+    if (isVideo) closeFullscreenVideo();
+    else closeFullscreenImage();
+    if (!msgId) return;
+    if (action === 'edit') openMessageEditModal(msgId);
+    else if (action === 'reply') setReplyTargetMessage(msgId);
+    else if (action === 'delete') deleteMessageById(msgId, isVideo ? '🗑️ Video deleted' : '🗑️ Photo deleted');
+  }
+
+  const editLightboxImageMessage = () => performLightboxMessageAction('image', 'edit');
+  const replyLightboxImageMessage = () => performLightboxMessageAction('image', 'reply');
+  const deleteLightboxImageMessage = () => performLightboxMessageAction('image', 'delete');
+  const editLightboxVideoMessage = () => performLightboxMessageAction('video', 'edit');
+  const replyLightboxVideoMessage = () => performLightboxMessageAction('video', 'reply');
+  const deleteLightboxVideoMessage = () => performLightboxMessageAction('video', 'delete');
 
   function setReplyTargetMessage(msgId) {
     const msg = messages.find(m => m.id === msgId);
@@ -2358,24 +2446,6 @@ function playSciFiChimeSound() {
     renderChatStream();
     updateMultiSelectBarUi();
     showToast(toastLabel);
-  }
-
-  function editLightboxImageMessage() {
-    const msgId = activeLightboxMsgId;
-    closeFullscreenImage();
-    if (msgId) openMessageEditModal(msgId);
-  }
-
-  function replyLightboxImageMessage() {
-    const msgId = activeLightboxMsgId;
-    closeFullscreenImage();
-    if (msgId) setReplyTargetMessage(msgId);
-  }
-
-  function deleteLightboxImageMessage() {
-    const msgId = activeLightboxMsgId;
-    closeFullscreenImage();
-    if (msgId) deleteMessageById(msgId, '🗑️ Photo deleted');
   }
 
   function handleStickerMessageClick(msgId, ev) {
@@ -2455,7 +2525,20 @@ function playSciFiChimeSound() {
     selectedMessageIds.clear();
     if (initialMsgId) selectedMessageIds.add(initialMsgId);
     updateMultiSelectBarUi();
-    renderChatStream();
+    const renderedRows = document.querySelectorAll('.selectable-msg-row[data-msg-id]');
+    if (renderedRows.length !== messages.length) {
+      const stream = document.getElementById('chatStream');
+      const prevScroll = stream ? stream.scrollTop : 0;
+      renderChatStream();
+      if (stream) stream.scrollTop = prevScroll;
+    } else {
+      renderedRows.forEach(el => {
+        const sel = selectedMessageIds.has(el.dataset.msgId);
+        el.classList.toggle('msg-selected', sel);
+        const chk = el.querySelector('.msg-select-checkbox');
+        if (chk) chk.textContent = sel ? '✓' : '';
+      });
+    }
     showToast('☑️ Tap messages to select multiple, then press Delete');
   }
 
@@ -2527,6 +2610,8 @@ function playSciFiChimeSound() {
   if (chatStreamSelectEl) {
     let longPressTimer = null;
     let longPressTriggered = false;
+    let pressStartX = 0;
+    let pressStartY = 0;
 
     chatStreamSelectEl.addEventListener('click', (e) => {
       if (longPressTriggered) {
@@ -2558,18 +2643,34 @@ function playSciFiChimeSound() {
       if (!rowEl) return;
       const msgId = rowEl.dataset.msgId;
       longPressTriggered = false;
+      pressStartX = e.clientX || 0;
+      pressStartY = e.clientY || 0;
       clearTimeout(longPressTimer);
       longPressTimer = setTimeout(() => {
+        longPressTimer = null;
         longPressTriggered = true;
         openMessageEditModal(msgId);
       }, 480);
     }, { passive: true });
 
-    for (const ev of ['pointerup', 'pointercancel', 'pointermove']) {
+    chatStreamSelectEl.addEventListener('pointermove', (e) => {
+      if (!longPressTimer) return;
+      const dx = (e.clientX || 0) - pressStartX;
+      const dy = (e.clientY || 0) - pressStartY;
+      if ((dx * dx + dy * dy) > 100) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }, { passive: true });
+
+    for (const ev of ['pointerup', 'pointercancel']) {
       chatStreamSelectEl.addEventListener(ev, () => {
         if (longPressTimer) {
           clearTimeout(longPressTimer);
           longPressTimer = null;
+        }
+        if (longPressTriggered) {
+          setTimeout(() => { longPressTriggered = false; }, 80);
         }
       }, { passive: true });
     }
@@ -2582,6 +2683,9 @@ function playSciFiChimeSound() {
   window.editLightboxImageMessage = editLightboxImageMessage;
   window.replyLightboxImageMessage = replyLightboxImageMessage;
   window.deleteLightboxImageMessage = deleteLightboxImageMessage;
+  window.editLightboxVideoMessage = editLightboxVideoMessage;
+  window.replyLightboxVideoMessage = replyLightboxVideoMessage;
+  window.deleteLightboxVideoMessage = deleteLightboxVideoMessage;
   window.deleteMessageById = deleteMessageById;
   window.toggleMessageSelectMode = toggleMessageSelectMode;
   window.exitMessageSelectMode = exitMessageSelectMode;
@@ -2975,18 +3079,18 @@ if (msg.type === 'quest') {
             </video>
           </div>
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<div class="video-caption-text" style="padding:6px 8px 2px 8px; font-size:13.5px; color:#f8fafc; word-break:break-word;">${escapeHtml(msg.caption || msg.text)}</div>` : ''}
-          <div class="bubble-meta" style="padding:0 8px 4px 8px; width:100%; justify-content:flex-end; float:none; margin-top:2px;">
+          <div class="bubble-meta" style="padding:0 8px 4px 8px; width:100%; justify-content:flex-end; align-items:center; gap:6px; float:none; margin-top:2px;">
+            <button type="button" class="video-full-btn" onclick="event.stopPropagation(); openFullscreenVideo(this.closest('.video-message-bubble')?.querySelector('video')?.getAttribute('src') || '', '${msg.id}')" title="Watch Fullscreen & Edit/Delete">⛶ Full</button>
             <span>${msg.time || getNextStoryTime()}</span> ${tickHtml}
           </div>
         </div>
       `;
     } else if (msg.type === 'audio' || msg.type === 'voice') {
-      const audioSrc = msg.audioUrl || msg.url || msg.data || '';
       bubbleContentHtml = `
         <div class="speech-bubble audio-voice-bubble" id="audioBubble_${msg.id}">
           ${replyBoxHtml}
           <div class="audio-player-card">
-            <button type="button" class="audio-play-btn" id="audioBtn_${msg.id}" onclick="event.stopPropagation(); playCustomAudio('${audioSrc}', '${msg.id}', 'audioBtn_${msg.id}')" title="Play / Pause Audio">
+            <button type="button" class="audio-play-btn" id="audioBtn_${msg.id}" onclick="event.stopPropagation(); playMessageAudio('${msg.id}')" title="Play / Pause Audio">
               <span id="audioIcon_${msg.id}">▶</span>
             </button>
             <div class="audio-track-info">
@@ -3047,6 +3151,13 @@ if (msg.type === 'quest') {
 
   let cachedGeminiHeroNode = null;
 
+  function scrollStreamBottomNow(stream) {
+    if (!stream) return;
+    stream.style.scrollBehavior = 'auto';
+    stream.scrollTop = stream.scrollHeight;
+    stream.style.scrollBehavior = '';
+  }
+
   function renderChatStream(subsetMessages = null) {
     const stream = document.getElementById('chatStream');
     if (!stream) return;
@@ -3073,7 +3184,18 @@ if (msg.type === 'quest') {
     });
 
     stream.appendChild(fragment);
-    stream.scrollTop = stream.scrollHeight;
+    scrollStreamBottomNow(stream);
+  }
+
+  function appendMessageRowToStream(msg) {
+    const stream = document.getElementById('chatStream');
+    if (!stream || !msg) return null;
+    const idx = Math.max(0, messages.length - 1);
+    const el = createMessageRowElement(msg, idx, messages);
+    if (!el) return null;
+    stream.appendChild(el);
+    scrollStreamBottomNow(stream);
+    return el;
   }
 
   function replayStickerCard(msgId) {
@@ -3086,7 +3208,8 @@ if (msg.type === 'quest') {
     } else if (st.sfx) {
       triggerSfxByName(st.sfx, char.pitch || 1.05);
     }
-    triggerExpressionEffects(msg.expr || st.expr || 'normal', char.pitch || 1.05);
+    const targetCard = document.querySelector(`.msg-row[data-msg-id="${msgId}"] .sticker-card`) || null;
+    triggerExpressionEffects(msg.expr || st.expr || 'normal', char.pitch || 1.05, targetCard, { skipSound: Boolean(st.customAudioData || st.sfx) });
     if (!isCinemaPlaying) {
       openMessageEditModal(msgId);
     }
@@ -3290,7 +3413,7 @@ if (msg.type === 'quest') {
     clearActiveReply();
 
     const commitFn = () => {
-      messages.push({
+      const newMsg = {
         id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         type: 'text',
         charId: char.id,
@@ -3298,10 +3421,14 @@ if (msg.type === 'quest') {
         expr: exprToUse,
         replyToId: replyIdToUse || null,
         time: getNextStoryTime()
+      };
+      messages.push(newMsg);
+      scheduleSaveStudioState();
+      const rowEl = appendMessageRowToStream(newMsg);
+      const bubbleEl = rowEl ? rowEl.querySelector('.speech-bubble, .sticker-card') : null;
+      requestAnimationFrame(() => {
+        triggerExpressionEffects(exprToUse, char.pitch || 1.05, bubbleEl);
       });
-      saveStudioState();
-      renderChatStream();
-      triggerExpressionEffects(exprToUse, char.pitch || 1.05);
     };
 
     pendingMessageCommit = commitFn;
@@ -3313,7 +3440,7 @@ if (msg.type === 'quest') {
     const char = characters.find(c => c.id === currentCharId) || characters[0];
     const exprToUse = stickerObj.expr || currentExpr;
 
-    messages.push({
+    const newMsg = {
       id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       type: 'sticker',
       charId: char.id,
@@ -3324,11 +3451,13 @@ if (msg.type === 'quest') {
       expr: exprToUse,
       replyToId: activeReplyMsgId || null,
       time: getNextStoryTime()
-    });
+    };
+    messages.push(newMsg);
 
     clearActiveReply();
-    saveStudioState();
-    renderChatStream();
+    scheduleSaveStudioState();
+    const rowEl = appendMessageRowToStream(newMsg);
+    const bubbleEl = rowEl ? rowEl.querySelector('.sticker-card, .speech-bubble') : null;
 
     if (stickerObj.customAudioData) {
       playCustomAudio(stickerObj.customAudioData);
@@ -3337,13 +3466,15 @@ if (msg.type === 'quest') {
     } else {
       playPopSound(char.pitch || 1.05);
     }
-    triggerExpressionEffects(exprToUse, char.pitch || 1.05);
+    requestAnimationFrame(() => {
+      triggerExpressionEffects(exprToUse, char.pitch || 1.05, bubbleEl, { skipSound: true });
+    });
   }
 
   function sendSfxBurst(burstObj) {
     flushPendingLiveMessage();
     const char = characters.find(c => c.id === currentCharId) || characters[0];
-    messages.push({
+    const newMsg = {
       id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       type: 'sfx',
       charId: char.id,
@@ -3351,14 +3482,16 @@ if (msg.type === 'quest') {
       expr: burstObj.expr || 'angry',
       replyToId: activeReplyMsgId || null,
       time: getNextStoryTime()
-    });
+    };
+    messages.push(newMsg);
     clearActiveReply();
-    saveStudioState();
-    renderChatStream();
+    scheduleSaveStudioState();
+    const rowEl = appendMessageRowToStream(newMsg);
+    const bubbleEl = rowEl ? rowEl.querySelector('.sfx-burst-bubble, .speech-bubble') : null;
     triggerSfxByName(burstObj.sfx || 'boom', char.pitch || 1.05);
     // rAF: wait one paint frame so the newly-rendered SFX bubble is in the viewport
     requestAnimationFrame(() => {
-      triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05, getLastChatBubbleEl('.sfx-burst-bubble, .speech-bubble'));
+      triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05, bubbleEl, { skipSound: true });
     });
   }
 
@@ -3727,6 +3860,7 @@ if (msg.type === 'quest') {
         return;
       }
       videosList.forEach((st) => {
+        const vSrc = st.videoUrl || st.imageUrl || st.data || st.url || '';
         const card = document.createElement('div');
         card.className = `sticker-option-item ${isDrawerEditMode ? 'vault-edit-mode' : ''}`;
         card.onclick = () => {
@@ -3739,7 +3873,7 @@ if (msg.type === 'quest') {
         card.innerHTML = `
           ${isDrawerEditMode ? `<div class="edit-custom-btn" title="Click to rename label">✏️</div>` : ''}
           ${isDrawerEditMode ? `<div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSticker('${st.id}')" title="Delete Video">✕</div>` : ''}
-          <video src="${st.imageUrl}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05); pointer-events:none;"></video>
+          <video src="${vSrc}" muted autoplay loop playsinline style="width:52px; height:52px; border-radius:8px; object-fit:contain; background:rgba(0,0,0,0.05); pointer-events:none;"></video>
           <span class="sticker-option-label">${escapeHtml(st.label || 'Video')}</span>
         `;
         grid.appendChild(card);
@@ -3769,7 +3903,7 @@ if (msg.type === 'quest') {
         };
         card.innerHTML = `
           <div class="delete-custom-btn" onclick="event.stopPropagation(); deleteCustomSound('${snd.id}')" title="Delete Song">✕</div>
-          <button type="button" class="icon-btn" style="background:#00a884; color:#fff; border-radius:50%; width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; margin-bottom:4px;" onclick="event.stopPropagation(); playCustomAudio('${snd.data}')" title="Preview Song">▶</button>
+          <button type="button" class="icon-btn" style="background:#00a884; color:#fff; border-radius:50%; width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; margin-bottom:4px;" onclick="event.stopPropagation(); playCustomAudioByClipId('${snd.id}')" title="Preview Song">▶</button>
           <span class="sticker-option-label">${escapeHtml(snd.label || 'Song')}</span>
         `;
         grid.appendChild(card);
@@ -3825,6 +3959,7 @@ if (msg.type === 'quest') {
       filtered.forEach(burst => {
         const card = document.createElement('div');
         card.className = 'sticker-option-item';
+        card.dataset.sakuga = 'sfx-drawer';
         card.style.background = burst.category === 'combat' ? '#fee2e2' : (burst.category === 'aura' ? '#ede9fe' : (burst.category === 'drama' ? '#e0f2fe' : '#fef08a'));
         card.onclick = () => sendSfxBurst(burst);
         card.innerHTML = `
@@ -3903,16 +4038,12 @@ if (msg.type === 'quest') {
             id: 'aud_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
             label: baseLabel,
             data: fileData,
-            audioUrl: fileData,
-            url: fileData,
             name: file.name
           });
         } else {
           customStickers.unshift({
             id: 'cust_media_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
-            imageUrl: fileData,
-            data: fileData,
-            url: fileData,
+            imageUrl: isVideo ? '' : fileData,
             videoUrl: isVideo ? fileData : null,
             label: baseLabel,
             isVideo: isVideo,
@@ -5076,11 +5207,12 @@ if (msg.type === 'quest') {
         grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#94a3b8;">No videos in vault yet. Upload video clips from the Videos tab!</div>';
       } else {
         vids.forEach(st => {
+          const vSrc = st.videoUrl || st.imageUrl || st.data || st.url || '';
           const card = document.createElement('div');
           card.className = 'drawer-media-card';
-          card.onclick = () => window.selectVaultMediaForEdit(st.imageUrl, st.label, null);
+          card.onclick = () => window.selectVaultMediaForEdit(vSrc, st.label, null);
           card.innerHTML = `
-            <video src="${st.imageUrl}" class="drawer-media-thumb" muted></video>
+            <video src="${vSrc}" class="drawer-media-thumb" muted></video>
             <span class="drawer-media-title">${escapeHtml(st.label)}</span>
           `;
           grid.appendChild(card);
@@ -5389,11 +5521,34 @@ if (msg.type === 'quest') {
     }, 2800);
   }
 
+  let cinemaSessionId = 0;
+  const cinemaTimers = new Set();
+
+  function clearAllCinemaTimers() {
+    for (const id of cinemaTimers) {
+      clearTimeout(id);
+    }
+    cinemaTimers.clear();
+  }
+
+  function scheduleCinemaTimeout(fn, delayMs, sessionId = cinemaSessionId) {
+    const id = setTimeout(() => {
+      cinemaTimers.delete(id);
+      if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
+      fn();
+    }, Math.max(0, delayMs || 0));
+    cinemaTimers.add(id);
+    return id;
+  }
+
   function startCinemaPlayback() {
     if (messages.length === 0) {
       showToast('⚠️ Add some messages first before playing!');
       return;
     }
+    cinemaSessionId++;
+    const sessionId = cinemaSessionId;
+    clearAllCinemaTimers();
     if (cinemaStepTimeout) {
       clearTimeout(cinemaStepTimeout);
       cinemaStepTimeout = null;
@@ -5549,9 +5704,9 @@ if (msg.type === 'quest') {
         }
 
         if (isBuiltinRecording) {
-          setTimeout(() => {
+          scheduleCinemaTimeout(() => {
             if (isBuiltinRecording) stopBuiltinRecording();
-          }, 1200);
+          }, 1200, sessionId);
         }
         return;
       }
@@ -5600,8 +5755,11 @@ if (msg.type === 'quest') {
 
         if (statusText && autoReadMs > 0) statusText.textContent = `⏳ Reading message...`;
 
-        setTimeout(() => {
-          if (!isCinemaPlaying) return;
+        function executeChatModeSwitch() {
+          if (isCinemaPaused) {
+            cinemaStepTimeout = scheduleCinemaTimeout(executeChatModeSwitch, 200, sessionId);
+            return;
+          }
 
           if (activeAppMode !== 'whatsapp') {
             switchAppMode('whatsapp', true);
@@ -5622,8 +5780,9 @@ if (msg.type === 'quest') {
           if (statusText) statusText.textContent = `💬 ${targetMode.toUpperCase()} CHAT`;
           const stepDelay = Math.max(250, (nextMsg.delayMs || 1000) / cinemaSpeedMultiplier);
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, stepDelay);
-        }, readBuffer);
+          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, stepDelay, sessionId);
+        }
+        scheduleCinemaTimeout(executeChatModeSwitch, readBuffer, sessionId);
         return;
       }
 
@@ -5645,8 +5804,11 @@ if (msg.type === 'quest') {
 
         if (statusText && autoReadMs > 0) statusText.textContent = `⏳ Reading message...`;
 
-        setTimeout(() => {
-          if (!isCinemaPlaying) return;
+        function beginAppSwitchTransition() {
+          if (isCinemaPaused) {
+            cinemaStepTimeout = scheduleCinemaTimeout(beginAppSwitchTransition, 200, sessionId);
+            return;
+          }
 
           if (statusText) statusText.textContent = `🚀 ${appInfo.title}`;
 
@@ -5666,9 +5828,7 @@ if (msg.type === 'quest') {
           // Transition animation hold
           const transitionHold = Math.max(900, (nextMsg.delayMs || 1200)) / cinemaSpeedMultiplier;
 
-          setTimeout(() => {
-            if (!isCinemaPlaying) return;
-
+          scheduleCinemaTimeout(() => {
             // 4. Switch app mode shell & theme
             switchAppMode(targetApp, true);
             currentCinemaApp = targetApp;
@@ -5700,14 +5860,25 @@ if (msg.type === 'quest') {
 
             stream.scrollTop = stream.scrollHeight;
 
-            setTimeout(() => {
+            scheduleCinemaTimeout(() => {
               hideAppSwitchTransition();
-            }, 220);
+            }, 220, sessionId);
 
             stepIndex++;
-            cinemaStepTimeout = setTimeout(playNextStep, 700 / cinemaSpeedMultiplier);
-          }, transitionHold);
-        }, preSwitchWait);
+            cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, 700 / cinemaSpeedMultiplier, sessionId);
+          }, transitionHold, sessionId);
+        }
+        scheduleCinemaTimeout(beginAppSwitchTransition, preSwitchWait, sessionId);
+        return;
+      }
+
+      if (nextMsg.type === 'speed') {
+        if (nextMsg.speedMultiplier && !isNaN(nextMsg.speedMultiplier)) {
+          cinemaSpeedMultiplier = Math.max(0.4, Math.min(8.0, nextMsg.speedMultiplier));
+          updateCinemaSpeedUI();
+        }
+        stepIndex++;
+        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, 80, sessionId);
         return;
       }
 
@@ -5723,16 +5894,20 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTop = stream.scrollHeight;
+        scrollStreamBottomNow(stream);
         if (nextMsg.type === 'quest' && window.ChatHubVfx) {
-          window.ChatHubVfx.playBubbleVfx('quest', 'shock', el.querySelector('.quest-card') || el);
+          requestAnimationFrame(() => {
+            if (window.ChatHubVfx) {
+              window.ChatHubVfx.playBubbleVfx('quest', 'shock', el.querySelector('.quest-card') || el);
+            }
+          });
         }
         if (soundEnabled) {
           if (nextMsg.type === 'quest') playSciFiChimeSound();
           else playPopSound();
         }
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' ? 1400 : 1000)) / cinemaSpeedMultiplier);
+        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' ? 1400 : 1000)) / cinemaSpeedMultiplier, sessionId);
         return;
       }
 
@@ -5740,15 +5915,19 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        scrollStreamBottomNow(stream);
         if (window.ChatHubVfx) {
-          window.ChatHubVfx.playBubbleVfx('choice', 'normal', el.querySelector('.choice-card') || el);
+          requestAnimationFrame(() => {
+            if (window.ChatHubVfx) {
+              window.ChatHubVfx.playBubbleVfx('choice', 'normal', el.querySelector('.choice-card') || el);
+            }
+          });
         }
         if (soundEnabled) playSparkleSound();
         stepIndex++;
 
         if (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0) {
-          cinemaStepTimeout = setTimeout(playNextStep, 350);
+          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, 350, sessionId);
           return;
         }
 
@@ -5757,12 +5936,12 @@ if (msg.type === 'quest') {
         showToast('👉 Tap your choice on screen to continue!');
 
         if (cinemaChoiceAutoTimer) clearTimeout(cinemaChoiceAutoTimer);
-        cinemaChoiceAutoTimer = setTimeout(() => {
+        cinemaChoiceAutoTimer = scheduleCinemaTimeout(() => {
           if (isCinemaWaitingForChoice) {
             const fallbackIdx = nextMsg.selectedIdx !== null && nextMsg.selectedIdx !== undefined ? nextMsg.selectedIdx : 0;
             handleSelectChoiceOption(nextMsg.id, fallbackIdx);
           }
-        }, 8000 / cinemaSpeedMultiplier);
+        }, 8000 / cinemaSpeedMultiplier, sessionId);
 
         return;
       }
@@ -5771,18 +5950,17 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTop = stream.scrollHeight;
+        scrollStreamBottomNow(stream);
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
         if (soundEnabled) {
           triggerSfxByName(nextMsg.sfx || 'punch', char.pitch || 1.05);
         }
-        const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sfx-burst-bubble');
+        const bubbleEl = el.querySelector('.sfx-burst-bubble') || el.querySelector('.speech-bubble');
         if (bubbleEl) {
           bubbleEl.classList.remove('in-box-shock');
           void bubbleEl.offsetWidth;
           bubbleEl.classList.add('in-box-shock');
           if (window.ChatHubVfx) {
-            // rAF: let the browser paint the appended bubble before measuring its rect
             requestAnimationFrame(() => {
               if (window.ChatHubVfx) {
                 window.ChatHubVfx.playBubbleVfx('sfx', nextMsg.expr || 'angry', bubbleEl, { text: nextMsg.text });
@@ -5791,7 +5969,7 @@ if (msg.type === 'quest') {
           }
         }
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 420) / cinemaSpeedMultiplier);
+        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || 650) / cinemaSpeedMultiplier, sessionId);
         return;
       }
 
@@ -5806,7 +5984,7 @@ if (msg.type === 'quest') {
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
           if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-          stream.scrollTop = stream.scrollHeight;
+          scrollStreamBottomNow(stream);
           const pairedCustomAudio = nextMsg.customAudioData || (nextMsg.stickerData && nextMsg.stickerData.customAudioData);
           const pairedSfx = nextMsg.sfx || (nextMsg.stickerData && nextMsg.stickerData.sfx);
           if (soundEnabled) {
@@ -5820,8 +5998,14 @@ if (msg.type === 'quest') {
               playPopSound(char.pitch || 1.05);
             }
           }
+          if (nextMsg.type === 'sticker') {
+            const bubbleEl = el.querySelector('.sticker-card') || el.querySelector('.speech-bubble');
+            requestAnimationFrame(() => {
+              triggerExpressionEffects(nextMsg.expr || (nextMsg.stickerData && nextMsg.stickerData.expr) || 'normal', char.pitch || 1.05, bubbleEl, { skipSound: true });
+            });
+          }
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, 60);
+          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, 60, sessionId);
           return;
         }
 
@@ -5850,13 +6034,13 @@ if (msg.type === 'quest') {
           stream.scrollTop = stream.scrollHeight;
         }
 
-        activePreDelayTimer = setTimeout(() => {
-          clearTypingTimers();
-          if (!isCinemaPlaying) return;
+        function finalizeMediaStep() {
+          if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
           if (isCinemaPaused) {
-            cinemaStepTimeout = setTimeout(playNextStep, 200);
+            cinemaStepTimeout = scheduleCinemaTimeout(finalizeMediaStep, 200, sessionId);
             return;
           }
+          clearTypingTimers();
           if (statusEl && activeAppMode === 'whatsapp') {
             statusEl.classList.remove('typing-pulse-status');
             const autoStatus = characters.map(c => c.name).join(', ');
@@ -5865,7 +6049,7 @@ if (msg.type === 'quest') {
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
           if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-          stream.scrollTop = stream.scrollHeight;
+          scrollStreamBottomNow(stream);
           const pairedCustomAudio = nextMsg.customAudioData || (nextMsg.stickerData && nextMsg.stickerData.customAudioData);
           const pairedSfx = nextMsg.sfx || (nextMsg.stickerData && nextMsg.stickerData.sfx);
           if (soundEnabled) {
@@ -5881,11 +6065,14 @@ if (msg.type === 'quest') {
           }
 
           const bubbleEl = el.querySelector('.sticker-card') || el.querySelector('.speech-bubble');
-          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+          requestAnimationFrame(() => {
+            triggerExpressionEffects(nextMsg.expr || (nextMsg.stickerData && nextMsg.stickerData.expr) || 'normal', char.pitch || 1.05, bubbleEl, { skipSound: true });
+          });
 
           stepIndex++;
-          cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 700) / cinemaSpeedMultiplier);
-        }, sendDuration);
+          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || 700) / cinemaSpeedMultiplier, sessionId);
+        }
+        activePreDelayTimer = setTimeout(finalizeMediaStep, sendDuration);
         return;
       }
 
@@ -5900,10 +6087,14 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        scrollStreamBottomNow(stream);
         if (soundEnabled) playPopSound(char.pitch || 1.05);
+        const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
+        requestAnimationFrame(() => {
+          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl, { skipSound: true });
+        });
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, 60);
+        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, 60, sessionId);
         return;
       }
 
@@ -5913,13 +6104,15 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTop = stream.scrollHeight;
+        scrollStreamBottomNow(stream);
         if (soundEnabled) playPopSound(char.pitch || 1.05);
         const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-        triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
+        requestAnimationFrame(() => {
+          triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl, { skipSound: true });
+        });
         if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
         stepIndex++;
-        cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 250) / cinemaSpeedMultiplier);
+        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || 250) / cinemaSpeedMultiplier, sessionId);
         return;
       }
 
@@ -5989,13 +6182,17 @@ if (msg.type === 'quest') {
             });
           }
 
-          activeTypingTimer = setTimeout(() => {
-            clearTypingTimers();
-            if (!isCinemaPlaying) return;
+          function finalizeIncomingMessage() {
+            if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
             if (isCinemaPaused) {
-              cinemaStepTimeout = setTimeout(playNextStep, 200);
+              if (activeTypingTickTimer) {
+                clearInterval(activeTypingTickTimer);
+                activeTypingTickTimer = null;
+              }
+              cinemaStepTimeout = scheduleCinemaTimeout(finalizeIncomingMessage, 200, sessionId);
               return;
             }
+            clearTypingTimers();
 
             if (statusEl && !isGpt && !isGemini) {
               statusEl.classList.remove('typing-pulse-status');
@@ -6006,18 +6203,21 @@ if (msg.type === 'quest') {
             const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
             stream.appendChild(el);
             if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-            stream.scrollTop = stream.scrollHeight;
+            scrollStreamBottomNow(stream);
 
             if (soundEnabled) playPopSound(char.pitch || 1.05);
 
             const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-            triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
-        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
+            requestAnimationFrame(() => {
+              triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl, { skipSound: true });
+            });
+            if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
 
             stepIndex++;
             const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
-            cinemaStepTimeout = setTimeout(playNextStep, readingPause);
-          }, durationMs);
+            cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, readingPause, sessionId);
+          }
+          activeTypingTimer = setTimeout(finalizeIncomingMessage, durationMs);
         }
 
         if (configuredPreDelay > 0) {
@@ -6131,17 +6331,19 @@ if (msg.type === 'quest') {
 
                 stream.appendChild(el);
                 if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-                stream.scrollTop = stream.scrollHeight;
+                scrollStreamBottomNow(stream);
 
                 if (soundEnabled) playPopSound(char.pitch || 1.05);
 
                 const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
-                triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
-        if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
+                requestAnimationFrame(() => {
+                  triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl, { skipSound: true });
+                });
+                if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
 
                 stepIndex++;
                 const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
-                cinemaStepTimeout = setTimeout(playNextStep, readingPause);
+                cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, readingPause, sessionId);
               }, sendPause);
             }
           }
@@ -6191,8 +6393,9 @@ if (msg.type === 'quest') {
 
   function toggleCinemaPause() {
     isCinemaPaused = !isCinemaPaused;
-    if (isCinemaPaused) {
-      clearTypingTimers();
+    if (isCinemaPaused && activeTypingTickTimer) {
+      clearInterval(activeTypingTickTimer);
+      activeTypingTickTimer = null;
     }
     const pauseBtn = document.getElementById('cinemaPauseBtn');
     if (pauseBtn) {
@@ -6379,7 +6582,15 @@ if (msg.type === 'quest') {
     }
   }
 
+  let isStartingRecording = false;
+
   async function startBuiltinRecording() {
+    if (isStartingRecording || isBuiltinRecording) return;
+    if (!messages || messages.length === 0) {
+      showToast('⚠️ Add some messages first before recording!');
+      return;
+    }
+    isStartingRecording = true;
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
         enableCleanMobileRecording();
@@ -6461,6 +6672,8 @@ if (msg.type === 'quest') {
       if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
         enableCleanMobileRecording();
       }
+    } finally {
+      isStartingRecording = false;
     }
   }
 
@@ -6483,6 +6696,7 @@ if (msg.type === 'quest') {
   function exportRecordedVideo(mimeType) {
     if (recordedChunks.length === 0) return;
     const blob = new Blob(recordedChunks, { type: mimeType || 'video/webm' });
+    recordedChunks = [];
     const isMp4 = mimeType && mimeType.includes('mp4');
     const ext = isMp4 ? 'mp4' : 'webm';
     const safeTitle = (currentStoryTitle || 'Story').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -6523,6 +6737,8 @@ if (msg.type === 'quest') {
 
   function stopCinemaMode() {
     stopCurrentAudio();
+    cinemaSessionId++;
+    clearAllCinemaTimers();
     isCinemaPlaying = false;
     isCinemaPaused = false;
     isCinemaWaitingForChoice = false;
@@ -9659,8 +9875,12 @@ if (msg.type === 'quest') {
       // 5. [SPEED: 1.5x]
       const speedMatch = line.match(/^\[SPEED:\s*([\d\.]+)x?\]$/i);
       if (speedMatch) {
-        cinemaSpeedMultiplier = parseFloat(speedMatch[1]) || 1.0;
-        safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
+        const mult = parseFloat(speedMatch[1]) || 1.0;
+        parsedMsgs.push({
+          id: 'm_spd_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 5),
+          type: 'speed',
+          speedMultiplier: Math.max(0.4, Math.min(8.0, mult))
+        });
         return;
       }
 
@@ -9871,7 +10091,7 @@ if (msg.type === 'quest') {
           expr: expr,
           sfx: soundType,
           preDelayMs: eventPreDelay,
-          delayMs: 380,
+          delayMs: 650,
           screenShake: true,
           time: getNextStoryTime()
         });
@@ -9886,7 +10106,7 @@ if (msg.type === 'quest') {
                       customStickers.find(s => (s.isSticker || s.mediaType === 'sticker')) ||
                       builtInStickers[0];
 
-        let expr = explicitExpr || 'normal';
+        let expr = explicitExpr || (found && found.expr) || 'normal';
 
         parsedMsgs.push({
           id: 'm_stk_' + Date.now() + '_' + idx,
@@ -9945,7 +10165,7 @@ if (msg.type === 'quest') {
 
     if (pendingDelayMs > 0) {
       parsedMsgs.push({
-        id: 'm_pause_end',
+        id: 'm_pause_end_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         type: 'pause',
         delayMs: pendingDelayMs
       });
@@ -10081,12 +10301,18 @@ if (msg.type === 'quest') {
             type: m.type || 'text',
             charId: charId || currentCharId,
             text: m.text || '',
+            caption: m.caption || '',
+            label: m.label || '',
             expr: m.expr || 'normal',
             time: m.time || getNextStoryTime(),
             preDelayMs: m.preDelayMs || 0,
             delayMs: m.delayMs || 1000,
             title: m.title || '',
             targetApp: m.targetApp || '',
+            replyToId: m.replyToId || null,
+            imageUrl: m.imageUrl || null,
+            videoUrl: m.videoUrl || null,
+            audioUrl: m.audioUrl || null,
             question: m.question || '',
             options: m.options || null,
             stickerData: m.sticker ? { id: m.sticker.id, label: m.sticker.label, emoji: m.sticker.emoji } : (m.stickerData || null)
@@ -10323,9 +10549,7 @@ if (msg.type === 'quest') {
 
   function toggleDirectorDeck() {
     const deck = document.getElementById('directorDeck');
-    const isHidden = deck.classList.toggle('hidden');
-    const label = document.getElementById('toggleDeckMenuLabel');
-    if (label) label.textContent = isHidden ? '🎛️ Show Director Deck' : '🎛️ Hide Director Deck';
+    if (deck) deck.classList.toggle('hidden');
   }
 
   function toggleCleanRecordMode() {
@@ -10364,8 +10588,6 @@ if (msg.type === 'quest') {
       ghostTrigger.style.display = cleanRecordMode ? 'inline-flex' : 'none';
     }
 
-    const label = document.getElementById('cleanRecordMenuLabel');
-    if (label) label.textContent = cleanRecordMode ? '👁️ Exit Pure View (H)' : '👁️ Pure Chat View (H)';
     showToast(cleanRecordMode ? '👁️ Pure Chat Mode ON (Press H to restore)' : '🎬 Studio Controls Restored');
   }
 
@@ -10440,10 +10662,22 @@ if (msg.type === 'quest') {
   window.handleInlineClearChat = handleInlineClearChat;
 
   function confirmClearChat() {
-    messages = [];
-    saveStudioState();
-    renderChatStream();
-    showToast('🗑️ Chat cleared');
+    if (!messages || messages.length === 0) {
+      showToast('ℹ️ Chat is already empty');
+      return;
+    }
+    openCustomPromptModal({
+      title: '🗑️ Clear All Messages?',
+      desc: `Delete all ${messages.length} message${messages.length === 1 ? '' : 's'} in the current scene? This cannot be undone.`,
+      showInput: false,
+      onConfirm: () => {
+        messages = [];
+        exitMessageSelectMode();
+        saveStudioState();
+        renderChatStream();
+        showToast('🗑️ Chat cleared');
+      }
+    });
   }
 
   let toastTimeout = null;
@@ -10473,7 +10707,8 @@ if (msg.type === 'quest') {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   // Keyboard shortcut 'H' for Clean Record View
@@ -10501,6 +10736,85 @@ if (msg.type === 'quest') {
   updateCinemaSpeedUI();
   autoResizeComposerInput(document.getElementById('chatMessageInput'));
   initTurboGestures();
+
+  // Hydrate studio if IndexedDB holds newer/larger state than synchronous localStorage preload
+  window.addEventListener('chathub:storage-ready', (ev) => {
+    const detail = (ev && ev.detail) || {};
+    if (!detail.hydratedFromIdb) return;
+    const dirty = new Set(detail.dirtyKeys || []);
+
+    if (!dirty.has('wh_current_story_title')) {
+      currentStoryTitle = safeGetStorage('wh_current_story_title') || currentStoryTitle;
+    }
+    if (!dirty.has('wh_current_story_id')) {
+      currentStoryId = safeGetStorage('wh_current_story_id') || currentStoryId;
+    }
+    if (!dirty.has(STORIES_LIB_KEY)) {
+      try {
+        const rawStories = safeGetStorage(STORIES_LIB_KEY);
+        if (rawStories) {
+          const parsedStories = JSON.parse(rawStories);
+          if (Array.isArray(parsedStories)) savedStories = parsedStories;
+        }
+      } catch (e) {}
+    }
+    if (!dirty.has('wh_sound_enabled')) {
+      soundEnabled = safeGetStorage('wh_sound_enabled') !== 'false';
+    }
+    if (!dirty.has('wh_cinema_speed')) {
+      cinemaSpeedMultiplier = parseFloat(safeGetStorage('wh_cinema_speed') || '1.0');
+    }
+    if (!dirty.has('wh_cinema_spam_delay')) {
+      cinemaSpamDelayMs = parseInt(safeGetStorage('wh_cinema_spam_delay') || '280', 10);
+    }
+    if (!dirty.has('wh_cinema_cam_engine')) {
+      cinemaCameraEngineEnabled = safeGetStorage('wh_cinema_cam_engine') !== 'false';
+    }
+    if (!dirty.has('wh_chat_theme_style')) {
+      chatThemeStyle = safeGetStorage('wh_chat_theme_style') || chatThemeStyle;
+    }
+    if (!dirty.has('chathub_director_layout')) {
+      directorBarLayout = safeGetStorage('chathub_director_layout') || directorBarLayout;
+    }
+    if (!dirty.has('wh_builtin_sticker_sounds')) {
+      try {
+        const rawSnds = safeGetStorage('wh_builtin_sticker_sounds');
+        if (rawSnds) customBuiltInSounds = JSON.parse(rawSnds);
+        if (typeof builtInStickers !== 'undefined') {
+          builtInStickers.forEach(s => {
+            if (customBuiltInSounds[s.id]) {
+              if (customBuiltInSounds[s.id].sfx) s.sfx = customBuiltInSounds[s.id].sfx;
+              if (customBuiltInSounds[s.id].customAudioData) {
+                s.customAudioData = customBuiltInSounds[s.id].customAudioData;
+                s.customAudioLabel = customBuiltInSounds[s.id].customAudioLabel;
+              }
+            }
+          });
+        }
+      } catch (_) {}
+    }
+
+    if (!dirty.has(STORAGE_KEY) && !isCinemaPlaying && !pendingSaveStudioTimer) {
+      loadStudioState();
+      ensureAiCastMembers();
+    }
+
+    applyChatStyle(chatThemeStyle);
+    applyDirectorBarLayout();
+    switchAppMode(activeAppMode, true);
+    renderGroupHeader();
+    renderDirectorStrip();
+    renderChatStream();
+    renderDrawerContent();
+    renderStoriesList();
+    updateCinemaSpeedUI();
+    const sBtn = document.getElementById('soundToggleBtn');
+    if (sBtn) sBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    const sIcon = document.getElementById('globalSoundIcon');
+    const sLabel = document.getElementById('globalSoundLabel');
+    if (sIcon) sIcon.textContent = soundEnabled ? '🔊' : '🔇';
+    if (sLabel) sLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
+  });
 
   // Initialize Sound UI state
   const initSoundBtn = document.getElementById('soundToggleBtn');
@@ -10607,10 +10921,8 @@ if (msg.type === 'quest') {
       if (drawer) drawer.classList.remove('open');
       const vModal = document.getElementById('vaultPickModal');
       if (vModal) vModal.classList.remove('open');
-      const imgModal = document.getElementById('imageLightboxModal');
-      if (imgModal) imgModal.classList.remove('open');
-      const vidModal = document.getElementById('videoLightboxModal');
-      if (vidModal) vidModal.classList.remove('open');
+      closeFullscreenImage();
+      closeFullscreenVideo();
     }
   });
 
