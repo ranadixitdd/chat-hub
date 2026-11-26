@@ -60,7 +60,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="style.css?v=3.0">
+<link rel="stylesheet" href="style.css?v=3.4.0">
 
 <!-- Prevent and remove any Netlify badge / HUD iframe -->
 <style>
@@ -313,6 +313,7 @@
     <div class="dropdown-item" style="color:#facc15; font-weight:800; background:rgba(250, 204, 21, 0.08);" onclick="openAboutModal(); closeDropdownMenu();">ℹ️ About Studio & Versions</div>
     <div class="dropdown-item" id="menuGroupMsgItem" onclick="toggleMessageGrouping(); closeDropdownMenu();">🔗 Group Same-Speaker: ON</div>
     <div class="dropdown-item" onclick="exportBackupJson(); closeDropdownMenu();">💾 Export Story JSON</div>
+    <div class="dropdown-item" id="menuMultiSelectItem" onclick="toggleMessageSelectMode(); closeDropdownMenu();">☑️ Select Multiple Messages</div>
     <div class="dropdown-item danger" onclick="confirmClearChat(); closeDropdownMenu();">🗑️ Clear All Messages</div>
   </div>
 
@@ -480,6 +481,18 @@
     <!-- FIXED SUB-FILTER BAR (ALWAYS VISIBLE, NEVER SCROLLS AWAY OR OVERLAPS) -->
     <div class="drawer-subbar" id="drawerSubBar"></div>
     <div class="drawer-content" id="drawerGridContent"></div>
+  </div>
+
+  <!-- === MULTI-SELECT BULK DELETE ACTION BAR === -->
+  <div class="multi-select-bar" id="multiSelectBar">
+    <div class="multi-select-left">
+      <span class="multi-select-count" id="multiSelectCountLabel">☑ 0 selected</span>
+      <button type="button" class="icon-btn" id="multiSelectAllBtn" style="padding:4px 9px; font-size:11px; background:#334155;" onclick="toggleSelectAllMessages()">Select All</button>
+    </div>
+    <div class="multi-select-right">
+      <button type="button" class="icon-btn danger" id="multiSelectDeleteBtn" style="padding:5px 11px; font-size:11.5px; background:#ef4444; color:#fff;" onclick="deleteSelectedMessages()" disabled>🗑️ Delete (0)</button>
+      <button type="button" class="icon-btn" style="padding:5px 9px; font-size:11.5px; background:#475569;" onclick="exitMessageSelectMode()">✕ Done</button>
+    </div>
   </div>
 
   <!-- === QUOTED REPLY PREVIEW BAR === -->
@@ -1319,11 +1332,12 @@
         <input type="text" class="form-input" id="msgEditTimeInput" placeholder="e.g. 4:15 PM" style="padding:7px 10px; font-weight:700;">
       </div>
 
-      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap:6px;">
         <button class="icon-btn" onclick="replyToEditingMessage()" title="Quote Reply to this line">↩️ Reply</button>
         <button class="icon-btn" onclick="moveEditingMessage(-1)" title="Move Line Up">⬆️ Up</button>
         <button class="icon-btn" onclick="moveEditingMessage(1)" title="Move Line Down">⬇️ Down</button>
         <button class="icon-btn" onclick="insertLineAfterEditingMessage()" title="Insert Line Below">➕ Below</button>
+        <button class="icon-btn" style="background:#0284c7;" onclick="startMultiSelectFromEditModal()" title="Select multiple messages to delete">☑️ Multi</button>
       </div>
 
       <div style="display:flex; gap:8px; margin-top:4px;">
@@ -2017,9 +2031,14 @@
 
 <!-- === FULLSCREEN IMAGE LIGHTBOX MODAL === -->
 <div class="modal-backdrop" id="imageLightboxModal" style="z-index:10060; background:rgba(0,0,0,0.92); display:none; align-items:center; justify-content:center; padding:12px;" onclick="closeFullscreenImage()">
-  <div style="position:relative; max-width:680px; width:100%; max-height:90vh; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
+  <div style="position:relative; max-width:680px; width:100%; max-height:90vh; display:flex; flex-direction:column; align-items:center; gap:10px;" onclick="event.stopPropagation()">
     <button type="button" class="icon-btn" onclick="closeFullscreenImage()" style="position:absolute; top:-40px; right:0; background:#334155; color:#fff; border-radius:50%; width:34px; height:34px; font-size:15px; font-weight:800; z-index:10; cursor:pointer;" title="Close Image">✕</button>
-    <img id="lightboxImagePlayer" style="max-width:100%; max-height:85vh; border-radius:14px; box-shadow:0 16px 48px rgba(0,0,0,0.9); background:#000; object-fit:contain;">
+    <img id="lightboxImagePlayer" style="max-width:100%; max-height:76vh; border-radius:14px; box-shadow:0 16px 48px rgba(0,0,0,0.9); background:#000; object-fit:contain;">
+    <div class="lightbox-action-bar" id="lightboxImageActions" style="display:none;">
+      <button type="button" class="icon-btn" style="background:#0284c7; padding:7px 14px;" onclick="editLightboxImageMessage()">✏️ Edit / Replace</button>
+      <button type="button" class="icon-btn" style="background:#334155; padding:7px 14px;" onclick="replyLightboxImageMessage()">↩️ Reply</button>
+      <button type="button" class="icon-btn danger" style="background:#ef4444; padding:7px 14px;" onclick="deleteLightboxImageMessage()">🗑️ Delete</button>
+    </div>
   </div>
 </div>
 
@@ -2032,9 +2051,9 @@
 </div>
 
 <script src="storage.js?v=1.0"></script>
-<script src="sakuga-vfx/core.js?v=1.0"></script>
-<script src="app.js?v=3.3.2"></script>
-<script src="sakuga-vfx/sakuga-studio.js?v=1.0"></script>
-<script src="sakuga-vfx/chathub-vfx.js?v=1.0"></script>
+<script src="sakuga-vfx/core.js?v=1.1"></script>
+<script src="app.js?v=3.4.0"></script>
+<script src="sakuga-vfx/sakuga-studio.js?v=1.1"></script>
+<script src="sakuga-vfx/chathub-vfx.js?v=1.1"></script>
 </body>
 </html>

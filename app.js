@@ -2304,23 +2304,75 @@ function playSciFiChimeSound() {
   }
 
   /* === FULLSCREEN IMAGE LIGHTBOX CONTROLLER === */
-  function openFullscreenImage(url) {
+  let activeLightboxMsgId = null;
+
+  function openFullscreenImage(url, msgId = null) {
     const modal = document.getElementById('imageLightboxModal');
     const player = document.getElementById('lightboxImagePlayer');
+    const actions = document.getElementById('lightboxImageActions');
     if (!modal || !player || !url) return;
+    activeLightboxMsgId = msgId || null;
     player.src = url;
+    if (actions) actions.style.display = activeLightboxMsgId ? 'flex' : 'none';
     modal.style.display = 'flex';
   }
 
   function closeFullscreenImage() {
     const modal = document.getElementById('imageLightboxModal');
     const player = document.getElementById('lightboxImagePlayer');
+    const actions = document.getElementById('lightboxImageActions');
+    activeLightboxMsgId = null;
     if (player) player.src = '';
+    if (actions) actions.style.display = 'none';
     if (modal) modal.style.display = 'none';
   }
 
+  function setReplyTargetMessage(msgId) {
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg) return;
+    activeReplyMsgId = msg.id;
+    const char = characters.find(c => c.id === msg.charId);
+    document.getElementById('replyBarAuthor').textContent = char ? char.name : 'System';
+    const snippet = msg.type === 'sticker'
+      ? `[Sticker: ${(msg.stickerData && msg.stickerData.label) || 'Sticker'}]`
+      : (msg.type === 'image' ? (msg.caption || msg.text || '📷 Photo') : (msg.text || ''));
+    document.getElementById('replyBarSnippet').textContent = snippet;
+    document.getElementById('composerReplyBar').classList.add('open');
+    document.getElementById('chatMessageInput').focus();
+  }
+
+  function deleteMessageById(msgId, toastLabel = '🗑️ Message deleted') {
+    if (!msgId) return;
+    const before = messages.length;
+    messages = messages.filter(m => m.id !== msgId);
+    if (messages.length === before) return;
+    selectedMessageIds.delete(msgId);
+    saveStudioState();
+    renderChatStream();
+    updateMultiSelectBarUi();
+    showToast(toastLabel);
+  }
+
+  function editLightboxImageMessage() {
+    const msgId = activeLightboxMsgId;
+    closeFullscreenImage();
+    if (msgId) openMessageEditModal(msgId);
+  }
+
+  function replyLightboxImageMessage() {
+    const msgId = activeLightboxMsgId;
+    closeFullscreenImage();
+    if (msgId) setReplyTargetMessage(msgId);
+  }
+
+  function deleteLightboxImageMessage() {
+    const msgId = activeLightboxMsgId;
+    closeFullscreenImage();
+    if (msgId) deleteMessageById(msgId, '🗑️ Photo deleted');
+  }
+
   function handleStickerMessageClick(msgId, ev) {
-    if (isCinemaPlaying) return;
+    if (isCinemaPlaying || messageSelectMode) return;
     const msg = messages.find(m => m.id === msgId);
     if (!msg) return;
     const pairedAudio = msg.customAudioData || (msg.stickerData && msg.stickerData.customAudioData);
@@ -2339,7 +2391,7 @@ function playSciFiChimeSound() {
   }
 
   function handleImageMessageClick(msgId, ev) {
-    if (isCinemaPlaying) return;
+    if (isCinemaPlaying || messageSelectMode) return;
     const msg = messages.find(m => m.id === msgId);
     if (!msg) return;
     const pairedAudio = msg.customAudioData;
@@ -2354,9 +2406,165 @@ function playSciFiChimeSound() {
     }
     const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
     if (srcUrl) {
-      openFullscreenImage(srcUrl);
+      openFullscreenImage(srcUrl, msgId);
     } else {
       openMessageEditModal(msgId);
+    }
+  }
+
+  /* === MULTI-SELECT MESSAGE MODE (BULK DELETE) === */
+  let messageSelectMode = false;
+  const selectedMessageIds = new Set();
+
+  function updateMultiSelectBarUi() {
+    const bar = document.getElementById('multiSelectBar');
+    const countLabel = document.getElementById('multiSelectCountLabel');
+    const delBtn = document.getElementById('multiSelectDeleteBtn');
+    const allBtn = document.getElementById('multiSelectAllBtn');
+    const menuEl = document.getElementById('menuMultiSelectItem');
+    const count = selectedMessageIds.size;
+
+    document.body.classList.toggle('msg-select-mode', messageSelectMode);
+    if (bar) bar.classList.toggle('open', messageSelectMode);
+    if (countLabel) countLabel.textContent = `☑ ${count} selected`;
+    if (delBtn) {
+      delBtn.textContent = `🗑️ Delete (${count})`;
+      delBtn.disabled = count === 0;
+    }
+    if (allBtn) {
+      const allSelected = messages.length > 0 && count === messages.length;
+      allBtn.textContent = allSelected ? 'Unselect All' : 'Select All';
+    }
+    if (menuEl) {
+      menuEl.innerHTML = messageSelectMode
+        ? '✅ Exit Multi-Select Mode'
+        : '☑️ Select Multiple Messages';
+    }
+  }
+
+  function enterMessageSelectMode(initialMsgId = null) {
+    if (isCinemaPlaying) return;
+    messageSelectMode = true;
+    selectedMessageIds.clear();
+    if (initialMsgId) selectedMessageIds.add(initialMsgId);
+    updateMultiSelectBarUi();
+    renderChatStream();
+    showToast('☑️ Tap messages to select multiple, then press Delete');
+  }
+
+  function exitMessageSelectMode() {
+    if (!messageSelectMode && selectedMessageIds.size === 0) return;
+    messageSelectMode = false;
+    selectedMessageIds.clear();
+    updateMultiSelectBarUi();
+    document.querySelectorAll('.selectable-msg-row.msg-selected').forEach(el => {
+      el.classList.remove('msg-selected');
+      const chk = el.querySelector('.msg-select-checkbox');
+      if (chk) chk.textContent = '';
+    });
+  }
+
+  function toggleMessageSelectMode() {
+    if (messageSelectMode) exitMessageSelectMode();
+    else enterMessageSelectMode();
+  }
+
+  function toggleMessageSelection(msgId, rowEl = null) {
+    if (!msgId) return;
+    if (selectedMessageIds.has(msgId)) selectedMessageIds.delete(msgId);
+    else selectedMessageIds.add(msgId);
+    const selected = selectedMessageIds.has(msgId);
+    if (rowEl) {
+      rowEl.classList.toggle('msg-selected', selected);
+      const chk = rowEl.querySelector('.msg-select-checkbox');
+      if (chk) chk.textContent = selected ? '✓' : '';
+    }
+    updateMultiSelectBarUi();
+  }
+
+  function toggleSelectAllMessages() {
+    if (!messageSelectMode) return;
+    if (selectedMessageIds.size === messages.length) {
+      selectedMessageIds.clear();
+    } else {
+      messages.forEach(m => { if (m && m.id) selectedMessageIds.add(m.id); });
+    }
+    updateMultiSelectBarUi();
+    document.querySelectorAll('.selectable-msg-row[data-msg-id]').forEach(el => {
+      const sel = selectedMessageIds.has(el.dataset.msgId);
+      el.classList.toggle('msg-selected', sel);
+      const chk = el.querySelector('.msg-select-checkbox');
+      if (chk) chk.textContent = sel ? '✓' : '';
+    });
+  }
+
+  function deleteSelectedMessages() {
+    const count = selectedMessageIds.size;
+    if (count === 0) return;
+    messages = messages.filter(m => !selectedMessageIds.has(m.id));
+    selectedMessageIds.clear();
+    messageSelectMode = false;
+    saveStudioState();
+    updateMultiSelectBarUi();
+    renderChatStream();
+    showToast(`🗑️ Deleted ${count} message${count === 1 ? '' : 's'}`);
+  }
+
+  function startMultiSelectFromEditModal() {
+    const msgId = editingMessageId;
+    closeMessageEditModal();
+    enterMessageSelectMode(msgId);
+  }
+
+  const chatStreamSelectEl = document.getElementById('chatStream');
+  if (chatStreamSelectEl) {
+    let longPressTimer = null;
+    let longPressTriggered = false;
+
+    chatStreamSelectEl.addEventListener('click', (e) => {
+      if (longPressTriggered) {
+        longPressTriggered = false;
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      if (!messageSelectMode) return;
+      const rowEl = e.target && e.target.closest ? e.target.closest('.selectable-msg-row[data-msg-id]') : null;
+      if (!rowEl) return;
+      e.stopPropagation();
+      e.preventDefault();
+      toggleMessageSelection(rowEl.dataset.msgId, rowEl);
+    }, { capture: true });
+
+    // Right-click or long-press (480ms) any message (image, video, sticker, text) to edit/delete cleanly
+    chatStreamSelectEl.addEventListener('contextmenu', (e) => {
+      if (isCinemaPlaying || messageSelectMode) return;
+      const rowEl = e.target && e.target.closest ? e.target.closest('.selectable-msg-row[data-msg-id]') : null;
+      if (!rowEl) return;
+      e.preventDefault();
+      openMessageEditModal(rowEl.dataset.msgId);
+    });
+
+    chatStreamSelectEl.addEventListener('pointerdown', (e) => {
+      if (isCinemaPlaying || messageSelectMode || e.button === 2) return;
+      const rowEl = e.target && e.target.closest ? e.target.closest('.selectable-msg-row[data-msg-id]') : null;
+      if (!rowEl) return;
+      const msgId = rowEl.dataset.msgId;
+      longPressTriggered = false;
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        openMessageEditModal(msgId);
+      }, 480);
+    }, { passive: true });
+
+    for (const ev of ['pointerup', 'pointercancel', 'pointermove']) {
+      chatStreamSelectEl.addEventListener(ev, () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      }, { passive: true });
     }
   }
 
@@ -2364,6 +2572,15 @@ function playSciFiChimeSound() {
   window.closeFullscreenVideo = closeFullscreenVideo;
   window.openFullscreenImage = openFullscreenImage;
   window.closeFullscreenImage = closeFullscreenImage;
+  window.editLightboxImageMessage = editLightboxImageMessage;
+  window.replyLightboxImageMessage = replyLightboxImageMessage;
+  window.deleteLightboxImageMessage = deleteLightboxImageMessage;
+  window.deleteMessageById = deleteMessageById;
+  window.toggleMessageSelectMode = toggleMessageSelectMode;
+  window.exitMessageSelectMode = exitMessageSelectMode;
+  window.toggleSelectAllMessages = toggleSelectAllMessages;
+  window.deleteSelectedMessages = deleteSelectedMessages;
+  window.startMultiSelectFromEditModal = startMultiSelectFromEditModal;
   window.handleStickerMessageClick = handleStickerMessageClick;
   window.handleImageMessageClick = handleImageMessageClick;
 
@@ -2521,6 +2738,23 @@ function playSciFiChimeSound() {
   window.handleSelectChoiceOption = handleSelectChoiceOption;
 
   function createMessageRowElement(msg, index, listToRender) {
+    const el = buildMessageRowElement(msg, index, listToRender);
+    if (el && msg && msg.id) {
+      el.dataset.msgId = msg.id;
+      el.classList.add('selectable-msg-row');
+      if (selectedMessageIds.has(msg.id)) {
+        el.classList.add('msg-selected');
+      }
+      const check = document.createElement('span');
+      check.className = 'msg-select-checkbox';
+      check.setAttribute('aria-hidden', 'true');
+      check.textContent = selectedMessageIds.has(msg.id) ? '✓' : '';
+      el.prepend(check);
+    }
+    return el;
+  }
+
+  function buildMessageRowElement(msg, index, listToRender) {
     if (msg.type === 'app_switch') {
       const banner = document.createElement('div');
       banner.className = 'scene-switch-banner';
@@ -2700,7 +2934,7 @@ if (msg.type === 'quest') {
             : `<div class="sticker-emoji-art" style="background:${st.bg || '#fef08a'}">${st.emoji || '🎭'}</div>`);
 
       bubbleContentHtml = `
-        <div class="sticker-card" onclick="handleStickerMessageClick('${msg.id}', event)" title="Click to play sound or edit">
+        <div class="sticker-card" onclick="handleStickerMessageClick('${msg.id}', event)" title="Tap to play sound or hold/right-click to edit">
           ${innerArt}
           ${st.label ? `<span class="sticker-caption">${escapeHtml(st.label)}</span>` : ''}
           <div class="bubble-meta" style="width:100%; justify-content:flex-end; float:none; margin-top:2px;">
@@ -2711,7 +2945,7 @@ if (msg.type === 'quest') {
     } else if (msg.type === 'image') {
       const srcUrl = msg.imageUrl || msg.url || (msg.mediaData && msg.mediaData.url) || '';
       bubbleContentHtml = `
-        <div class="speech-bubble image-message-bubble" onclick="handleImageMessageClick('${msg.id}', event)" title="Click to view photo or play sound">
+        <div class="speech-bubble image-message-bubble" onclick="handleImageMessageClick('${msg.id}', event)" title="Tap to view/edit photo, or hold/right-click to edit">
           ${replyBoxHtml}
           <div class="image-media-card" style="position:relative; border-radius:10px; overflow:hidden; cursor:pointer;">
             <img src="${srcUrl}" alt="${escapeHtml(msg.caption || msg.text || 'Photo')}" style="max-width:240px; max-height:280px; width:100%; height:auto; object-fit:cover; display:block; border-radius:10px;" onerror="this.onerror=null; this.src=makeComicAvatarDataUri('IMG', '#38bdf8', '📷');">
@@ -2732,10 +2966,6 @@ if (msg.type === 'quest') {
               style="width:100%; height:auto; max-height:360px; min-height:160px; object-fit:cover; display:block; border-radius:12px; cursor:pointer;"
               onclick="event.stopPropagation();">
             </video>
-            <div class="video-overlay-actions">
-              <button type="button" class="video-action-pill" onclick="event.stopPropagation(); openFullscreenVideo('${srcUrl}')" title="Watch in Full View / Lightbox">⛶ Full</button>
-              <button type="button" class="video-action-pill" onclick="event.stopPropagation(); openMessageEditModal('${msg.id}')" title="Edit Message / Caption">✏️ Edit</button>
-            </div>
           </div>
           ${msg.caption || (msg.text && msg.text !== srcUrl) ? `<div class="video-caption-text" style="padding:6px 8px 2px 8px; font-size:13.5px; color:#f8fafc; word-break:break-word;">${escapeHtml(msg.caption || msg.text)}</div>` : ''}
           <div class="bubble-meta" style="padding:0 8px 4px 8px; width:100%; justify-content:flex-end; float:none; margin-top:2px;">
@@ -5070,11 +5300,9 @@ if (msg.type === 'quest') {
 
   function deleteEditingMessage() {
     if (!editingMessageId) return;
-    messages = messages.filter(m => m.id !== editingMessageId);
-    saveStudioState();
-    renderChatStream();
+    const idToDelete = editingMessageId;
     closeMessageEditModal();
-    showToast('🗑️ Line deleted');
+    deleteMessageById(idToDelete, '🗑️ Line deleted');
   }
 
   function moveEditingMessage(direction) {
@@ -5110,18 +5338,10 @@ if (msg.type === 'quest') {
   }
 
   function replyToEditingMessage() {
-    const msg = messages.find(m => m.id === editingMessageId);
-    if (!msg) return;
-    activeReplyMsgId = msg.id;
-    const char = characters.find(c => c.id === msg.charId);
-    document.getElementById('replyBarAuthor').textContent = char ? char.name : 'System';
-    const snippet = msg.type === 'sticker'
-      ? `[Sticker: ${(msg.stickerData && msg.stickerData.label) || 'Sticker'}]`
-      : (msg.text || '');
-    document.getElementById('replyBarSnippet').textContent = snippet;
-    document.getElementById('composerReplyBar').classList.add('open');
+    const id = editingMessageId;
+    if (!id) return;
     closeMessageEditModal();
-    document.getElementById('chatMessageInput').focus();
+    setReplyTargetMessage(id);
   }
 
   function clearActiveReply() {
@@ -5174,6 +5394,7 @@ if (msg.type === 'quest') {
     hideSpeedPopover();
     hideAppSwitchTransition();
     closeCastPickerPopover();
+    exitMessageSelectMode();
     isCinemaPlaying = true;
     isCinemaPaused = false;
 
@@ -10094,6 +10315,7 @@ if (msg.type === 'quest') {
 
   function toggleCleanRecordMode() {
     cleanRecordMode = !cleanRecordMode;
+    if (cleanRecordMode) exitMessageSelectMode();
     renderGroupHeader();
 
     const wrapper = document.getElementById('phoneWrapper');
@@ -10361,6 +10583,7 @@ if (msg.type === 'quest') {
         showToast('⏹️ Urgent Stop: Playback halted');
       }
       stopCurrentAudio();
+      exitMessageSelectMode();
       closeAllModals();
       closeDropdownMenu();
       hideSpeedPopover();
