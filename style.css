@@ -6861,6 +6861,151 @@
     z-index: -99999 !important;
   }
 
+  /* === SAKUGA ANIME VFX ENGINE (finktheartist/sakuga-vfx) === */
+  :root {
+    --sk-card: #ffffff;
+    --sk-ink: #1d1a4a;
+    --sk-dim: #8580b0;
+    --sk-soft: #b8b3ff;
+    --sk-pri: #8f8df7;
+    --sk-pri-ink: #1d1a4a;
+    --sk-acc: #ff5fa8;
+    --sk-track: #c9cbe0;
+    --sk-r: 14px;
+    --sk-bw: 3px;
+    --sk-sh: 5px 6px 0 var(--sk-soft);
+    --sk-btn-sh: var(--sk-sh);
+    --sk-btn-line: var(--sk-ink);
+    --sk-alt-sh: var(--sk-sh);
+    --sk-alt-line: var(--sk-ink);
+    --sk-tick: var(--sk-ink);
+    --sk-fill: var(--sk-acc);
+    --sk-on-pri: #ffffff;
+  }
+
+  /* Pause CSS transform transitions while a JS Spring drives scale/rotate at 60fps */
+  .sakuga-sprung {
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease !important;
+    will-change: scale, rotate;
+  }
+
+  /* Let the JS Spring handle squash/stretch instead of static CSS :active scale/translate */
+  body.sakuga-vfx-active .icon-btn:active,
+  body.sakuga-vfx-active .header-icon-btn:active,
+  body.sakuga-vfx-active .input-action-btn:active,
+  body.sakuga-vfx-active .wa-send-btn:active,
+  body.sakuga-vfx-active .phone-wrapper.theme-realistic .wa-send-btn:active,
+  body.sakuga-vfx-active .btn-primary-comic:active,
+  body.sakuga-vfx-active .btn-secondary-comic:active {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 1-Frame Manga Impact Invert Flash on Hit (preserves emoji colors) */
+  .sakuga-impact-invert {
+    background: var(--sk-ink) !important;
+    color: var(--sk-card) !important;
+    border-color: var(--sk-acc) !important;
+    box-shadow: none !important;
+  }
+
+  /* Sakuga Toast Banner Mode (smears in on Spring with active VFX skin styling) */
+  .app-toast.sakuga-toast-mode {
+    animation: none !important;
+    background: var(--sk-card) !important;
+    color: var(--sk-ink) !important;
+    border: 2.5px solid var(--sk-ink) !important;
+    box-shadow: 5px 6px 0 var(--sk-soft) !important;
+    border-radius: 14px !important;
+    will-change: translate, scale;
+  }
+
+  .vfx-skin-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .vfx-skin-pill {
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1.5px solid #334155;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .vfx-skin-pill.active {
+    background: #1e293b;
+    color: #ffffff;
+    box-shadow: 0 0 0 1px var(--sk-acc);
+  }
+
+  /* Global Studio Hub Sakuga Banner Card */
+  .sakuga-studio-banner {
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    border: 1.5px solid #5a4fd8;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .sakuga-studio-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .modal-window.studio-modal-wide {
+      overflow: hidden !important;
+    }
+
+    .hub-tab-panel {
+      overflow-x: hidden !important;
+      max-width: 100% !important;
+    }
+
+    .global-section {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    .global-tools-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    }
+
+    .global-tools-grid button {
+      min-width: 0 !important;
+      width: 100% !important;
+      white-space: normal !important;
+      text-align: left !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sakuga-sprung {
+      will-change: auto;
+    }
+  }
+
+
 
 
 

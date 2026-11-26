@@ -303,6 +303,9 @@
     <div class="dropdown-item" style="color:#38bdf8; font-weight:800; background:rgba(56, 189, 248, 0.1);" onclick="openAssetManagerModal(); closeDropdownMenu();">📦 Studio Asset Manager</div>
     <div class="dropdown-item" style="color:#a855f7; font-weight:800;" onclick="restartCinemaPlayback(); closeDropdownMenu();">⏮️ Restart Auto-Play from Start</div>
     <div class="dropdown-item" id="menuThemeToggleItem" onclick="toggleChatStyle(); closeDropdownMenu();">🎨 Style: <b>Realistic WhatsApp</b></div>
+    <div class="dropdown-item" id="menuSakugaToggleItem" onclick="toggleSakugaVfx(); closeDropdownMenu();">⚡ Sakuga VFX: <b style="color:#ff5fa8;">ON</b></div>
+    <div class="dropdown-item" id="menuChatVfxToggleItem" onclick="toggleChatBubbleVfx(); closeDropdownMenu();">✨ Chat Story VFX: <b style="color:#ff5fa8;">ON</b></div>
+    <div class="dropdown-item" id="menuVfxSkinItem" onclick="cycleChatHubVfxSkin(); closeDropdownMenu();">🌸 VFX Skin: <b style="color:#b8b3ff;">Sakuga Classic</b></div>
     <div class="dropdown-item" onclick="openStoriesModal(); closeDropdownMenu();">📁 Saved Stories & Episodes</div>
     <div class="dropdown-item" onclick="openScriptModal(); closeDropdownMenu();">📜 AI Script Importer</div>
     <div class="dropdown-item" onclick="openSpecialEventModal(); closeDropdownMenu();">✨ Insert Banner / Special Alert</div>
@@ -687,6 +690,29 @@
           <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px; border-color:#facc15;" onclick="openAboutModal('globalSettingsModal');">
             <span style="font-size:18px;">ℹ️</span><span>About Studio & Versions</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Sakuga Manga VFX & Chat Hub Story VFX Controls -->
+      <div class="sakuga-studio-banner">
+        <div style="min-width:0; flex:1 1 260px;">
+          <div style="font-weight:900; font-size:14px; color:#f8fafc;">⚡ Sakuga & Chat Hub VFX Studio</div>
+          <div style="font-size:12px; color:#c7d2fe; margin-top:2px;">Sakuga spring controls + live emotion VFX on chat bubbles, stickers, quests & playback</div>
+        </div>
+        <div class="sakuga-studio-actions">
+          <button type="button" class="btn-secondary-comic" id="globalSakugaToggleBtn" style="padding:8px 12px; font-size:12px; display:flex; align-items:center; gap:6px; border-color:#ff5fa8;" onclick="toggleSakugaVfx()">
+            <span id="globalSakugaIcon">⚡</span><span id="globalSakugaLabel">Sakuga VFX: ON</span>
+          </button>
+          <button type="button" class="btn-secondary-comic" id="globalChatVfxToggleBtn" style="padding:8px 12px; font-size:12px; display:flex; align-items:center; gap:6px; border-color:#ff5fa8;" onclick="toggleChatBubbleVfx()">
+            <span id="globalChatVfxIcon">✨</span><span id="globalChatVfxLabel">Chat VFX: ON</span>
+          </button>
+          <sakuga-button id="sakugaStudioTestBtn" onclick="setTimeout(() => this.done(), 350)">Test Impact!</sakuga-button>
+        </div>
+        <div class="vfx-skin-pills" role="group" aria-label="VFX Skin Theme">
+          <button type="button" class="vfx-skin-pill active" data-skin="sakuga" onclick="setChatHubVfxSkin('sakuga')">🌸 Sakuga Classic</button>
+          <button type="button" class="vfx-skin-pill" data-skin="hunter" onclick="setChatHubVfxSkin('hunter')">💠 Hunter System</button>
+          <button type="button" class="vfx-skin-pill" data-skin="shonen" onclick="setChatHubVfxSkin('shonen')">🔥 Shonen Clash</button>
+          <button type="button" class="vfx-skin-pill" data-skin="kawaii" onclick="setChatHubVfxSkin('kawaii')">💖 Kawaii Pop</button>
         </div>
       </div>
 
@@ -1128,6 +1154,7 @@
             <span class="script-tag-pill" onclick="insertScriptTag('[QUEST: ⚠️ URGENT QUEST: Enter mission objective here]')" title="Click to insert Solo Leveling quest alert">[QUEST: text]</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[SYSTEM: 🎬 EPISODE 1: TITLE]')" title="Click to insert episode or scene banner">[SYSTEM: text]</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:shock:vineboom]: NANI?!')" title="Click to insert dialogue with face and sound effect">[Name:shock:vineboom]: text</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:sfx]: 💥 BAM!!')" title="Click to insert animated Manga SFX Burst (BAM!!, NANI?!, BRUH..., ARISE!!)" style="border-color:#facc15; color:#facc15;">[Name:sfx]: 💥 BAM!!</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:STICKER]: DEAD')" title="Click to trigger reaction sticker">[Name:STICKER]: label</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[CHOICE: Choose reply | Option A -> Nobita: Reply A | Option B -> Doraemon: Reply B]')" title="Click to insert interactive branching choice dilemma" style="border-color:#ec4899; color:#f472b6;">[CHOICE: Option A | Option B]</span>
           </div>
@@ -2005,6 +2032,9 @@
 </div>
 
 <script src="storage.js?v=1.0"></script>
+<script src="sakuga-vfx/core.js?v=1.0"></script>
 <script src="app.js?v=3.3.2"></script>
+<script src="sakuga-vfx/sakuga-studio.js?v=1.0"></script>
+<script src="sakuga-vfx/chathub-vfx.js?v=1.0"></script>
 </body>
 </html>

@@ -263,14 +263,23 @@
     // 💥 Combat & Impact
     { text: '👊 POW!!', category: 'combat', expr: 'angry', sfx: 'punch' },
     { text: '💥 BAM!!', category: 'combat', expr: 'angry', sfx: 'punch' },
+    { text: '💢 CRITICAL HIT!!', category: 'combat', expr: 'angry', sfx: 'punch' },
+    { text: '💥 K.O.!!', category: 'combat', expr: 'angry', sfx: 'boom' },
     { text: '🥊 ORA ORA!!', category: 'combat', expr: 'angry', sfx: 'punch' },
     { text: '⚔️ CLASH!!', category: 'combat', expr: 'shock', sfx: 'sword' },
+    { text: '🩸 SLASH!!', category: 'combat', expr: 'angry', sfx: 'sword' },
+    { text: '🛡️ BLOCKED!!', category: 'combat', expr: 'shock', sfx: 'sword' },
+    { text: '🔨 BONK!!', category: 'combat', expr: 'angry', sfx: 'punch' },
     { text: '💫 SMACK!!', category: 'combat', expr: 'angry', sfx: 'punch' },
     { text: '💨 WHOOSH!', category: 'combat', expr: 'normal', sfx: 'pop' },
     { text: '⚡ CRACKLE!!', category: 'combat', expr: 'shock', sfx: 'shock' },
 
     // 😱 Drama & Suspense
     { text: '⚡ NANI?!', category: 'drama', expr: 'shock', sfx: 'sting' },
+    { text: '❗ WAIT WHAT?!', category: 'drama', expr: 'shock', sfx: 'sting' },
+    { text: '🤫 PLOT TWIST!!', category: 'drama', expr: 'shock', sfx: 'vineboom' },
+    { text: '😰 PANIC!!', category: 'drama', expr: 'shock', sfx: 'shock' },
+    { text: '💔 HEARTBREAK...', category: 'drama', expr: 'cry', sfx: 'sad' },
     { text: '👀 GULP...', category: 'drama', expr: 'shock', sfx: 'vineboom' },
     { text: '💀 OMAE WA MOU...', category: 'drama', expr: 'shock', sfx: 'vineboom' },
     { text: '⚠️ MENACING (ゴゴゴ)', category: 'drama', expr: 'angry', sfx: 'vineboom' },
@@ -280,13 +289,22 @@
     // 😂 Comedy & Memes
     { text: '🤣 BWAHAHA!', category: 'comedy', expr: 'laugh', sfx: 'boing' },
     { text: '🤡 BRUH...', category: 'comedy', expr: 'shock', sfx: 'vineboom' },
+    { text: '😭 EMOTIONAL DAMAGE!!', category: 'comedy', expr: 'cry', sfx: 'vineboom' },
+    { text: '🫣 SHEESH!!', category: 'comedy', expr: 'laugh', sfx: 'sparkle' },
+    { text: '💀 RIP!!', category: 'comedy', expr: 'shock', sfx: 'vineboom' },
+    { text: '🏃 YEET!!', category: 'comedy', expr: 'laugh', sfx: 'boing' },
+    { text: '🤡 CAP!!', category: 'comedy', expr: 'angry', sfx: 'vineboom' },
     { text: '🗿 CHAD SILENCE', category: 'comedy', expr: 'normal', sfx: 'vineboom' },
     { text: '🪗 BOING!!', category: 'comedy', expr: 'laugh', sfx: 'boing' },
     { text: '😭 WAAAHH!!', category: 'comedy', expr: 'cry', sfx: 'sad' },
     { text: '💨 NIGERUNDAYO!!', category: 'comedy', expr: 'shock', sfx: 'pop' },
 
     // 🔥 Auras & Power
+    { text: '👑 ARISE!!', category: 'aura', expr: 'angry', sfx: 'scifi' },
+    { text: '⬆️ LEVEL UP!!', category: 'aura', expr: 'laugh', sfx: 'sparkle' },
     { text: '🔥 AWAKEN!!', category: 'aura', expr: 'angry', sfx: 'boom' },
+    { text: '⚡ BANKAI!!', category: 'aura', expr: 'angry', sfx: 'boom' },
+    { text: '🌀 PLUS ULTRA!!', category: 'aura', expr: 'angry', sfx: 'boom' },
     { text: '🌌 DOMAIN EXPANSION!!', category: 'aura', expr: 'shock', sfx: 'scifi' },
     { text: '⚡ 100% POWER!!', category: 'aura', expr: 'angry', sfx: 'boom' },
     { text: '👁️ SHARINGAN!!', category: 'aura', expr: 'shock', sfx: 'sting' },
@@ -1709,21 +1727,38 @@ function playSciFiChimeSound() {
     }
   }
 
-  function triggerExpressionEffects(expr, charPitch = 1.0, bubbleEl = null) {
-    if (bubbleEl) {
+  function getLastChatBubbleEl(selector = '.speech-bubble, .sticker-card') {
+    const stream = document.getElementById('chatStream');
+    if (!stream) return null;
+    const matches = stream.querySelectorAll(selector);
+    return matches.length ? matches[matches.length - 1] : null;
+  }
+
+  function triggerExpressionEffects(expr, charPitch = 1.0, bubbleEl = null, meta = {}) {
+    const targetBubble = bubbleEl || getLastChatBubbleEl('.speech-bubble, .sticker-card');
+
+    if (targetBubble) {
       if (expr === 'angry') {
-        bubbleEl.classList.remove('in-box-angry');
-        void bubbleEl.offsetWidth;
-        bubbleEl.classList.add('in-box-angry');
+        targetBubble.classList.remove('in-box-angry');
+        void targetBubble.offsetWidth;
+        targetBubble.classList.add('in-box-angry');
       } else if (expr === 'shock') {
-        bubbleEl.classList.remove('in-box-shock');
-        void bubbleEl.offsetWidth;
-        bubbleEl.classList.add('in-box-shock');
+        targetBubble.classList.remove('in-box-shock');
+        void targetBubble.offsetWidth;
+        targetBubble.classList.add('in-box-shock');
       } else if (expr === 'love') {
-        bubbleEl.classList.remove('in-box-pulse');
-        void bubbleEl.offsetWidth;
-        bubbleEl.classList.add('in-box-pulse');
+        targetBubble.classList.remove('in-box-pulse');
+        void targetBubble.offsetWidth;
+        targetBubble.classList.add('in-box-pulse');
       }
+    }
+
+    if (window.ChatHubVfx && targetBubble) {
+      const vfxKind = targetBubble.classList.contains('sfx-burst-bubble')
+        ? 'sfx'
+        : (targetBubble.classList.contains('sticker-card') ? 'sticker' : 'message');
+      const vfxText = vfxKind === 'sfx' ? (targetBubble.querySelector('.bubble-text')?.textContent || '') : '';
+      window.ChatHubVfx.playBubbleVfx(vfxKind, expr, targetBubble, { text: vfxText, ...meta });
     }
 
     if (!soundEnabled) return;
@@ -2758,7 +2793,7 @@ if (msg.type === 'quest') {
 
     // Completely clean avatar (NO reaction emoji badge, NO mood pill)
     row.innerHTML = `
-      <div class="char-avatar-box" onclick="triggerExpressionEffects('${expr}', ${char.pitch || 1.05}, this.closest('.msg-row').querySelector('.speech-bubble, .sticker-card'))" title="${escapeHtml(char.name)}">
+      <div class="char-avatar-box" onclick="triggerExpressionEffects('${expr}', ${char.pitch || 1.05}, this.closest('.msg-row').querySelector('.speech-bubble, .sticker-card'), { fromAvatarClick: true })" title="${escapeHtml(char.name)}">
         <img class="char-avatar-img" src="${getCharacterAvatarForExpr(char, expr)}" alt="${escapeHtml(char.name)}">
       </div>
       <div class="bubble-wrapper">
@@ -3002,6 +3037,9 @@ if (msg.type === 'quest') {
       });
       saveStudioState();
       renderChatStream();
+      if (window.ChatHubVfx) {
+        window.ChatHubVfx.playBubbleVfx('quest', 'shock', getLastChatBubbleEl('.quest-card'));
+      }
       if (soundEnabled) playSciFiChimeSound();
       showToast('🟦 System Quest Activated!');
       return;
@@ -3081,7 +3119,7 @@ if (msg.type === 'quest') {
     saveStudioState();
     renderChatStream();
     triggerSfxByName(burstObj.sfx || 'boom', char.pitch || 1.05);
-    triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05);
+    triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05, getLastChatBubbleEl('.sfx-burst-bubble, .speech-bubble'));
   }
 
   const composerInputElement = document.getElementById('chatMessageInput');
@@ -5454,7 +5492,10 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        stream.scrollTop = stream.scrollHeight;
+        if (nextMsg.type === 'quest' && window.ChatHubVfx) {
+          window.ChatHubVfx.playBubbleVfx('quest', 'shock', el.querySelector('.quest-card') || el);
+        }
         if (soundEnabled) {
           if (nextMsg.type === 'quest') playSciFiChimeSound();
           else playPopSound();
@@ -5469,6 +5510,9 @@ if (msg.type === 'quest') {
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
         stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        if (window.ChatHubVfx) {
+          window.ChatHubVfx.playBubbleVfx('choice', 'normal', el.querySelector('.choice-card') || el);
+        }
         if (soundEnabled) playSparkleSound();
         stepIndex++;
 
@@ -5496,7 +5540,7 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        stream.scrollTop = stream.scrollHeight;
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
         if (soundEnabled) {
           triggerSfxByName(nextMsg.sfx || 'punch', char.pitch || 1.05);
@@ -5506,6 +5550,9 @@ if (msg.type === 'quest') {
           bubbleEl.classList.remove('in-box-shock');
           void bubbleEl.offsetWidth;
           bubbleEl.classList.add('in-box-shock');
+          if (window.ChatHubVfx) {
+            window.ChatHubVfx.playBubbleVfx('sfx', nextMsg.expr || 'angry', bubbleEl, { text: nextMsg.text });
+          }
         }
         stepIndex++;
         cinemaStepTimeout = setTimeout(playNextStep, (nextMsg.delayMs || 420) / cinemaSpeedMultiplier);
@@ -5523,7 +5570,7 @@ if (msg.type === 'quest') {
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
           if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          stream.scrollTop = stream.scrollHeight;
           const pairedCustomAudio = nextMsg.customAudioData || (nextMsg.stickerData && nextMsg.stickerData.customAudioData);
           const pairedSfx = nextMsg.sfx || (nextMsg.stickerData && nextMsg.stickerData.sfx);
           if (soundEnabled) {
@@ -5582,7 +5629,7 @@ if (msg.type === 'quest') {
           const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
           stream.appendChild(el);
           if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-          stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+          stream.scrollTop = stream.scrollHeight;
           const pairedCustomAudio = nextMsg.customAudioData || (nextMsg.stickerData && nextMsg.stickerData.customAudioData);
           const pairedSfx = nextMsg.sfx || (nextMsg.stickerData && nextMsg.stickerData.sfx);
           if (soundEnabled) {
@@ -5630,7 +5677,7 @@ if (msg.type === 'quest') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+        stream.scrollTop = stream.scrollHeight;
         if (soundEnabled) playPopSound(char.pitch || 1.05);
         const bubbleEl = el.querySelector('.speech-bubble') || el.querySelector('.sticker-card');
         triggerExpressionEffects(nextMsg.expr || 'normal', char.pitch || 1.05, bubbleEl);
@@ -5723,7 +5770,7 @@ if (msg.type === 'quest') {
             const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
             stream.appendChild(el);
             if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-            stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+            stream.scrollTop = stream.scrollHeight;
 
             if (soundEnabled) playPopSound(char.pitch || 1.05);
 
@@ -5792,6 +5839,9 @@ if (msg.type === 'quest') {
               try {
                 composerInput.setSelectionRange(charIdx, charIdx);
               } catch (_) {}
+              if (window.SakugaStudio && charIdx % 2 === 1) {
+                window.SakugaStudio.onComposerCaretType(composerInput);
+              }
             }
 
             if (soundEnabled && charIdx % 2 === 0) {
@@ -5825,6 +5875,9 @@ if (msg.type === 'quest') {
                 if (sendBtn) {
                   sendBtn.classList.add('btn-press-anim');
                   setTimeout(() => sendBtn.classList.remove('btn-press-anim'), 160);
+                  if (window.SakugaStudio) {
+                    window.SakugaStudio.onControlSpringPop(sendBtn, 1.2);
+                  }
                 }
 
                 // Append outgoing message
@@ -5842,7 +5895,7 @@ if (msg.type === 'quest') {
 
                 stream.appendChild(el);
                 if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-                stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+                stream.scrollTop = stream.scrollHeight;
 
                 if (soundEnabled) playPopSound(char.pitch || 1.05);
 
@@ -6846,11 +6899,13 @@ if (msg.type === 'quest') {
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
 /delay 1.5sec
 [Nobita:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!
+[Gian:sfx]: 💥 BAM!!
 /delay 1.5sec
 [PAUSE: 2s]
 [QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
 /delay 2sec
 [Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
+[Nobita:sfx]: 👑 ARISE!!
 /delay 2.5sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
@@ -8227,6 +8282,18 @@ if (msg.type === 'quest') {
       md += `   :vineboom:, :punch:, :boom:, :shock:, :sword:, :sting:, :scifi:, :boing:, :sad:, :sparkle:, :pop:\n`;
     }
 
+    md += `\n4b. 💥 VISUAL MANGA SFX BURSTS ([Character:sfx]: SFX_TEXT — triggers animated comic bursts & stamps in Auto-Play):\n`;
+    if (Array.isArray(builtInSfxBursts) && builtInSfxBursts.length > 0) {
+      const sfxByCat = { combat: [], drama: [], comedy: [], aura: [] };
+      builtInSfxBursts.forEach(b => {
+        if (sfxByCat[b.category]) sfxByCat[b.category].push(b.text);
+      });
+      md += `   • Combat & Impact: ${sfxByCat.combat.join(', ')}\n`;
+      md += `   • Drama & Suspense: ${sfxByCat.drama.join(', ')}\n`;
+      md += `   • Comedy & Memes: ${sfxByCat.comedy.join(', ')}\n`;
+      md += `   • Auras & Power: ${sfxByCat.aura.join(', ')}\n`;
+    }
+
     const customStickerLabels = (customStickers || []).filter(s => (s.isSticker || s.mediaType === 'sticker') && !s.isVideo && !s.isAudio).map(s => s.label).filter(Boolean);
     const customPhotoLabels = (customStickers || []).filter(s => !s.isSticker && s.mediaType !== 'sticker' && !s.isVideo && s.mediaType !== 'video' && !s.isAudio).map(s => s.label).filter(Boolean);
     const customVideoLabels = (customStickers || []).filter(s => s.isVideo || s.mediaType === 'video').map(s => s.label).filter(Boolean);
@@ -8252,6 +8319,7 @@ if (msg.type === 'quest') {
     md += `Every line in your script MUST match one of these exact syntaxes:\n`;
     md += `• Character Dialogue: [Character:emotion]: dialogue text\n`;
     md += `• Dialogue + SFX Burst: [Character:emotion:sfx_id]: dialogue text\n`;
+    md += `• Manga Visual SFX Card (animated burst + comic stamp!): [Character:sfx]: 💥 BAM!!\n`;
     md += `• Photo Bubble: [Character:IMAGE]: photo_label\n`;
     md += `• Reaction Sticker: [Character:STICKER]: sticker_label\n`;
     md += `• Video Clip Bubble: [Character:VIDEO]: video_label\n`;
@@ -8351,8 +8419,10 @@ if (msg.type === 'quest') {
     md += `/delay 1.5sec\n`;
     md += `[PAUSE: 2s]\n`;
     md += `[${pGian}:angry:punch]: NOBITAAA! COME OUT HERE RIGHT NOW OR I WILL FOLD YOU LIKE ORIGAMI!\n`;
-    md += `/delay 1.8sec\n`;
+    md += `[${pGian}:sfx]: 💥 BAM!!\n`;
+    md += `/delay 1.6sec\n`;
     md += `[${pDora}:shock:shock]: NANI?! That was his holy grail card from the 1998 Tokyo championship!!\n`;
+    md += `[${pDora}:sfx]: ⚡ NANI?!\n`;
     md += `/delay 1.6sec\n`;
     md += `[${povChar}:cry]: Lend me a 4D gadget! The Anywhere Door, the Invisibility Cloak, ANYTHING!!\n`;
     md += `/delay 2.2sec\n`;
@@ -8367,12 +8437,14 @@ if (msg.type === 'quest') {
     md += `[${povChar}:bliss:sparkle]: ${pDora}, lend me your emergency snack stash to distract Gian!\n`;
     md += `/delay 1.8sec\n`;
     md += `[${pDora}:angry]: Anything EXCEPT my limited-edition Dorayaki!\n`;
+    md += `[${pDora}:sfx]: 🤡 BRUH...\n`;
     md += `/delay 2sec\n`;
     md += `[CHAT: group]\n`;
     md += `/delay 1.2sec\n`;
     md += `[CHOICE: How should ${povChar} escape Gian? | 💨 Use Nigerundayo Sprint Speed -> ${povChar}: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice ${pDora}'s Dorayaki -> ${pDora}: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]\n`;
     md += `/delay 2.2sec\n`;
     md += `[${pGian}:shock:vineboom]: NANI?! HE DISAPPEARED INTO THIN AIR?!\n`;
+    md += `[${pGian}:sfx]: 😭 EMOTIONAL DAMAGE!!\n`;
     md += `/delay 1.5sec\n`;
     md += `[${povChar}:STICKER]: DEAD\n`;
     md += `/delay 1.8sec\n`;
@@ -8441,6 +8513,7 @@ if (msg.type === 'quest') {
     md += `[${pGian}:shock:vineboom]: Guys... I just saw a weird shadow moving outside ${povChar}'s second-floor window.\n`;
     md += `/delay 2sec\n`;
     md += `[${povChar}:shock:vineboom]: ${pGian.toUpperCase()}?! Why are you texting in our squad chat at 3 AM?!\n`;
+    md += `[${povChar}:sfx]: 🤫 PLOT TWIST!!\n`;
     md += `/delay 1.8sec\n`;
     md += `[${pGian}:angry]: Because I couldn't sleep! And whatever is outside your window is NOT human!\n`;
     md += `/delay 2sec\n`;
@@ -8469,6 +8542,7 @@ if (msg.type === 'quest') {
     md += `[QUEST: ⚠️ SURVIVAL QUEST: Evade the Predator for 300 seconds without taking damage!]\n`;
     md += `/delay 2sec\n`;
     md += `[${povChar}:shock:vineboom]: A floating blue holographic quest window just popped up in front of my eyes?!\n`;
+    md += `[${povChar}:sfx]: 👑 ARISE!!\n`;
     md += `/delay 1.8sec\n`;
     md += `[${pDora}:laugh:boing]: Bwahaha! The Solo Leveling System chose YOU as a player?!\n`;
     md += `/delay 2.2sec\n`;
@@ -8489,6 +8563,7 @@ if (msg.type === 'quest') {
     md += `[CHOICE: Penalty timer is at 00:03! | ⚡ Awaken Shadow Extraction -> ${povChar}: 👑 ARISE!! GIAN'S SHADOW IS MINE!! | 💨 Tactical Retreat -> ${povChar}: 💨 NIGERUNDAYO SPRINT!!]\n`;
     md += `/delay 2.2sec\n`;
     md += `[${pGian}:shock:vineboom]: NANI?! HIS POWER LEVEL JUST SURPASSED 9000?!\n`;
+    md += `[${povChar}:sfx]: ⬆️ LEVEL UP!!\n`;
     md += `/delay 1.8sec\n`;
     md += `[${povChar}:STICKER]: HYPE\n`;
     md += `/delay 1.8sec\n`;
@@ -8592,6 +8667,7 @@ if (msg.type === 'quest') {
       list += `\n=== 🎬 VIDEO CLIPS ===\n${customVideoLabels.join(', ')}\n`;
     }
     list += `\n=== 🔊 SOUND EFFECTS (SFX) ===\n:vineboom:, :punch:, :boom:, :shock:, :sword:, :sting:, :scifi:, :boing:, :sad:, :sparkle:, :pop:\n`;
+    list += `\n=== 💥 VISUAL MANGA SFX BURSTS ([Character:sfx]: text) ===\n${builtInSfxBursts.map(b => b.text).join(', ')}\n`;
     if (customAudioLabels.length > 0) {
       list += `\n=== 🎵 AUDIO TRACKS / SONGS ===\n${customAudioLabels.join(', ')}\n`;
     }
@@ -8761,11 +8837,13 @@ if (msg.type === 'quest') {
 [Doraemon:angry]: Again?! What did you do to anger him this time?!
 /delay 1.5sec
 [Nobita:shock:vineboom]: I accidentally stepped on his ultra-rare signed baseball card!
+[Gian:sfx]: 💥 BAM!!
 /delay 1.5sec
 [PAUSE: 2s]
 [QUEST: ⚠️ SURVIVAL QUEST: Evade Gian for 5 minutes without Doraemon's 4D gadgets!]
 /delay 2sec
 [Doraemon:laugh:boing]: Bwahaha! Looks like you have to awaken your inner hunter!
+[Nobita:sfx]: 👑 ARISE!!
 /delay 2.5sec
 [SCENE: chatgpt]
 [Nobita]: ChatGPT, give me a tactical escape strategy against an angry baseball kid!
@@ -9525,22 +9603,26 @@ if (msg.type === 'quest') {
         const bodyLower = msgBody.toLowerCase();
         let soundType = explicitSfx || 'punch';
         if (!explicitSfx) {
-          if (bodyLower.includes('bam') || bodyLower.includes('pow') || bodyLower.includes('punch') || bodyLower.includes('hit')) soundType = 'punch';
-          else if (bodyLower.includes('slash') || bodyLower.includes('sword') || bodyLower.includes('blade') || bodyLower.includes('cut')) soundType = 'sword';
-          else if (bodyLower.includes('boom') || bodyLower.includes('vineboom') || bodyLower.includes('bruh') || bodyLower.includes('explode')) soundType = 'vineboom';
-          else if (bodyLower.includes('nani') || bodyLower.includes('shock') || bodyLower.includes('omae') || bodyLower.includes('sting')) soundType = 'sting';
-          else if (bodyLower.includes('awaken') || bodyLower.includes('quest') || bodyLower.includes('mana') || bodyLower.includes('system') || bodyLower.includes('level')) soundType = 'scifi';
-          else if (bodyLower.includes('wah') || bodyLower.includes('cry') || bodyLower.includes('tear') || bodyLower.includes('sob')) soundType = 'sad';
-          else if (bodyLower.includes('bwaha') || bodyLower.includes('haha') || bodyLower.includes('laugh') || bodyLower.includes('rofl')) soundType = 'boing';
+          if (bodyLower.includes('bam') || bodyLower.includes('pow') || bodyLower.includes('punch') || bodyLower.includes('hit') || bodyLower.includes('bonk') || bodyLower.includes('smack')) soundType = 'punch';
+          else if (bodyLower.includes('slash') || bodyLower.includes('sword') || bodyLower.includes('blade') || bodyLower.includes('cut') || bodyLower.includes('clash') || bodyLower.includes('block')) soundType = 'sword';
+          else if (bodyLower.includes('boom') || bodyLower.includes('vineboom') || bodyLower.includes('bruh') || bodyLower.includes('explode') || bodyLower.includes('k.o') || bodyLower.includes('emotional') || bodyLower.includes('plot twist') || bodyLower.includes('rip') || bodyLower.includes('cap') || bodyLower.includes('bankai') || bodyLower.includes('plus ultra')) soundType = 'vineboom';
+          else if (bodyLower.includes('nani') || bodyLower.includes('wait what') || bodyLower.includes('shock') || bodyLower.includes('omae') || bodyLower.includes('sting') || bodyLower.includes('panic')) soundType = 'sting';
+          else if (bodyLower.includes('awaken') || bodyLower.includes('quest') || bodyLower.includes('mana') || bodyLower.includes('system') || bodyLower.includes('arise') || bodyLower.includes('domain')) soundType = 'scifi';
+          else if (bodyLower.includes('level up') || bodyLower.includes('sheesh')) soundType = 'sparkle';
+          else if (bodyLower.includes('wah') || bodyLower.includes('cry') || bodyLower.includes('tear') || bodyLower.includes('sob') || bodyLower.includes('heartbreak')) soundType = 'sad';
+          else if (bodyLower.includes('bwaha') || bodyLower.includes('haha') || bodyLower.includes('laugh') || bodyLower.includes('rofl') || bodyLower.includes('yeet') || bodyLower.includes('boing')) soundType = 'boing';
 
-          const matchBurst = builtInSfxBursts.find(b => b.text.toLowerCase().includes(bodyLower) || bodyLower.includes(b.id));
+          const matchBurst = builtInSfxBursts.find(b => {
+            const plain = b.text.replace(/^[^\w]+/g, '').trim().toLowerCase();
+            return b.text.toLowerCase().includes(bodyLower) || (plain && bodyLower.includes(plain.replace(/[!?.]+$/g, '')));
+          });
           if (matchBurst && matchBurst.sfx) soundType = matchBurst.sfx;
         }
 
         let expr = explicitExpr;
         if (!expr) {
           if (soundType === 'sad') expr = 'cry';
-          else if (soundType === 'boing') expr = 'laugh';
+          else if (soundType === 'boing' || soundType === 'sparkle') expr = 'laugh';
           else if (soundType === 'sting') expr = 'shock';
           else expr = 'angry';
         }
@@ -10130,6 +10212,17 @@ if (msg.type === 'quest') {
   let toastTimeout = null;
   function showToast(text) {
     const el = document.getElementById('appToast');
+    if (!el) return;
+    if (window.SakugaStudio && window.SakugaStudio.isEnabled() && window.SakugaStudio.animateToast(el, text)) {
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+      }
+      return;
+    }
+    el.classList.remove('sakuga-toast-mode');
+    el.style.translate = '';
+    el.style.scale = '';
     el.textContent = text;
     el.style.display = 'flex';
     if (toastTimeout) clearTimeout(toastTimeout);
