@@ -1758,7 +1758,14 @@ function playSciFiChimeSound() {
         ? 'sfx'
         : (targetBubble.classList.contains('sticker-card') ? 'sticker' : 'message');
       const vfxText = vfxKind === 'sfx' ? (targetBubble.querySelector('.bubble-text')?.textContent || '') : '';
-      window.ChatHubVfx.playBubbleVfx(vfxKind, expr, targetBubble, { text: vfxText, ...meta });
+      // For stickers: read the sticker caption from DOM so the stamp text is meaningful
+      const stickerLabel = vfxKind === 'sticker'
+        ? (targetBubble.querySelector('.sticker-caption')?.textContent?.trim() || '')
+        : '';
+      const stickerEmoji = vfxKind === 'sticker'
+        ? (targetBubble.querySelector('.sticker-emoji-art')?.textContent?.trim()?.slice(0, 2) || '')
+        : '';
+      window.ChatHubVfx.playBubbleVfx(vfxKind, expr, targetBubble, { text: vfxText, stickerLabel, stickerEmoji, ...meta });
     }
 
     if (!soundEnabled) return;
@@ -3349,7 +3356,10 @@ if (msg.type === 'quest') {
     saveStudioState();
     renderChatStream();
     triggerSfxByName(burstObj.sfx || 'boom', char.pitch || 1.05);
-    triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05, getLastChatBubbleEl('.sfx-burst-bubble, .speech-bubble'));
+    // rAF: wait one paint frame so the newly-rendered SFX bubble is in the viewport
+    requestAnimationFrame(() => {
+      triggerExpressionEffects(burstObj.expr || 'angry', char.pitch || 1.05, getLastChatBubbleEl('.sfx-burst-bubble, .speech-bubble'));
+    });
   }
 
   const composerInputElement = document.getElementById('chatMessageInput');
@@ -5772,7 +5782,12 @@ if (msg.type === 'quest') {
           void bubbleEl.offsetWidth;
           bubbleEl.classList.add('in-box-shock');
           if (window.ChatHubVfx) {
-            window.ChatHubVfx.playBubbleVfx('sfx', nextMsg.expr || 'angry', bubbleEl, { text: nextMsg.text });
+            // rAF: let the browser paint the appended bubble before measuring its rect
+            requestAnimationFrame(() => {
+              if (window.ChatHubVfx) {
+                window.ChatHubVfx.playBubbleVfx('sfx', nextMsg.expr || 'angry', bubbleEl, { text: nextMsg.text });
+              }
+            });
           }
         }
         stepIndex++;

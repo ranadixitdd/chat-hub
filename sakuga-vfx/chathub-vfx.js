@@ -571,15 +571,25 @@
 
     if (kind === 'sticker') {
       if (window.SakugaStudio) window.SakugaStudio.onControlSpringPop(bubbleEl, 1.18);
-      fx.ring(m.cx, m.bottomY - 4, { rx: Math.max(36, m.w * 0.45), ry: 11, life: 0.45, w: 4 });
-      fx.puff(m.b.left + window.scrollX + 12, m.bottomY, { size: 8, n: 3, vx: -24, vy: -8, life: 0.55 });
-      fx.puff(m.b.right + window.scrollX - 12, m.bottomY, { size: 8, n: 3, vx: 24, vy: -8, life: 0.55 });
+      // Square halftone burst matches the square sticker card shape (no round ring)
+      halftoneBurst(m.cx, m.cy, { rx: Math.max(44, m.w * 0.5), ry: Math.max(44, m.h * 0.5), life: 0.42, clipOutEl: bubbleEl });
+      fx.shards(m.cx, m.cy, { n: 6, speed: 170, size: 5, arc: 6.28, grav: 240, life: 0.65 });
       fx.kira(m.innerEdgeX, m.topY + 4, { r: 11, life: 0.6 });
+      fx.puff(m.b.left + window.scrollX + 12, m.bottomY, { size: 7, n: 3, vx: -20, vy: -10, life: 0.5 });
+      fx.puff(m.b.right + window.scrollX - 12, m.bottomY, { size: 7, n: 3, vx: 20, vy: -10, life: 0.5 });
       if (e === 'angry' || e === 'shock') {
         lightning(m.innerEdgeX, m.cy, { len: 36, dir: m.inwardDir > 0 ? -0.35 : Math.PI + 0.35, life: 0.38 });
       }
+      if (e === 'love') {
+        hearts(m.innerEdgeX, m.topY + 8, { n: 3, life: 0.8 });
+      }
       if (canSpawnStamp()) {
-        comicStamp(e === 'love' ? 'UWU!' : 'SLAM!', stampX, stampY, { fontSize: 13 });
+        // Use sticker label/emoji if passed, otherwise derive from expression
+        const rawLabel = meta.stickerLabel || meta.stickerEmoji || '';
+        const stickerStamp = rawLabel.slice(0, 10).toUpperCase() ||
+          (e === 'love' ? 'UWU!' : e === 'angry' ? 'RAGE!!' : e === 'shock' ? 'NANI?!' :
+           e === 'cry' ? 'NOOO!' : e === 'laugh' ? 'HAHA!' : e === 'cool' ? 'YOOO!' : '!!!');
+        comicStamp(stickerStamp, stampX, stampY, { fontSize: stickerStamp.length > 6 ? 11 : 13 });
       }
       return;
     }
