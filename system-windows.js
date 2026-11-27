@@ -1,6 +1,6 @@
 /* ============================================================================
    MANHWA CHAT HUB — MODULAR MANHWA SYSTEM WINDOW STUDIO
-   12 Presets • 7 Themes • 6 Frame Geometries • Modular Blocks • Live Builder
+   17 Presets • Inventory & Coin Shop • Level-Up +Stats • Dynamic Penalty Climax
    ============================================================================ */
 (() => {
   'use strict';
@@ -71,7 +71,7 @@
   }
 
   /* --------------------------------------------------------------------------
-     7 CURATED MANHWA SYSTEM THEMES
+     7 CURATED MANHWA SYSTEM THEMES (Clean helpers prevent id/label leakage)
      -------------------------------------------------------------------------- */
   const THEMES = {
     hunter_blue: {
@@ -174,8 +174,25 @@
     }
   };
 
+  function themeProps(themeId) {
+    const t = THEMES[themeId] || THEMES.hunter_blue;
+    return {
+      themeId: t.id,
+      accentColor: t.accentColor,
+      secondaryColor: t.secondaryColor,
+      bgColor: t.bgColor,
+      bgOpacity: t.bgOpacity,
+      frameStyle: t.frameStyle,
+      fontStyle: t.fontStyle,
+      scanlines: t.scanlines,
+      gridPattern: t.gridPattern,
+      sparkles: t.sparkles,
+      glowIntensity: t.glowIntensity
+    };
+  }
+
   /* --------------------------------------------------------------------------
-     12 MANHWA SYSTEM ARCHETYPE PRESETS
+     17 MANHWA SYSTEM ARCHETYPE PRESETS
      -------------------------------------------------------------------------- */
   const PRESETS = [
     {
@@ -185,18 +202,23 @@
       desc: 'Urgent mission & system prompt',
       config: {
         presetId: 'notification',
-        themeId: 'hunter_blue',
-        ...THEMES.hunter_blue,
+        ...themeProps('hunter_blue'),
         animation: 'hologram',
         sfx: 'scifi',
         headerIcon: '❖',
         headerTitle: 'SYSTEM QUEST ALERT',
         headerBadge: '[URGENT]',
+        currencyText: '',
         subtitle: 'Secret Quest: Courage of the Weak',
         mediaUrl: '',
         mediaLayout: 'none',
         mediaCaption: '',
         bodyText: 'Prepare to become a Player.\nWill you accept the System Awakening contract before time runs out?',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [],
         statsCols: 2,
         stats: [
@@ -208,8 +230,8 @@
         timerSeconds: 600,
         timerLabel: 'TIME LEFT',
         buttons: [
-          { label: '✔ ACCEPT', style: 'primary' },
-          { label: '✖ DECLINE', style: 'ghost' }
+          { label: '✔ ACCEPT', style: 'neutral' },
+          { label: '✖ DECLINE', style: 'neutral' }
         ],
         stampText: '',
         stampColor: '#00f0ff',
@@ -223,18 +245,23 @@
       desc: 'RPG stats, HP/MP bars & portrait',
       config: {
         presetId: 'status',
-        themeId: 'hunter_blue',
-        ...THEMES.hunter_blue,
+        ...themeProps('hunter_blue'),
         animation: 'hologram',
         sfx: 'scifi',
         headerIcon: '💠',
         headerTitle: 'PLAYER STATUS WINDOW',
         headerBadge: 'LV. 42',
+        currencyText: '',
         subtitle: 'Class: Shadow Hunter • Title: One Who Overcame',
         mediaUrl: 'assets/characters/anime_boy_body.png',
         mediaLayout: 'portrait_left',
         mediaCaption: 'KAITO [S-RANK]',
         bodyText: '',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [
           { label: 'HP', value: 100, fromValue: 35, displayText: '4,820 / 4,820', color: '#ef4444', animated: true },
           { label: 'MP', value: 84, fromValue: 84, displayText: '2,100 / 2,500', color: '#38bdf8', animated: false }
@@ -259,24 +286,299 @@
       }
     },
     {
+      id: 'levelup',
+      icon: '📈',
+      name: 'Level-Up +Stats',
+      desc: 'Level jump, new skill & +ATK%/STR',
+      config: {
+        presetId: 'levelup',
+        ...themeProps('hunter_blue'),
+        animation: 'pop',
+        sfx: 'sparkle',
+        headerIcon: '🎉',
+        headerTitle: 'LEVEL UP! POWER AWAKENING',
+        headerBadge: 'LV. +1',
+        currencyText: '',
+        subtitle: 'All Fatigue Cleared • Full HP/MP Recovery',
+        mediaUrl: 'assets/characters/anime_boy_happy.png',
+        mediaLayout: 'icon_title',
+        mediaCaption: '',
+        bodyText: 'You defeated the Red Gate Guardian solo! Hidden potential unlocked.',
+        levelTransition: 'LV. 12 ➔ LV. 13',
+        unlockedAbility: '⚡ NEW ABILITY: Shadow Extraction (Rank S)',
+        statBoosts: [
+          { label: 'STR', delta: '+15' },
+          { label: 'AGI', delta: '+12' },
+          { label: 'ATK POWER', delta: '+20%' },
+          { label: 'CRIT DMG', delta: '+10%' }
+        ],
+        inventoryItems: [],
+        shopItems: [],
+        bars: [
+          { label: 'EXP', value: 100, fromValue: 20, displayText: '100% LEVEL UP!', color: '#facc15', animated: true }
+        ],
+        statsCols: 2,
+        stats: [],
+        pills: ['HP/MP 100% Restored', '+5 Bonus Stat Points'],
+        timerEnabled: false,
+        timerSeconds: 0,
+        timerLabel: '',
+        buttons: [],
+        stampText: 'LEVEL UP!',
+        stampColor: '#4ade80',
+        footerText: 'System Stat Progression Engine'
+      }
+    },
+    {
+      id: 'inventory',
+      icon: '🎒',
+      name: 'Inventory Vault',
+      desc: 'Rarity slots, xQty stacks & EQP',
+      config: {
+        presetId: 'inventory',
+        ...themeProps('hunter_blue'),
+        animation: 'hologram',
+        sfx: 'scifi',
+        headerIcon: '🎒',
+        headerTitle: 'PLAYER INVENTORY VAULT',
+        headerBadge: '6/20 SLOTS',
+        currencyText: '🪙 125,400 G',
+        subtitle: 'Sub-Space Storage • Tap any item to inspect',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: '',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [
+          { icon: '🗡️', name: "Kasaka's Fang", rarity: 'mythic', qty: '1', equipped: true, locked: false },
+          { icon: '⚔️', name: 'Knight Killer', rarity: 'legendary', qty: '1', equipped: false, locked: false },
+          { icon: '🧪', name: 'Elixir of Life', rarity: 'epic', qty: '3', equipped: false, locked: false },
+          { icon: '💎', name: 'Mana Crystal', rarity: 'rare', qty: '14', equipped: false, locked: false },
+          { icon: '📜', name: 'Return Stone', rarity: 'rare', qty: '2', equipped: false, locked: false },
+          { icon: '🗝️', name: 'Monarch Key', rarity: 'mythic', qty: '1', equipped: false, locked: true }
+        ],
+        shopItems: [],
+        bars: [],
+        statsCols: 2,
+        stats: [],
+        pills: ['Soul-Bound Vault', 'Zero Weight Limit'],
+        timerEnabled: false,
+        timerSeconds: 0,
+        timerLabel: '',
+        buttons: [],
+        stampText: '',
+        stampColor: '#00f0ff',
+        footerText: 'Tap item slot to toggle Equip / Inspect'
+      }
+    },
+    {
+      id: 'shop',
+      icon: '🪙',
+      name: 'Coin Shop',
+      desc: 'System store with prices & locks',
+      config: {
+        presetId: 'shop',
+        ...themeProps('murim_gold'),
+        frameStyle: 'cyber_bevel',
+        fontStyle: 'hud',
+        animation: 'hologram',
+        sfx: 'sparkle',
+        headerIcon: '🪙',
+        headerTitle: 'SYSTEM COIN SHOP',
+        headerBadge: 'OPEN 24H',
+        currencyText: '🪙 120,000 G',
+        subtitle: 'Exclusive Hunter Exchange • Tap BUY to purchase',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: '',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [
+          { icon: '🗡️', name: "Demon King's Daggers", rarity: 'legendary', meta: 'ATK +240 • Twin Blades', price: '80,000 G', locked: false, owned: false },
+          { icon: '🧪', name: 'Full Recovery Potion', rarity: 'epic', meta: 'Instant 100% HP & Mana', price: '5,000 G', locked: false, owned: false },
+          { icon: '🧥', name: 'Shadow Monarch Cloak', rarity: 'rare', meta: 'Stealth +35% • DEF +90', price: '28,000 G', locked: false, owned: false },
+          { icon: '👑', name: 'Crown of Abyss', rarity: 'mythic', meta: 'REQ: LV.50 OR MONARCH', price: 'LOCKED LV.50', locked: true, owned: false }
+        ],
+        bars: [],
+        statsCols: 2,
+        stats: [],
+        pills: ['Discount Active: -10%'],
+        timerEnabled: false,
+        timerSeconds: 0,
+        timerLabel: '',
+        buttons: [],
+        stampText: '',
+        stampColor: '#facc15',
+        footerText: 'Non-Refundable System Transaction'
+      }
+    },
+    {
+      id: 'timer',
+      icon: '⏱️',
+      name: 'Penalty Timer',
+      desc: 'Dynamic urgent countdown & impact',
+      config: {
+        presetId: 'timer',
+        ...themeProps('crimson_danger'),
+        animation: 'impact',
+        sfx: 'sting',
+        headerIcon: '☠️',
+        headerTitle: 'PENALTY QUEST: SURVIVE',
+        headerBadge: 'DANGER',
+        currencyText: '',
+        subtitle: 'Failure triggers immediate Punishment Zone',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: 'WARNING: You ignored your Daily Objective!\nHold out until 00:00 or face Automatic System Penalty.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
+        bars: [
+          { label: 'HEARTBEAT PANIC', value: 92, fromValue: 45, displayText: 'CRITICAL 178 BPM', color: '#ef4444', animated: true }
+        ],
+        statsCols: 2,
+        stats: [
+          { label: 'PENALTY ZONE', value: 'Crimson Desert' },
+          { label: 'ESCAPE', value: 'LOCKED' }
+        ],
+        pills: ['Live Drain Active', 'No Healing Items'],
+        timerEnabled: true,
+        timerSeconds: 12,
+        timerLabel: 'SURVIVAL COUNTDOWN',
+        buttons: [],
+        stampText: '',
+        stampColor: '#ef4444',
+        footerText: 'DO NOT STOP RUNNING'
+      }
+    },
+    {
+      id: 'questboard',
+      icon: '📋',
+      name: 'Daily Quests',
+      desc: 'Checklist tasks & streak tracker',
+      config: {
+        presetId: 'questboard',
+        ...themeProps('hunter_blue'),
+        animation: 'hologram',
+        sfx: 'scifi',
+        headerIcon: '📋',
+        headerTitle: 'DAILY QUEST: PATH TO POWER',
+        headerBadge: '🔥 7-DAY STREAK',
+        currencyText: '',
+        subtitle: 'Complete all objectives before midnight',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: '',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
+        bars: [
+          { label: 'PUSH-UPS [COMPLETE]', value: 100, fromValue: 100, displayText: '100 / 100', color: '#4ade80', animated: false },
+          { label: 'SQUATS [COMPLETE]', value: 100, fromValue: 100, displayText: '100 / 100', color: '#4ade80', animated: false },
+          { label: '10KM RUN [IN PROGRESS]', value: 80, fromValue: 40, displayText: '8.0 / 10.0 km', color: '#00f0ff', animated: true }
+        ],
+        statsCols: 2,
+        stats: [
+          { label: 'REWARD', value: 'Full Recovery + Random Box' },
+          { label: 'STREAK BONUS', value: '+20% EXP Gain' }
+        ],
+        pills: ['2/3 Completed'],
+        timerEnabled: true,
+        timerSeconds: 300,
+        timerLabel: 'RESET IN',
+        buttons: [
+          { label: '🎁 CLAIM REWARD', style: 'neutral' }
+        ],
+        stampText: '',
+        stampColor: '#4ade80',
+        footerText: 'Unfinished quests trigger Penalty Quest'
+      }
+    },
+    {
+      id: 'shadowarmy',
+      icon: '👥',
+      name: 'Shadow Army',
+      desc: 'Monarch roster & leaderboard',
+      config: {
+        presetId: 'shadowarmy',
+        ...themeProps('shadow_violet'),
+        animation: 'glitch',
+        sfx: 'vineboom',
+        headerIcon: '🌑',
+        headerTitle: 'SHADOW SOLDIER ROSTER',
+        headerBadge: 'MONARCH',
+        currencyText: '🌑 MANA 9,400',
+        subtitle: 'Extracted Shadows Ready for Summon [3/20 Slots]',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: '',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [
+          { icon: '⚔️', name: 'IGRIS [KNIGHT]', rarity: 'legendary', qty: 'S', equipped: true, locked: false },
+          { icon: '🐜', name: 'BERU [MARSHAL]', rarity: 'mythic', qty: 'SSS', equipped: true, locked: false },
+          { icon: '🐻', name: 'TANK [ALPHA]', rarity: 'epic', qty: 'A', equipped: false, locked: false },
+          { icon: '🛡️', name: 'IRON [VANGUARD]', rarity: 'rare', qty: 'A', equipped: false, locked: false },
+          { icon: '⚡', name: 'KAISAR [WYVERN]', rarity: 'epic', qty: 'A+', equipped: false, locked: false },
+          { icon: '❔', name: 'EMPTY SLOT', rarity: 'common', qty: '-', equipped: false, locked: true }
+        ],
+        shopItems: [],
+        bars: [],
+        statsCols: 2,
+        stats: [
+          { label: 'TOTAL SOLDIERS', value: '1,240 Shadows' },
+          { label: 'REGEN SPEED', value: 'Instant (Mana)' }
+        ],
+        pills: ['Command: ARISE'],
+        timerEnabled: false,
+        timerSeconds: 0,
+        timerLabel: '',
+        buttons: [
+          { label: '🌑 SUMMON ALL', style: 'neutral' },
+          { label: '⚔️ EXTRACT MORE', style: 'neutral' }
+        ],
+        stampText: '',
+        stampColor: '#a855f7',
+        footerText: 'Shadow Extraction Storage'
+      }
+    },
+    {
       id: 'item',
       icon: '🗡️',
       name: 'Item / Artifact',
       desc: 'Weapon drop, rarity & passives',
       config: {
         presetId: 'item',
-        themeId: 'shadow_violet',
-        ...THEMES.shadow_violet,
+        ...themeProps('shadow_violet'),
         animation: 'pop',
         sfx: 'sparkle',
         headerIcon: '🗡️',
         headerTitle: "KASAKA'S VENOM FANG",
         headerBadge: 'S-RANK DAGGER',
+        currencyText: '',
         subtitle: 'Artifact Drop • Category: Mythic Weapon',
         mediaUrl: 'assets/characters/anime_boy_shadow.png',
         mediaLayout: 'icon_title',
         mediaCaption: '',
         bodyText: 'A deadly blade carved from the Shadow Serpent. Inflicts Paralyze and Bleed on every critical strike.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [],
         statsCols: 2,
         stats: [
@@ -290,8 +592,8 @@
         timerSeconds: 0,
         timerLabel: '',
         buttons: [
-          { label: '⚔️ EQUIP ITEM', style: 'primary' },
-          { label: '📦 STORE IN INVENTORY', style: 'ghost' }
+          { label: '⚔️ EQUIP ITEM', style: 'neutral' },
+          { label: '📦 STORE IN INVENTORY', style: 'neutral' }
         ],
         stampText: '',
         stampColor: '#facc15',
@@ -305,18 +607,23 @@
       desc: 'Animated boot or 99% glitch bar',
       config: {
         presetId: 'loading',
-        themeId: 'cyber_green',
-        ...THEMES.cyber_green,
+        ...themeProps('cyber_green'),
         animation: 'glitch',
         sfx: 'scifi',
         headerIcon: '⚡',
         headerTitle: 'SYSTEM INITIALIZING...',
         headerBadge: 'SYNCING',
+        currencyText: '',
         subtitle: 'Protocol v9.4 // Awakening Soul Matrix',
         mediaUrl: '',
         mediaLayout: 'none',
         mediaCaption: '',
         bodyText: 'Verifying Vessel Compatibility...\nUnlocking Locked Mana Circuits... Please do not lose consciousness.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [
           { label: 'AWAKENING SYNC', value: 100, fromValue: 0, displayText: '100% COMPLETE', color: '#10b981', animated: true }
         ],
@@ -342,18 +649,23 @@
       desc: 'Otome Isekai love/suspicion bar',
       config: {
         presetId: 'affection',
-        themeId: 'otome_rose',
-        ...THEMES.otome_rose,
+        ...themeProps('otome_rose'),
         animation: 'pop',
         sfx: 'sparkle',
         headerIcon: '💘',
         headerTitle: 'TARGET AFFECTION UPDATED',
         headerBadge: '+28% BOOST',
+        currencyText: '',
         subtitle: 'Otome Capture Target Monitor',
         mediaUrl: 'assets/characters/anime_girl_happy.png',
         mediaLayout: 'circle_halo',
         mediaCaption: 'HANA',
         bodyText: 'Your unexpected sincerity caught her completely off-guard!\nUnlockable Event: Rooftop Confession Route.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [
           { label: 'AFFECTION LEVEL', value: 78, fromValue: 50, displayText: '50% ➔ 78% (+28%)', color: '#ec4899', animated: true },
           { label: 'SUSPICION METER', value: 12, fromValue: 40, displayText: '40% ➔ 12% (DROPPED)', color: '#a855f7', animated: true }
@@ -380,19 +692,24 @@
       desc: 'Show any map, photo, meme or CG',
       config: {
         presetId: 'showcase',
-        themeId: 'hunter_blue',
-        ...THEMES.hunter_blue,
+        ...themeProps('hunter_blue'),
         frameStyle: 'glass_hud',
         animation: 'unroll',
         sfx: 'pop',
         headerIcon: '📷',
         headerTitle: 'CLASSIFIED EVIDENCE FILE',
         headerBadge: 'VERIFIED',
+        currencyText: '',
         subtitle: 'Attached Image Data • Encrypted Archive',
         mediaUrl: 'assets/characters/sample_anime_vn_scene.png',
         mediaLayout: 'banner_top',
         mediaCaption: 'CAPTURED AT SECTOR 04 — 01:14 AM',
         bodyText: 'Visual confirmation uploaded directly to your System Log. Inspect the image closely before answering.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [],
         statsCols: 2,
         stats: [
@@ -416,8 +733,7 @@
       desc: 'Omniscient Reader sponsor message',
       config: {
         presetId: 'constellation',
-        themeId: 'shadow_violet',
-        ...THEMES.shadow_violet,
+        ...themeProps('shadow_violet'),
         frameStyle: 'glass_hud',
         sparkles: true,
         animation: 'unroll',
@@ -425,11 +741,17 @@
         headerIcon: '✨',
         headerTitle: 'STAR STREAM CHANNEL #704',
         headerBadge: '+1,000 COINS',
+        currencyText: '🪙 +1,000 C',
         subtitle: '[Indirect Message from Constellation]',
         mediaUrl: 'assets/characters/anime_boy_happy.png',
         mediaLayout: 'circle_halo',
         mediaCaption: 'SPONSOR',
         bodyText: 'The Constellation "Demon-like Judge of Fire" is cheering wildly at your dramatic comeback!\n1,000 Coins have been sponsored.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [],
         statsCols: 2,
         stats: [
@@ -441,7 +763,7 @@
         timerSeconds: 0,
         timerLabel: '',
         buttons: [
-          { label: '🙏 THANK SPONSOR', style: 'primary' }
+          { label: '🙏 THANK SPONSOR', style: 'neutral' }
         ],
         stampText: '',
         stampColor: '#facc15',
@@ -455,25 +777,31 @@
       desc: 'Before/After skill awakening card',
       config: {
         presetId: 'skill',
-        themeId: 'murim_gold',
-        ...THEMES.murim_gold,
+        ...themeProps('murim_gold'),
         animation: 'impact',
         sfx: 'sword',
         headerIcon: '⚔️',
         headerTitle: 'SKILL AWAKENING ACHIEVED!',
         headerBadge: 'EVOLVED',
+        currencyText: '',
         subtitle: 'Unique Trait Resonance Detected',
         mediaUrl: 'assets/characters/clean_knight.png',
         mediaLayout: 'icon_title',
         mediaCaption: '',
         bodyText: 'Your survival instinct broke past mortal limits. Your basic passive skill has awakened into an Ultimate Art!',
+        levelTransition: '',
+        unlockedAbility: '⚔️ EVOLVED: [F] Quick Step ➔ [SS] Void Flash',
+        statBoosts: [
+          { label: 'SPEED', delta: '+45%' },
+          { label: 'CRIT CHANCE', delta: '+25%' }
+        ],
+        inventoryItems: [],
+        shopItems: [],
         bars: [
           { label: 'SKILL MASTERY', value: 100, fromValue: 45, displayText: 'MAX AWAKENED', color: '#facc15', animated: true }
         ],
         statsCols: 2,
         stats: [
-          { label: 'BEFORE', value: '[F] Quick Step' },
-          { label: 'AFTER', value: '[SS] Void Flash' },
           { label: 'MANA COST', value: '30 MP' },
           { label: 'COOLDOWN', value: '2.0 Sec' }
         ],
@@ -488,61 +816,29 @@
       }
     },
     {
-      id: 'timer',
-      icon: '⏱️',
-      name: 'Penalty Timer',
-      desc: 'Live ticking danger countdown',
-      config: {
-        presetId: 'timer',
-        themeId: 'crimson_danger',
-        ...THEMES.crimson_danger,
-        animation: 'impact',
-        sfx: 'sting',
-        headerIcon: '☠️',
-        headerTitle: 'PENALTY QUEST: SURVIVE',
-        headerBadge: 'DANGER',
-        subtitle: 'Failure to comply triggers immediate teleport',
-        mediaUrl: '',
-        mediaLayout: 'none',
-        mediaCaption: '',
-        bodyText: 'WARNING: You ignored the Daily Objective.\nSurvive inside the Crimson Desert until the countdown hits 00:00.',
-        bars: [
-          { label: 'THREAT INTENSITY', value: 92, fromValue: 40, displayText: 'CRITICAL 92%', color: '#ef4444', animated: true }
-        ],
-        statsCols: 2,
-        stats: [
-          { label: 'HOSTILES', value: '47 Sand Centipedes' },
-          { label: 'ESCAPE', value: 'LOCKED' }
-        ],
-        pills: ['No Healing Items', 'Heartbeat Spiking'],
-        timerEnabled: true,
-        timerSeconds: 299,
-        timerLabel: 'SURVIVAL COUNTDOWN',
-        buttons: [],
-        stampText: 'PENALTY',
-        stampColor: '#ef4444',
-        footerText: 'DO NOT STOP RUNNING'
-      }
-    },
-    {
       id: 'contract',
       icon: '📜',
       name: 'Devil Contract',
       desc: 'Royal oath, deal or guild pact',
       config: {
         presetId: 'contract',
-        themeId: 'murim_gold',
-        ...THEMES.murim_gold,
+        ...themeProps('murim_gold'),
         animation: 'unroll',
         sfx: 'vineboom',
         headerIcon: '📜',
         headerTitle: 'IMPERIAL BLOOD CONTRACT',
         headerBadge: 'BINDING',
+        currencyText: '',
         subtitle: 'Between Party A & Shadow Architect',
         mediaUrl: '',
         mediaLayout: 'none',
         mediaCaption: '',
         bodyText: '1. Signatory receives S-Rank Authority immediately.\n2. Betrayal voids all mortal protections.\n3. Both parties swear upon their True Names.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [],
         statsCols: 2,
         stats: [
@@ -554,8 +850,8 @@
         timerSeconds: 0,
         timerLabel: '',
         buttons: [
-          { label: '✒️ SIGN CONTRACT', style: 'primary' },
-          { label: '🔥 BURN PACT', style: 'ghost' }
+          { label: '✒️ SIGN CONTRACT', style: 'neutral' },
+          { label: '🔥 BURN PACT', style: 'neutral' }
         ],
         stampText: '',
         stampColor: '#ef4444',
@@ -564,24 +860,29 @@
     },
     {
       id: 'boss',
-      icon: '🗺️',
+      icon: '🐉',
       name: 'Boss / Gate',
       desc: 'Red Gate raid boss HP scanner',
       config: {
         presetId: 'boss',
-        themeId: 'crimson_danger',
-        ...THEMES.crimson_danger,
+        ...themeProps('crimson_danger'),
         frameStyle: 'cyber_bevel',
         animation: 'impact',
         sfx: 'vineboom',
         headerIcon: '🐉',
         headerTitle: 'RED GATE BOSS DETECTED',
         headerBadge: 'DISASTER LVL',
+        currencyText: '',
         subtitle: 'Gate Class: S-Rank Anomaly • Exit Sealed',
         mediaUrl: 'assets/characters/clean_barbarian.png',
         mediaLayout: 'portrait_left',
         mediaCaption: 'OVERLORD',
         bodyText: 'An Ancient Monarch Guard blocks the dungeon core. Conventional weapons have zero effect.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [
           { label: 'BOSS HP', value: 100, fromValue: 100, displayText: '250,000 / 250,000', color: '#ef4444', animated: false },
           { label: 'MANA SHIELD', value: 100, fromValue: 0, displayText: 'ACTIVE (INVULNERABLE)', color: '#a855f7', animated: true }
@@ -608,18 +909,23 @@
       desc: 'SSR Mystery pull or comic troll',
       config: {
         presetId: 'gacha',
-        themeId: 'comic_pop',
-        ...THEMES.comic_pop,
+        ...themeProps('comic_pop'),
         animation: 'pop',
         sfx: 'boing',
         headerIcon: '🎰',
         headerTitle: 'MYSTERY RANDOM BOX PULL!',
         headerBadge: '0.01% SSR?!',
+        currencyText: '💎 -10,000',
         subtitle: 'System Gacha Draw #99 — Guaranteed Jackpot?',
         mediaUrl: 'assets/characters/anime_girl_shock.png',
         mediaLayout: 'icon_title',
         mediaCaption: '',
         bodyText: 'CONGRATULATIONS!! You pulled: [Golden Wooden Spoon of Slightly Warm Soup]!\nWait... why did I spend 10,000 Gems on this?!',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
         bars: [
           { label: 'LUCK STAT', value: 5, fromValue: 99, displayText: '99% ➔ ERROR 5%', color: '#facc15', animated: true }
         ],
@@ -633,8 +939,8 @@
         timerSeconds: 0,
         timerLabel: '',
         buttons: [
-          { label: '😭 CRY', style: 'primary' },
-          { label: '💸 PULL AGAIN', style: 'ghost' }
+          { label: '😭 CRY', style: 'neutral' },
+          { label: '💸 PULL AGAIN', style: 'neutral' }
         ],
         stampText: 'SCAMMED!',
         stampColor: '#facc15',
@@ -647,13 +953,22 @@
     return cloneObj(PRESETS[0].config);
   }
 
+  function normalizeRarity(r) {
+    const k = String(r || 'common').trim().toLowerCase();
+    if (['mythic', 'sss', 'ur', 'red'].includes(k)) return 'mythic';
+    if (['legendary', 'ssr', 's', 's-rank', 'gold'].includes(k)) return 'legendary';
+    if (['epic', 'a', 'a-rank', 'purple'].includes(k)) return 'epic';
+    if (['rare', 'b', 'b-rank', 'blue'].includes(k)) return 'rare';
+    return 'common';
+  }
+
   function normalizeConfig(msgOrCfg) {
     const raw = (msgOrCfg && msgOrCfg.systemConfig) ? msgOrCfg.systemConfig : (msgOrCfg || {});
     const base = getDefaultConfig();
-    const merged = {
-      ...base,
-      ...raw
-    };
+    const merged = { ...base, ...raw };
+    delete merged.id;
+    delete merged.label;
+
     if (!merged.headerTitle && msgOrCfg && msgOrCfg.title) merged.headerTitle = msgOrCfg.title;
     if (!merged.bodyText && raw.bodyText === undefined && msgOrCfg && msgOrCfg.text && !msgOrCfg.systemConfig) {
       merged.bodyText = msgOrCfg.text;
@@ -670,10 +985,31 @@
       label: String(s.label || 'STAT'),
       value: String(s.value ?? '')
     })) : [];
+    merged.statBoosts = Array.isArray(merged.statBoosts) ? merged.statBoosts.map(sb => ({
+      label: String(sb.label || 'STR'),
+      delta: String(sb.delta || '+10')
+    })) : [];
+    merged.inventoryItems = Array.isArray(merged.inventoryItems) ? merged.inventoryItems.map(it => ({
+      icon: String(it.icon || '📦'),
+      name: String(it.name || 'Item'),
+      rarity: normalizeRarity(it.rarity),
+      qty: String(it.qty ?? '1'),
+      equipped: Boolean(it.equipped),
+      locked: Boolean(it.locked)
+    })) : [];
+    merged.shopItems = Array.isArray(merged.shopItems) ? merged.shopItems.map(sp => ({
+      icon: String(sp.icon || '🛒'),
+      name: String(sp.name || 'Shop Item'),
+      rarity: normalizeRarity(sp.rarity),
+      meta: String(sp.meta || ''),
+      price: String(sp.price || '1,000 G'),
+      locked: Boolean(sp.locked),
+      owned: Boolean(sp.owned)
+    })) : [];
     merged.pills = Array.isArray(merged.pills) ? merged.pills.map(p => String(p).trim()).filter(Boolean) : [];
     merged.buttons = Array.isArray(merged.buttons) ? merged.buttons.map(btn => ({
       label: String(btn.label || 'OK'),
-      style: btn.style === 'ghost' ? 'ghost' : 'primary'
+      style: 'neutral'
     })) : [];
     return merged;
   }
@@ -725,6 +1061,36 @@
     });
   }
 
+  function applyTimerVisualState(rootEl, remaining, total) {
+    if (!rootEl) return;
+    const pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
+    const barFill = rootEl.querySelector('.msw-timer-bar-fill');
+    const clockEl = rootEl.querySelector('.msw-timer-clock');
+    if (barFill) barFill.style.width = pct.toFixed(1) + '%';
+    if (clockEl) clockEl.textContent = formatTimerSeconds(remaining);
+
+    if (remaining <= 0) {
+      rootEl.classList.remove('is-timer-urgent');
+      rootEl.classList.add('is-timer-expired');
+      const lbl = rootEl.querySelector('.msw-timer-lbl');
+      if (lbl && !lbl.dataset.expiredUpdated) {
+        lbl.dataset.expiredUpdated = '1';
+        lbl.textContent = '💀 PENALTY TRIGGERED!';
+      }
+      if (!rootEl.querySelector('.msw-stamp')) {
+        const st = document.createElement('div');
+        st.className = 'msw-stamp';
+        st.style.setProperty('--stamp-color', '#ef4444');
+        st.textContent = 'PENALTY!';
+        rootEl.appendChild(st);
+      }
+    } else if (remaining <= 10) {
+      rootEl.classList.add('is-timer-urgent');
+    } else {
+      rootEl.classList.remove('is-timer-urgent', 'is-timer-expired');
+    }
+  }
+
   function renderSystemWindowElement(msg, opts = {}) {
     const cfg = normalizeConfig(msg);
     const previewMode = !!opts.previewMode;
@@ -741,6 +1107,9 @@
     if (cfg.scanlines) classes.push('has-scanlines');
     if (cfg.gridPattern) classes.push('has-grid');
     if (cfg.sparkles) classes.push('has-sparkles');
+    if (cfg.timerEnabled && Number(cfg.timerSeconds) > 0 && Number(cfg.timerSeconds) <= 10) {
+      classes.push('is-timer-urgent');
+    }
     el.className = classes.join(' ');
 
     el.style.setProperty('--sys-accent', cfg.accentColor || '#00f0ff');
@@ -753,6 +1122,58 @@
       <div class="msw-media-wrap layout-${esc(cfg.mediaLayout)}">
         <img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">
         ${cfg.mediaCaption ? `<div class="msw-media-caption">${esc(cfg.mediaCaption)}</div>` : ''}
+      </div>
+    ` : '';
+
+    const levelUpHtml = (cfg.levelTransition || cfg.unlockedAbility || cfg.statBoosts.length > 0) ? `
+      ${cfg.levelTransition ? `
+        <div class="msw-levelup-banner">
+          <span style="font-size:10px; font-weight:900; color:var(--sys-accent); letter-spacing:0.6px;">⚡ LEVEL PROGRESSION</span>
+          <span class="msw-lvl-jump">${esc(cfg.levelTransition)}</span>
+        </div>
+      ` : ''}
+      ${cfg.unlockedAbility ? `<div class="msw-ability-box">${esc(cfg.unlockedAbility)}</div>` : ''}
+      ${cfg.statBoosts.length > 0 ? `
+        <div class="msw-boost-grid">
+          ${cfg.statBoosts.map(sb => `
+            <div class="msw-boost-cell">
+              <span class="msw-boost-stat">${esc(sb.label)}</span>
+              <span class="msw-boost-delta">▲ ${esc(sb.delta)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    ` : '';
+
+    const inventoryHtml = cfg.inventoryItems.length > 0 ? `
+      <div class="msw-inv-grid">
+        ${cfg.inventoryItems.map((it, idx) => `
+          <div class="msw-inv-slot rarity-${esc(it.rarity)} ${it.equipped ? 'is-equipped' : ''} ${it.locked ? 'is-locked' : ''}" data-inv-idx="${idx}" title="${esc(it.name)} (${esc(it.rarity.toUpperCase())})">
+            ${it.equipped ? '<span class="msw-inv-tag eqp">EQP</span>' : (it.locked ? '<span class="msw-inv-tag lock">🔒</span>' : '')}
+            <span class="msw-inv-icon">${esc(it.icon)}</span>
+            <span class="msw-inv-name">${esc(it.name)}</span>
+            ${it.qty && it.qty !== '1' ? `<span class="msw-inv-qty">${esc(it.qty.startsWith('x') || isNaN(Number(it.qty)) ? it.qty : 'x' + it.qty)}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    const shopHtml = cfg.shopItems.length > 0 ? `
+      <div class="msw-shop-list">
+        ${cfg.shopItems.map((sp, idx) => `
+          <div class="msw-shop-row rarity-${esc(sp.rarity)}">
+            <div class="msw-shop-left">
+              <span style="font-size:19px; flex-shrink:0;">${esc(sp.icon)}</span>
+              <div class="msw-shop-info">
+                <span class="msw-shop-name">${esc(sp.name)}</span>
+                ${sp.meta ? `<span class="msw-shop-meta">${esc(sp.meta)}</span>` : ''}
+              </div>
+            </div>
+            <button type="button" class="msw-shop-buy-btn ${sp.owned ? 'owned' : (sp.locked ? 'locked' : '')}" data-shop-idx="${idx}">
+              ${sp.owned ? '✔ OWNED' : (sp.locked ? `🔒 ${esc(sp.price)}` : `🪙 ${esc(sp.price)}`)}
+            </button>
+          </div>
+        `).join('')}
       </div>
     ` : '';
 
@@ -793,10 +1214,16 @@
       </div>
     ` : '';
 
+    const timerSec = Math.max(0, Number(cfg.timerSeconds) || 0);
     const timerHtml = cfg.timerEnabled ? `
       <div class="msw-timer-box">
-        <span class="msw-timer-lbl">${esc(cfg.timerLabel || 'TIME LEFT')}</span>
-        <span class="msw-timer-clock" data-timer-sec="${Math.max(0, Number(cfg.timerSeconds) || 0)}">${formatTimerSeconds(cfg.timerSeconds)}</span>
+        <div class="msw-timer-top">
+          <span class="msw-timer-lbl">${esc(cfg.timerLabel || 'TIME LEFT')}</span>
+          <span class="msw-timer-clock" data-timer-sec="${timerSec}">${formatTimerSeconds(timerSec)}</span>
+        </div>
+        <div class="msw-timer-track">
+          <div class="msw-timer-bar-fill" style="width:${timerSec > 0 ? '100' : '0'}%;"></div>
+        </div>
       </div>
     ` : '';
 
@@ -804,7 +1231,7 @@
     const btnsHtml = cfg.buttons.length > 0 ? `
       <div class="msw-btn-row">
         ${cfg.buttons.map((b, i) => `
-          <button type="button" class="msw-action-btn ${b.style === 'ghost' ? 'ghost' : 'primary'} ${selectedBtnIdx === i ? 'selected' : ''}" data-msw-btn-idx="${i}">${esc(b.label)}</button>
+          <button type="button" class="msw-action-btn ${selectedBtnIdx === i ? 'selected' : ''}" data-msw-btn-idx="${i}">${esc(b.label)}</button>
         `).join('')}
       </div>
     ` : '';
@@ -834,7 +1261,10 @@
             ${cfg.headerIcon ? `<span class="msw-header-icon">${esc(cfg.headerIcon)}</span>` : ''}
             <span class="msw-header-title">${esc(cfg.headerTitle || 'SYSTEM WINDOW')}</span>
           </div>
-          ${cfg.headerBadge ? `<span class="msw-badge">${esc(cfg.headerBadge)}</span>` : ''}
+          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+            ${cfg.currencyText ? `<span class="msw-currency-pill">${esc(cfg.currencyText)}</span>` : ''}
+            ${cfg.headerBadge ? `<span class="msw-badge">${esc(cfg.headerBadge)}</span>` : ''}
+          </div>
         </div>
         ${cfg.subtitle ? `<div class="msw-subtitle">${esc(cfg.subtitle)}</div>` : ''}
         ${topBannerMedia}
@@ -842,6 +1272,9 @@
           ${sideMedia}
           <div class="msw-content-col">
             ${cfg.bodyText ? `<div class="msw-body-text">${esc(cfg.bodyText)}</div>` : ''}
+            ${levelUpHtml}
+            ${inventoryHtml}
+            ${shopHtml}
             ${barsHtml}
             ${statsHtml}
           </div>
@@ -853,10 +1286,8 @@
       </div>
     `;
 
-    // Trigger animated bar fill on insert
     animateBarsInElement(el);
 
-    // Action button click handling (selects button without opening editor)
     el.querySelectorAll('.msw-action-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -877,18 +1308,68 @@
       });
     });
 
-    // Live countdown ticking (auto-clears cleanly when detached from DOM)
-    if (cfg.timerEnabled && !previewMode && Number(cfg.timerSeconds) > 0) {
-      let remaining = Number(cfg.timerSeconds);
-      const clockEl = el.querySelector('.msw-timer-clock');
+    el.querySelectorAll('.msw-inv-slot').forEach(slotEl => {
+      slotEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = Number(slotEl.dataset.invIdx);
+        const target = (msg && msg.systemConfig && msg.systemConfig.inventoryItems && msg.systemConfig.inventoryItems[idx]) || cfg.inventoryItems[idx];
+        if (!target) return;
+        if (target.locked) {
+          if (api() && typeof api().showToast === 'function') api().showToast(`🔒 ${target.name} is Locked!`);
+          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+          return;
+        }
+        target.equipped = !target.equipped;
+        slotEl.classList.toggle('is-equipped', target.equipped);
+        let tag = slotEl.querySelector('.msw-inv-tag.eqp');
+        if (target.equipped && !tag) {
+          tag = document.createElement('span');
+          tag.className = 'msw-inv-tag eqp';
+          tag.textContent = 'EQP';
+          slotEl.prepend(tag);
+        } else if (!target.equipped && tag) {
+          tag.remove();
+        }
+        if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.15);
+        if (api() && typeof api().showToast === 'function') api().showToast(target.equipped ? `⚔️ Equipped ${target.name}!` : `🎒 Unequipped ${target.name}`);
+        if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+      });
+    });
+
+    el.querySelectorAll('.msw-shop-buy-btn').forEach(buyBtn => {
+      buyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = Number(buyBtn.dataset.shopIdx);
+        const target = (msg && msg.systemConfig && msg.systemConfig.shopItems && msg.systemConfig.shopItems[idx]) || cfg.shopItems[idx];
+        if (!target) return;
+        if (target.locked) {
+          if (api() && typeof api().showToast === 'function') api().showToast(`🔒 Locked: ${target.meta || target.price}`);
+          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+          return;
+        }
+        target.owned = true;
+        buyBtn.classList.add('owned');
+        buyBtn.textContent = '✔ OWNED';
+        if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
+        if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Purchased ${target.name}!`);
+        if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+      });
+    });
+
+    if (cfg.timerEnabled && !previewMode && timerSec > 0) {
+      let remaining = timerSec;
+      const total = timerSec;
       const iv = setInterval(() => {
         if (!el.isConnected) {
           clearInterval(iv);
           return;
         }
         remaining = Math.max(0, remaining - 1);
-        if (clockEl) clockEl.textContent = formatTimerSeconds(remaining);
-        if (remaining <= 0) clearInterval(iv);
+        applyTimerVisualState(el, remaining, total);
+        if (remaining <= 0) {
+          clearInterval(iv);
+          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 0.95);
+        }
       }, 1000);
     }
 
@@ -906,53 +1387,132 @@
   }
 
   /* --------------------------------------------------------------------------
-     SCREENPLAY TAG PARSER & SERIALIZER
+     CLEAN SHORTHAND SCREENPLAY PARSER & READABLE SERIALIZER
      -------------------------------------------------------------------------- */
   function applyThemeToConfig(cfg, themeId) {
-    const t = THEMES[themeId];
-    if (!t) return cfg;
+    if (!THEMES[themeId]) return cfg;
+    return { ...cfg, ...themeProps(themeId) };
+  }
+
+  function applyOptionalTagModifiers(cfg, parts) {
+    const cleanParts = [];
+    parts.forEach(p => {
+      const m = p.match(/^(theme|frame|accent|stamp|badge|icon)=([#\w\s\-\.\[\]\/✦🔥💀⚡👑]+)$/i);
+      if (m) {
+        const key = m[1].toLowerCase();
+        const val = m[2].trim();
+        if (key === 'theme' && THEMES[val]) {
+          Object.assign(cfg, themeProps(val));
+        } else if (key === 'frame') {
+          cfg.frameStyle = val;
+        } else if (key === 'accent') {
+          cfg.accentColor = val;
+        } else if (key === 'stamp') {
+          cfg.stampText = val;
+        } else if (key === 'badge') {
+          cfg.headerBadge = val;
+        } else if (key === 'icon') {
+          cfg.headerIcon = val;
+        }
+      } else {
+        cleanParts.push(p);
+      }
+    });
+    return cleanParts;
+  }
+
+  function makeMsg(cfg, delayMs = 2000, idx = 0) {
+    const cleanCfg = normalizeConfig({ systemConfig: cfg });
     return {
-      ...cfg,
-      themeId: t.id,
-      accentColor: t.accentColor,
-      secondaryColor: t.secondaryColor,
-      bgColor: t.bgColor,
-      bgOpacity: t.bgOpacity,
-      frameStyle: t.frameStyle,
-      fontStyle: t.fontStyle,
-      scanlines: t.scanlines,
-      gridPattern: t.gridPattern,
-      sparkles: t.sparkles,
-      glowIntensity: t.glowIntensity
+      id: 'm_syswin_' + Date.now() + '_' + idx,
+      type: 'syswindow',
+      title: cleanCfg.headerTitle,
+      text: cleanCfg.bodyText || cleanCfg.subtitle || cleanCfg.levelTransition || cleanCfg.headerTitle,
+      systemConfig: cleanCfg,
+      delayMs
     };
+  }
+
+  function splitTopLevelItems(str) {
+    const out = [];
+    let cur = '';
+    let depth = 0;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i];
+      if (ch === '(') depth++;
+      else if (ch === ')' && depth > 0) depth--;
+      if (ch === ',' && depth === 0) {
+        if (cur.trim()) out.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  function parseParenItemToken(token, isShop = false) {
+    const m = token.match(/^([^\(]+?)\s*(?:\(([^\)]+)\))?$/);
+    const name = m ? m[1].trim() : token.trim();
+    const metaRaw = m && m[2] ? m[2].split(/,\s*(?!\d{3}\b)/).map(s => s.trim()).filter(Boolean) : [];
+    let rarity = 'common';
+    let qty = '1';
+    let price = '1,000 G';
+    let equipped = false;
+    let locked = false;
+    let owned = false;
+    let metaNotes = [];
+    let icon = isShop ? '🛒' : '📦';
+
+    const lower = name.toLowerCase();
+    if (lower.includes('dagger') || lower.includes('fang') || lower.includes('blade') || lower.includes('sword')) icon = '🗡️';
+    else if (lower.includes('potion') || lower.includes('elixir') || lower.includes('heal')) icon = '🧪';
+    else if (lower.includes('key')) icon = '🗝️';
+    else if (lower.includes('stone') || lower.includes('gem') || lower.includes('crystal')) icon = '💎';
+    else if (lower.includes('cloak') || lower.includes('armor') || lower.includes('shield')) icon = '🛡️';
+    else if (lower.includes('crown') || lower.includes('ring')) icon = '👑';
+    else if (lower.includes('scroll') || lower.includes('book')) icon = '📜';
+    else if (lower.includes('igris') || lower.includes('knight') || lower.includes('iron')) icon = '⚔️';
+    else if (lower.includes('beru') || lower.includes('ant')) icon = '🐜';
+
+    metaRaw.forEach(tok => {
+      const tu = tok.toUpperCase();
+      if (['MYTHIC', 'SSS', 'UR'].includes(tu)) { rarity = 'mythic'; qty = tu; }
+      else if (['LEGENDARY', 'SSR', 'S', 'S-RANK'].includes(tu)) { rarity = 'legendary'; qty = tu; }
+      else if (['EPIC', 'A', 'A-RANK'].includes(tu)) { rarity = 'epic'; qty = tu; }
+      else if (['RARE', 'B', 'B-RANK'].includes(tu)) { rarity = 'rare'; qty = tu; }
+      else if (['COMMON', 'C', 'D', 'E'].includes(tu)) { rarity = 'common'; qty = tu; }
+      else if (tu === 'EQUIPPED' || tu === 'EQP') equipped = true;
+      else if (tu.startsWith('LOCKED')) { locked = true; if (isShop) price = tok; }
+      else if (tu === 'OWNED') owned = true;
+      else if (/^x\d+$/i.test(tok)) qty = tok;
+      else if (/\d[\d,]*\s*(?:G|GOLD|C|COINS|GEMS)/i.test(tok)) price = tok;
+      else metaNotes.push(tok);
+    });
+
+    if (isShop) {
+      return { icon, name, rarity, meta: metaNotes.join(' • '), price, locked, owned };
+    }
+    return { icon, name, rarity, qty, equipped, locked };
   }
 
   function parseSysWindowLine(line, idx = 0) {
     if (!line || typeof line !== 'string') return null;
 
-    // 1. Full serialized payload: [SYSWINDOW: {...}]
     const fullMatch = line.match(/^\[SYSWINDOW:\s*(\{.+\})\]$/i);
     if (fullMatch) {
       try {
         const parsed = JSON.parse(fullMatch[1]);
-        const cfg = normalizeConfig({ systemConfig: parsed });
-        return {
-          id: 'm_syswin_' + Date.now() + '_' + idx,
-          type: 'syswindow',
-          title: cfg.headerTitle,
-          text: cfg.bodyText || cfg.subtitle || cfg.headerTitle,
-          systemConfig: cfg,
-          delayMs: Number(parsed.holdMs) || 1900
-        };
+        return makeMsg(parsed, Number(parsed.holdMs) || 1900, idx);
       } catch (e) {}
     }
 
-    // 2. Shorthand AI screenplay tags:
-    // [SYS_STATUS: Name | Job/Rank | HP:100 | MP:85 | STR:90, AGI:110 | Note]
     const statusMatch = line.match(/^\[SYS_STATUS:\s*(.+)\]$/i);
     if (statusMatch) {
-      const parts = statusMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const rawParts = statusMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'status').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
       base.headerTitle = `${(parts[0] || 'PLAYER').toUpperCase()} — STATUS`;
       base.headerBadge = parts[1] || 'AWAKENED';
       base.subtitle = parts[1] || 'System Status';
@@ -960,7 +1520,6 @@
       base.stats = [];
       base.mediaUrl = '';
       base.mediaLayout = 'none';
-      // Try finding character portrait from studio
       if (api() && typeof api().getCharacters === 'function' && parts[0]) {
         const ch = api().getCharacters().find(c => c.name.toLowerCase() === parts[0].toLowerCase());
         if (ch && ch.avatar) {
@@ -981,33 +1540,106 @@
             color: /HP/i.test(barMatch[1]) ? '#ef4444' : '#38bdf8',
             animated: true
           });
-        } else if (part.includes(':') && part.includes(',')) {
+        } else if (part.includes(':')) {
           part.split(',').forEach(kv => {
             const [k, ...rest] = kv.split(':');
             if (k && rest.length) base.stats.push({ label: k.trim().toUpperCase(), value: rest.join(':').trim() });
           });
-        } else if (part.includes(':')) {
-          const [k, ...rest] = part.split(':');
-          base.stats.push({ label: k.trim().toUpperCase(), value: rest.join(':').trim() });
         } else {
           base.bodyText = (base.bodyText ? base.bodyText + '\n' : '') + part;
         }
       });
-      return {
-        id: 'm_syswin_' + Date.now() + '_' + idx,
-        type: 'syswindow',
-        title: base.headerTitle,
-        text: base.bodyText || base.subtitle,
-        systemConfig: normalizeConfig({ systemConfig: base }),
-        delayMs: 2200
-      };
+      return makeMsg(base, 2200, idx);
     }
 
-    // [SYS_ITEM: Title | Rank | Effect Stats | Description]
+    const lvlMatch = line.match(/^\[SYS_LEVELUP:\s*(.+)\]$/i);
+    if (lvlMatch) {
+      const rawParts = lvlMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'levelup').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      base.mediaUrl = '';
+      base.mediaLayout = 'none';
+      base.bars = [];
+      base.statBoosts = [];
+      base.levelTransition = (parts[0] || 'LEVEL UP!').replace(/->/g, '➔');
+      base.unlockedAbility = '';
+      parts.slice(1).forEach(p => {
+        if (/^(NEW SKILL|ABILITY|UNLOCKED|SKILL):/i.test(p)) {
+          base.unlockedAbility = '⚡ ' + p;
+        } else if (/[+\-]\d+%?/.test(p) && (p.includes(',') || /^[A-Za-z\s]+[+\-:]/.test(p))) {
+          p.split(',').forEach(item => {
+            const m = item.trim().match(/^(.+?)\s*[: ]\s*([+\-]\d+\s*%?.*)$/);
+            if (m) base.statBoosts.push({ label: m[1].trim().toUpperCase(), delta: m[2].trim() });
+          });
+        } else {
+          base.bodyText = p;
+        }
+      });
+      return makeMsg(base, 2200, idx);
+    }
+
+    const invMatch = line.match(/^\[SYS_INVENTORY:\s*(.+)\]$/i);
+    if (invMatch) {
+      const rawParts = invMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'inventory').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      base.currencyText = parts[0] ? (parts[0].includes('🪙') ? parts[0] : '🪙 ' + parts[0]) : '🪙 0 G';
+      const itemListRaw = parts[1] ? parts.slice(1).join(', ') : '';
+      base.inventoryItems = splitTopLevelItems(itemListRaw).map(tok => parseParenItemToken(tok, false));
+      base.headerBadge = `${base.inventoryItems.length}/20 SLOTS`;
+      return makeMsg(base, 2200, idx);
+    }
+
+    const shopMatch = line.match(/^\[SYS_SHOP:\s*(.+)\]$/i);
+    if (shopMatch) {
+      const rawParts = shopMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'shop').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      base.headerTitle = parts[0] || 'SYSTEM COIN SHOP';
+      base.currencyText = parts[1] ? (parts[1].includes('🪙') ? parts[1] : '🪙 ' + parts[1]) : '🪙 50,000 G';
+      const itemListRaw = parts.slice(2).join(', ');
+      base.shopItems = splitTopLevelItems(itemListRaw).map(tok => parseParenItemToken(tok, true));
+      return makeMsg(base, 2300, idx);
+    }
+
+    const qbMatch = line.match(/^\[SYS_QUESTBOARD:\s*(.+)\]$/i);
+    if (qbMatch) {
+      const rawParts = qbMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'questboard').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      base.headerTitle = parts[0] || 'DAILY QUEST BOARD';
+      base.headerBadge = parts[1] || 'DAILY';
+      base.bars = [];
+      base.timerEnabled = false;
+      splitTopLevelItems(parts.slice(2).join(', ')).forEach(t => {
+        const m = t.match(/^(.+?)\s+(\d+)\s*\/\s*(\d+)$/);
+        if (m) {
+          const pct = clampPct((Number(m[2]) / Math.max(1, Number(m[3]))) * 100, 50);
+          base.bars.push({ label: m[1].trim(), value: pct, fromValue: pct, displayText: `${m[2]} / ${m[3]}`, color: pct >= 100 ? '#4ade80' : '#00f0ff', animated: pct < 100 });
+        } else {
+          base.pills.push(t);
+        }
+      });
+      return makeMsg(base, 2100, idx);
+    }
+
+    const saMatch = line.match(/^\[SYS_SHADOWARMY:\s*(.+)\]$/i);
+    if (saMatch) {
+      const rawParts = saMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'shadowarmy').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      base.headerTitle = parts[0] || 'SHADOW SOLDIER ROSTER';
+      base.currencyText = parts[1] || '🌑 SHADOWS';
+      const itemListRaw = parts.slice(2).join(', ');
+      base.inventoryItems = splitTopLevelItems(itemListRaw).map(tok => parseParenItemToken(tok, false));
+      return makeMsg(base, 2100, idx);
+    }
+
     const itemMatch = line.match(/^\[SYS_ITEM:\s*(.+)\]$/i);
     if (itemMatch) {
-      const parts = itemMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const rawParts = itemMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'item').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
       base.mediaUrl = '';
       base.mediaLayout = 'none';
       base.headerTitle = parts[0] || 'MYSTERY ARTIFACT';
@@ -1023,42 +1655,28 @@
       } else {
         base.bodyText = parts.slice(2).join('\n');
       }
-      return {
-        id: 'm_syswin_' + Date.now() + '_' + idx,
-        type: 'syswindow',
-        title: base.headerTitle,
-        text: base.bodyText,
-        systemConfig: normalizeConfig({ systemConfig: base }),
-        delayMs: 2000
-      };
+      return makeMsg(base, 2000, idx);
     }
 
-    // [SYS_LOADING: Title | Percent | Message]
     const loadMatch = line.match(/^\[SYS_LOADING:\s*(.+)\]$/i);
     if (loadMatch) {
-      const parts = loadMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const rawParts = loadMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'loading').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
       base.headerTitle = parts[0] || 'SYSTEM LOADING...';
       const pct = clampPct(String(parts[1] || '100').replace('%', ''), 100);
       base.bars = [{ label: 'PROGRESS', value: pct, fromValue: 0, displayText: `${pct}%`, color: base.accentColor, animated: true }];
       base.bodyText = parts.slice(2).join('\n') || 'Synchronizing player core data...';
       base.stats = [];
       base.pills = [];
-      return {
-        id: 'm_syswin_' + Date.now() + '_' + idx,
-        type: 'syswindow',
-        title: base.headerTitle,
-        text: base.bodyText,
-        systemConfig: normalizeConfig({ systemConfig: base }),
-        delayMs: 2000
-      };
+      return makeMsg(base, 2000, idx);
     }
 
-    // [SYS_AFFECTION: TargetName | From->To (or Pct) | Message]
     const affMatch = line.match(/^\[SYS_AFFECTION:\s*(.+)\]$/i);
     if (affMatch) {
-      const parts = affMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const rawParts = affMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'affection').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
       const target = parts[0] || 'Heroine';
       base.headerTitle = `${target.toUpperCase()} — AFFECTION`;
       base.mediaUrl = '';
@@ -1081,65 +1699,47 @@
       base.bodyText = parts.slice(2).join('\n') || '';
       base.stats = [];
       base.pills = [];
-      return {
-        id: 'm_syswin_' + Date.now() + '_' + idx,
-        type: 'syswindow',
-        title: base.headerTitle,
-        text: base.bodyText,
-        systemConfig: normalizeConfig({ systemConfig: base }),
-        delayMs: 2000
-      };
+      return makeMsg(base, 2000, idx);
     }
 
-    // [SYS_CONSTELLATION: ConstellationName | SponsorAmount | Message]
     const constMatch = line.match(/^\[SYS_CONSTELLATION:\s*(.+)\]$/i);
     if (constMatch) {
-      const parts = constMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const rawParts = constMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'constellation').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
       base.mediaUrl = '';
       base.mediaLayout = 'none';
       base.headerTitle = parts[0] || 'CONSTELLATION CHANNEL';
-      base.headerBadge = parts[1] || '+500 COINS';
+      base.headerBadge = parts[1] || '+500 Coins';
+      base.currencyText = '';
       base.bodyText = parts.slice(2).join('\n') || 'A Constellation watches your battle with great amusement!';
       base.stats = [];
       base.pills = ['Star Stream'];
-      return {
-        id: 'm_syswin_' + Date.now() + '_' + idx,
-        type: 'syswindow',
-        title: base.headerTitle,
-        text: base.bodyText,
-        systemConfig: normalizeConfig({ systemConfig: base }),
-        delayMs: 1900
-      };
+      return makeMsg(base, 1900, idx);
     }
 
-    // [SYS_TIMER: SecondsOrMM:SS | Title | Message]
     const timerMatch = line.match(/^\[SYS_TIMER:\s*(.+)\]$/i);
     if (timerMatch) {
-      const parts = timerMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const rawParts = timerMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'timer').config);
-      const timeStr = parts[0] || '300';
-      let secs = 300;
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      const timeStr = parts[0] || '10s';
+      let secs = 10;
       if (timeStr.includes(':')) {
         const [m, s] = timeStr.split(':').map(n => parseInt(n, 10) || 0);
         secs = m * 60 + s;
+      } else if (/m/i.test(timeStr)) {
+        secs = (parseInt(timeStr, 10) || 1) * 60;
       } else {
-        secs = parseInt(timeStr, 10) || 300;
+        secs = parseInt(timeStr, 10) || 10;
       }
       base.timerEnabled = true;
       base.timerSeconds = secs;
       base.headerTitle = parts[1] || 'PENALTY COUNTDOWN';
-      base.bodyText = parts.slice(2).join('\n') || 'Complete the survival task before time expires!';
+      base.bodyText = parts.slice(2).join('\n') || 'Complete the survival task before time hits 00:00!';
       base.stats = [];
       base.pills = [];
-      return {
-        id: 'm_syswin_' + Date.now() + '_' + idx,
-        type: 'syswindow',
-        title: base.headerTitle,
-        text: base.bodyText,
-        systemConfig: normalizeConfig({ systemConfig: base }),
-        delayMs: 2000
-      };
+      return makeMsg(base, 2000, idx);
     }
 
     return null;
@@ -1147,7 +1747,81 @@
 
   function serializeSysWindowToTag(msg) {
     if (!msg || !msg.systemConfig) return '';
-    return `[SYSWINDOW: ${JSON.stringify(msg.systemConfig)}]`;
+    const c = normalizeConfig(msg);
+    const mods = [];
+    const defPreset = PRESETS.find(p => p.id === c.presetId);
+    if (c.themeId && (!defPreset || c.themeId !== defPreset.config.themeId) && c.themeId !== 'custom') {
+      mods.push(`theme=${c.themeId}`);
+    }
+    if (c.stampText && (!defPreset || c.stampText !== defPreset.config.stampText)) {
+      mods.push(`stamp=${c.stampText}`);
+    }
+    const modSuffix = mods.length ? ' | ' + mods.join(' | ') : '';
+
+    if (c.presetId === 'levelup') {
+      const boostStr = c.statBoosts.map(sb => `${sb.label} ${sb.delta}`).join(', ');
+      const parts = [c.levelTransition || c.headerTitle];
+      if (c.unlockedAbility) parts.push(c.unlockedAbility.replace(/^⚡\s*/, ''));
+      if (boostStr) parts.push(boostStr);
+      return `[SYS_LEVELUP: ${parts.join(' | ')}${modSuffix}]`;
+    }
+    if (c.presetId === 'inventory' && c.inventoryItems.length > 0) {
+      const itemsStr = c.inventoryItems.map(it => {
+        const tags = [it.rarity.toUpperCase()];
+        if (it.qty && it.qty !== '1' && it.qty.toUpperCase() !== it.rarity.toUpperCase()) tags.push(it.qty);
+        if (it.equipped) tags.push('EQUIPPED');
+        if (it.locked) tags.push('LOCKED');
+        return `${it.name} (${tags.join(', ')})`;
+      }).join(', ');
+      return `[SYS_INVENTORY: ${c.currencyText || '0 G'} | ${itemsStr}${modSuffix}]`;
+    }
+    if (c.presetId === 'shop' && c.shopItems.length > 0) {
+      const itemsStr = c.shopItems.map(sp => {
+        const tags = [sp.locked ? (sp.price || 'LOCKED') : sp.price, sp.rarity.toUpperCase()];
+        if (sp.owned) tags.push('OWNED');
+        return `${sp.name} (${tags.join(', ')})`;
+      }).join(', ');
+      return `[SYS_SHOP: ${c.headerTitle} | ${c.currencyText || '0 G'} | ${itemsStr}${modSuffix}]`;
+    }
+    if (c.presetId === 'questboard' && c.bars.length > 0) {
+      const goalsStr = c.bars.map(b => `${b.label} ${(b.displayText || `${b.value}/100`).replace(/\s*\/\s*/, '/')}`).join(', ');
+      return `[SYS_QUESTBOARD: ${c.headerTitle} | ${c.headerBadge || 'DAILY'} | ${goalsStr}${modSuffix}]`;
+    }
+    if (c.presetId === 'shadowarmy' && c.inventoryItems.length > 0) {
+      const soldiersStr = c.inventoryItems.map(it => {
+        const tags = [it.rarity.toUpperCase()];
+        if (it.equipped) tags.push('EQUIPPED');
+        if (it.locked) tags.push('LOCKED');
+        return `${it.name} (${tags.join(', ')})`;
+      }).join(', ');
+      return `[SYS_SHADOWARMY: ${c.headerTitle} | ${c.currencyText || 'SHADOWS'} | ${soldiersStr}${modSuffix}]`;
+    }
+    if (c.presetId === 'timer' && c.timerEnabled) {
+      return `[SYS_TIMER: ${c.timerSeconds}s | ${c.headerTitle} | ${(c.bodyText || '').replace(/\n/g, ' ')}${modSuffix}]`;
+    }
+    if (c.presetId === 'loading' && c.bars.length === 1) {
+      return `[SYS_LOADING: ${c.headerTitle} | ${c.bars[0].value}% | ${(c.bodyText || '').replace(/\n/g, ' ')}${modSuffix}]`;
+    }
+    if (c.presetId === 'constellation') {
+      return `[SYS_CONSTELLATION: ${c.headerTitle} | ${c.headerBadge || '+500 Coins'} | ${(c.bodyText || '').replace(/\n/g, ' ')}${modSuffix}]`;
+    }
+    if (c.presetId === 'affection' && c.bars.length > 0) {
+      const name = c.mediaCaption || c.headerTitle.replace(/\s*—\s*AFFECTION$/i, '');
+      const b = c.bars[0];
+      return `[SYS_AFFECTION: ${name} | ${b.fromValue}->${b.value} | ${(c.bodyText || '').replace(/\n/g, ' ')}${modSuffix}]`;
+    }
+    if (c.presetId === 'status' && !c.mediaUrl?.startsWith('data:')) {
+      const name = c.mediaCaption || c.headerTitle.replace(/\s*—\s*STATUS$/i, '');
+      const barSegs = c.bars.map(b => `${b.label}:${b.value}`);
+      const statSeg = c.stats.length ? c.stats.map(s => `${s.label}:${s.value}`).join(', ') : '';
+      return `[SYS_STATUS: ${[name, c.headerBadge, ...barSegs, statSeg].filter(Boolean).join(' | ')}${modSuffix}]`;
+    }
+    if (c.presetId === 'item' && !c.mediaUrl?.startsWith('data:')) {
+      const statSeg = c.stats.map(s => `${s.label}:${s.value}`).join(', ');
+      return `[SYS_ITEM: ${[c.headerTitle, c.headerBadge, statSeg, (c.bodyText || '').replace(/\n/g, ' ')].filter(Boolean).join(' | ')}${modSuffix}]`;
+    }
+
+    return `[SYSWINDOW: ${JSON.stringify(c)}]`;
   }
 
   /* --------------------------------------------------------------------------
@@ -1174,7 +1848,6 @@
           <button type="button" class="modal-close-btn" onclick="closeSystemWindowBuilder()">✕</button>
         </div>
 
-        <!-- STICKY LIVE PREVIEW -->
         <div class="syswin-preview-stage">
           <div style="display:flex; width:100%; justify-content:space-between; align-items:center; font-size:10.5px; color:#94a3b8;">
             <span style="font-weight:800; letter-spacing:0.6px; text-transform:uppercase;">⚡ Live Window Preview</span>
@@ -1183,18 +1856,16 @@
           <div id="sysWinPreviewHost" style="width:100%; display:flex; justify-content:center; flex-shrink:0;"></div>
         </div>
 
-        <!-- BUILDER TABS -->
         <div class="syswin-tabs">
           <button type="button" class="syswin-tab-btn active" id="sysTabBtn_presets" onclick="window.ChatHubSystemWindows.switchTab('presets')">📋 Templates</button>
           <button type="button" class="syswin-tab-btn" id="sysTabBtn_content" onclick="window.ChatHubSystemWindows.switchTab('content')">📝 Text & Images</button>
-          <button type="button" class="syswin-tab-btn" id="sysTabBtn_blocks" onclick="window.ChatHubSystemWindows.switchTab('blocks')">🧩 Bars & Stats</button>
+          <button type="button" class="syswin-tab-btn" id="sysTabBtn_blocks" onclick="window.ChatHubSystemWindows.switchTab('blocks')">🧩 Stats, Shop & Inv</button>
           <button type="button" class="syswin-tab-btn" id="sysTabBtn_style" onclick="window.ChatHubSystemWindows.switchTab('style')">🎨 Theme & FX</button>
         </div>
 
         <div class="syswin-body" id="sysWinBuilderBody">
-          <!-- TAB 1: TEMPLATES & SAVED PRESETS -->
           <div class="syswin-tab-panel active" id="sysTabPanel_presets">
-            <div style="font-size:11px; color:#94a3b8; font-weight:700;">Choose a Manhwa System Archetype (fully editable afterwards):</div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:700;">Choose any of the 17 Manhwa System Windows (100% editable afterwards):</div>
             <div class="syswin-preset-grid" id="sysWinPresetGrid"></div>
             <div style="margin-top:6px; border-top:1px solid #1e293b; padding-top:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -1205,21 +1876,24 @@
             </div>
           </div>
 
-          <!-- TAB 2: TEXT & IMAGES -->
           <div class="syswin-tab-panel" id="sysTabPanel_content">
             <div class="syswin-field-row">
               <div>
                 <label class="syswin-label">Header Title</label>
                 <input type="text" class="syswin-input" id="sysInpHeaderTitle" placeholder="SYSTEM QUEST ALERT">
               </div>
-              <div style="display:grid; grid-template-columns:64px 1fr; gap:6px;">
+              <div style="display:grid; grid-template-columns:56px 1fr 1fr; gap:5px;">
                 <div>
                   <label class="syswin-label">Icon</label>
                   <input type="text" class="syswin-input" id="sysInpHeaderIcon" placeholder="❖">
                 </div>
                 <div>
-                  <label class="syswin-label">Corner Badge</label>
+                  <label class="syswin-label">Badge</label>
                   <input type="text" class="syswin-input" id="sysInpHeaderBadge" placeholder="[S-RANK]">
+                </div>
+                <div>
+                  <label class="syswin-label">Coins / G</label>
+                  <input type="text" class="syswin-input" id="sysInpCurrency" placeholder="🪙 100 G">
                 </div>
               </div>
             </div>
@@ -1235,10 +1909,9 @@
             </div>
             <div>
               <label class="syswin-label">Body Narrative / Message</label>
-              <textarea rows="3" class="syswin-textarea" id="sysInpBodyText" placeholder="Enter alert details, lore, item effect, or system command..."></textarea>
+              <textarea rows="2" class="syswin-textarea" id="sysInpBodyText" placeholder="Enter alert details, lore, item effect, or system command..."></textarea>
             </div>
 
-            <!-- IMAGE & MEDIA SHOWCASE -->
             <div style="background:#131c31; border:1px solid #293548; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                 <span style="font-size:12px; font-weight:800; color:#38bdf8;">🖼️ Attach Image / Character / Item Icon</span>
@@ -1272,18 +1945,39 @@
             </div>
           </div>
 
-          <!-- TAB 3: MODULAR BLOCKS -->
           <div class="syswin-tab-panel" id="sysTabPanel_blocks">
-            <!-- BARS -->
+            <div style="background:#131c31; border:1px solid #293548; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:11.5px; font-weight:900; color:#4ade80;">📈 Level-Up, New Ability & +Stat Gains</span>
+                <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addStatBoost()">+ Add +Stat</button>
+              </div>
+              <div class="syswin-field-row">
+                <input type="text" class="syswin-input" id="sysInpLevelJump" placeholder="Level Jump (e.g. LV. 12 ➔ LV. 13)">
+                <input type="text" class="syswin-input" id="sysInpUnlockedAbility" placeholder="New Ability (e.g. ⚡ Shadow Extraction)">
+              </div>
+              <div class="syswin-block-list" id="sysWinBoostsList"></div>
+            </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:12px; font-weight:900; color:#e2e8f0;">📊 Progress / HP / Loading / Affection Bars</span>
+              <span style="font-size:11.5px; font-weight:900; color:#38bdf8;">🎒 Inventory / Shadow Army Grid Slots</span>
+              <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addInventoryItem()">+ Add Slot</button>
+            </div>
+            <div class="syswin-block-list" id="sysWinInvList"></div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11.5px; font-weight:900; color:#facc15;">🪙 System Coin Shop Items</span>
+              <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addShopItem()">+ Add Shop Item</button>
+            </div>
+            <div class="syswin-block-list" id="sysWinShopList"></div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11.5px; font-weight:900; color:#e2e8f0;">📊 Progress / HP / Loading / Affection Bars</span>
               <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addBar()">+ Add Bar</button>
             </div>
             <div class="syswin-block-list" id="sysWinBarsList"></div>
 
-            <!-- STATS GRID -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-              <span style="font-size:12px; font-weight:900; color:#e2e8f0;">🔢 Key-Value Stat Grid</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+              <span style="font-size:11.5px; font-weight:900; color:#e2e8f0;">🔢 Key-Value Stat Grid</span>
               <div style="display:flex; gap:5px; align-items:center;">
                 <select class="syswin-select" id="sysSelStatsCols" style="width:auto; padding:3px 7px; font-size:11px;">
                   <option value="1">1 Col</option>
@@ -1295,40 +1989,45 @@
             </div>
             <div class="syswin-block-list" id="sysWinStatsList"></div>
 
-            <!-- PILLS, COUNTDOWN, BUTTONS, STAMP -->
-            <div class="syswin-field-row" style="margin-top:4px;">
+            <div class="syswin-field-row" style="margin-top:2px;">
               <div>
                 <label class="syswin-label">Trait / Tag Pills (comma-separated)</label>
                 <input type="text" class="syswin-input" id="sysInpPills" placeholder="Shadow Step, Untradable">
               </div>
               <div>
-                <label class="syswin-label">Action Buttons (separated by |)</label>
+                <label class="syswin-label">Action Buttons (neutral until tapped, separated by |)</label>
                 <input type="text" class="syswin-input" id="sysInpButtons" placeholder="✔ ACCEPT | ✖ DECLINE">
               </div>
             </div>
 
             <div class="syswin-field-row">
               <div style="background:#131c31; border:1px solid #293548; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px;">
-                <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:800; color:#f8fafc; cursor:pointer;">
-                  <input type="checkbox" id="sysChkTimer"> ⏱️ Live Countdown Timer
-                </label>
-                <div style="display:grid; grid-template-columns:1fr 80px; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <label style="display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:#f8fafc; cursor:pointer;">
+                    <input type="checkbox" id="sysChkTimer"> ⏱️ Dynamic Timer
+                  </label>
+                  <div style="display:flex; gap:3px;">
+                    <button type="button" class="syswin-chip-btn" style="padding:2px 6px; font-size:9.5px;" onclick="window.ChatHubSystemWindows.setQuickTimer(10)">10s Shorts</button>
+                    <button type="button" class="syswin-chip-btn" style="padding:2px 6px; font-size:9.5px;" onclick="window.ChatHubSystemWindows.setQuickTimer(60)">60s</button>
+                    <button type="button" class="syswin-chip-btn" style="padding:2px 6px; font-size:9.5px;" onclick="window.ChatHubSystemWindows.setQuickTimer(300)">5m</button>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 75px; gap:6px;">
                   <input type="text" class="syswin-input" id="sysInpTimerLabel" placeholder="PENALTY IN">
-                  <input type="number" class="syswin-input" id="sysInpTimerSeconds" min="0" max="86400" placeholder="300">
+                  <input type="number" class="syswin-input" id="sysInpTimerSeconds" min="0" max="86400" placeholder="12">
                 </div>
               </div>
 
               <div style="background:#131c31; border:1px solid #293548; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px;">
                 <label class="syswin-label" style="margin:0;">🏷️ Diagonal Overlay Seal Stamp</label>
                 <div style="display:grid; grid-template-columns:1fr 44px; gap:6px;">
-                  <input type="text" class="syswin-input" id="sysInpStampText" placeholder="COMPLETED / S-RANK / LOCKED">
+                  <input type="text" class="syswin-input" id="sysInpStampText" placeholder="COMPLETED / LEVEL UP! / PENALTY">
                   <input type="color" id="sysInpStampColor" value="#facc15" style="width:44px; height:32px; border:none; background:none; cursor:pointer;">
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- TAB 4: THEME, FRAME & FX -->
           <div class="syswin-tab-panel" id="sysTabPanel_style">
             <div>
               <label class="syswin-label">One-Click Manhwa OS Theme</label>
@@ -1448,9 +2147,13 @@
     setVal('sysInpHeaderTitle', builderDraft.headerTitle);
     setVal('sysInpHeaderIcon', builderDraft.headerIcon);
     setVal('sysInpHeaderBadge', builderDraft.headerBadge);
+    setVal('sysInpCurrency', builderDraft.currencyText);
     setVal('sysInpSubtitle', builderDraft.subtitle);
     setVal('sysInpFooter', builderDraft.footerText);
     setVal('sysInpBodyText', builderDraft.bodyText);
+
+    setVal('sysInpLevelJump', builderDraft.levelTransition);
+    setVal('sysInpUnlockedAbility', builderDraft.unlockedAbility);
 
     setVal('sysSelMediaLayout', builderDraft.mediaLayout || 'none');
     setVal('sysInpMediaCaption', builderDraft.mediaCaption || '');
@@ -1461,7 +2164,7 @@
     setVal('sysInpButtons', (builderDraft.buttons || []).map(b => b.label).join(' | '));
     setChk('sysChkTimer', builderDraft.timerEnabled);
     setVal('sysInpTimerLabel', builderDraft.timerLabel || 'TIME LEFT');
-    setVal('sysInpTimerSeconds', builderDraft.timerSeconds ?? 300);
+    setVal('sysInpTimerSeconds', builderDraft.timerSeconds ?? 12);
     setVal('sysInpStampText', builderDraft.stampText || '');
     setVal('sysInpStampColor', builderDraft.stampColor || '#facc15');
 
@@ -1483,6 +2186,9 @@
     renderSavedPresetsList();
     renderThemeChips();
     renderMediaPickerStrip();
+    renderBoostsEditor();
+    renderInventoryEditor();
+    renderShopEditor();
     renderBarsEditor();
     renderStatsEditor();
     refreshPreviewOnly();
@@ -1572,11 +2278,100 @@
     });
   }
 
+  function renderBoostsEditor() {
+    const list = document.getElementById('sysWinBoostsList');
+    if (!list) return;
+    if (!builderDraft.statBoosts || builderDraft.statBoosts.length === 0) {
+      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No +stat increases yet. Add STR +15 or ATK +20% above!</div>';
+      return;
+    }
+    list.innerHTML = builderDraft.statBoosts.map((sb, idx) => `
+      <div class="syswin-block-row">
+        <input type="text" class="syswin-input" style="flex:1; min-width:85px;" value="${esc(sb.label)}" placeholder="Stat (e.g. ATK POWER)" data-boost-idx="${idx}" data-boost-field="label">
+        <input type="text" class="syswin-input" style="width:95px;" value="${esc(sb.delta)}" placeholder="+20% or +15" data-boost-idx="${idx}" data-boost-field="delta">
+        <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeStatBoost(${idx})">✕</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-boost-idx]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = Number(inp.dataset.boostIdx);
+        const f = inp.dataset.boostField;
+        if (builderDraft.statBoosts[i]) builderDraft.statBoosts[i][f] = inp.value;
+        refreshPreviewOnly();
+      });
+    });
+  }
+
+  function renderInventoryEditor() {
+    const list = document.getElementById('sysWinInvList');
+    if (!list) return;
+    if (!builderDraft.inventoryItems || builderDraft.inventoryItems.length === 0) {
+      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No inventory slots yet. Click "+ Add Slot" to build a Solo Leveling grid!</div>';
+      return;
+    }
+    list.innerHTML = builderDraft.inventoryItems.map((it, idx) => `
+      <div class="syswin-block-row">
+        <input type="text" class="syswin-input" style="width:42px; text-align:center;" value="${esc(it.icon)}" data-inv-eidx="${idx}" data-inv-efield="icon">
+        <input type="text" class="syswin-input" style="flex:1; min-width:90px;" value="${esc(it.name)}" placeholder="Item Name" data-inv-eidx="${idx}" data-inv-efield="name">
+        <select class="syswin-select" style="width:88px;" data-inv-eidx="${idx}" data-inv-efield="rarity">
+          <option value="common" ${it.rarity === 'common' ? 'selected' : ''}>Common</option>
+          <option value="rare" ${it.rarity === 'rare' ? 'selected' : ''}>Rare</option>
+          <option value="epic" ${it.rarity === 'epic' ? 'selected' : ''}>Epic</option>
+          <option value="legendary" ${it.rarity === 'legendary' ? 'selected' : ''}>Legend</option>
+          <option value="mythic" ${it.rarity === 'mythic' ? 'selected' : ''}>Mythic</option>
+        </select>
+        <input type="text" class="syswin-input" style="width:48px;" value="${esc(it.qty)}" placeholder="x1" title="Qty / Rank" data-inv-eidx="${idx}" data-inv-efield="qty">
+        <label style="font-size:10px; color:#4ade80; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${it.equipped ? 'checked' : ''} data-inv-eidx="${idx}" data-inv-efield="equipped">EQP</label>
+        <label style="font-size:10px; color:#fca5a5; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${it.locked ? 'checked' : ''} data-inv-eidx="${idx}" data-inv-efield="locked">🔒</label>
+        <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeInventoryItem(${idx})">✕</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-inv-eidx]').forEach(inp => {
+      const evt = (inp.tagName === 'SELECT' || inp.type === 'checkbox') ? 'change' : 'input';
+      inp.addEventListener(evt, () => {
+        const i = Number(inp.dataset.invEidx);
+        const f = inp.dataset.invEfield;
+        if (!builderDraft.inventoryItems[i]) return;
+        builderDraft.inventoryItems[i][f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+        refreshPreviewOnly();
+      });
+    });
+  }
+
+  function renderShopEditor() {
+    const list = document.getElementById('sysWinShopList');
+    if (!list) return;
+    if (!builderDraft.shopItems || builderDraft.shopItems.length === 0) {
+      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No coin shop items yet. Click "+ Add Shop Item" to sell skills & weapons!</div>';
+      return;
+    }
+    list.innerHTML = builderDraft.shopItems.map((sp, idx) => `
+      <div class="syswin-block-row">
+        <input type="text" class="syswin-input" style="width:42px; text-align:center;" value="${esc(sp.icon)}" data-shop-eidx="${idx}" data-shop-efield="icon">
+        <input type="text" class="syswin-input" style="flex:1; min-width:90px;" value="${esc(sp.name)}" placeholder="Item Name" data-shop-eidx="${idx}" data-shop-efield="name">
+        <input type="text" class="syswin-input" style="flex:1; min-width:85px;" value="${esc(sp.meta)}" placeholder="Meta / ATK" data-shop-eidx="${idx}" data-shop-efield="meta">
+        <input type="text" class="syswin-input" style="width:76px;" value="${esc(sp.price)}" placeholder="50,000 G" data-shop-eidx="${idx}" data-shop-efield="price">
+        <label style="font-size:10px; color:#fca5a5; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${sp.locked ? 'checked' : ''} data-shop-eidx="${idx}" data-shop-efield="locked">🔒</label>
+        <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeShopItem(${idx})">✕</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-shop-eidx]').forEach(inp => {
+      const evt = inp.type === 'checkbox' ? 'change' : 'input';
+      inp.addEventListener(evt, () => {
+        const i = Number(inp.dataset.shopEidx);
+        const f = inp.dataset.shopEfield;
+        if (!builderDraft.shopItems[i]) return;
+        builderDraft.shopItems[i][f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+        refreshPreviewOnly();
+      });
+    });
+  }
+
   function renderBarsEditor() {
     const list = document.getElementById('sysWinBarsList');
     if (!list) return;
     if (!builderDraft.bars || builderDraft.bars.length === 0) {
-      list.innerHTML = '<div style="font-size:11px; color:#64748b;">No bars attached. Click "+ Add Bar" for HP, MP, EXP, Loading, or Affection meters!</div>';
+      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No bars attached. Click "+ Add Bar" for HP, MP, EXP, Loading, or Affection meters!</div>';
       return;
     }
     list.innerHTML = builderDraft.bars.map((b, idx) => `
@@ -1611,7 +2406,7 @@
     const list = document.getElementById('sysWinStatsList');
     if (!list) return;
     if (!builderDraft.stats || builderDraft.stats.length === 0) {
-      list.innerHTML = '<div style="font-size:11px; color:#64748b;">No stat cells yet. Click "+ Add Stat" for STR/AGI, Item Attack, Price, etc.</div>';
+      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No stat cells yet. Click "+ Add Stat" for STR/AGI, Item Attack, Price, etc.</div>';
       return;
     }
     list.innerHTML = builderDraft.stats.map((s, idx) => `
@@ -1657,16 +2452,19 @@
     bindInput('sysInpHeaderTitle', 'headerTitle');
     bindInput('sysInpHeaderIcon', 'headerIcon');
     bindInput('sysInpHeaderBadge', 'headerBadge');
+    bindInput('sysInpCurrency', 'currencyText');
     bindInput('sysInpSubtitle', 'subtitle');
     bindInput('sysInpFooter', 'footerText');
     bindInput('sysInpBodyText', 'bodyText');
+    bindInput('sysInpLevelJump', 'levelTransition');
+    bindInput('sysInpUnlockedAbility', 'unlockedAbility');
     bindInput('sysInpMediaCaption', 'mediaCaption');
     bindInput('sysInpMediaUrl', 'mediaUrl');
     bindChange('sysSelMediaLayout', 'mediaLayout');
 
     bindChange('sysSelStatsCols', 'statsCols', v => Number(v) || 2);
     bindInput('sysInpPills', 'pills', v => String(v).split(',').map(s => s.trim()).filter(Boolean));
-    bindInput('sysInpButtons', 'buttons', v => String(v).split('|').map(s => s.trim()).filter(Boolean).map((lbl, i) => ({ label: lbl, style: i === 0 ? 'primary' : 'ghost' })));
+    bindInput('sysInpButtons', 'buttons', v => String(v).split('|').map(s => s.trim()).filter(Boolean).map(lbl => ({ label: lbl, style: 'neutral' })));
     bindChange('sysChkTimer', 'timerEnabled');
     bindInput('sysInpTimerLabel', 'timerLabel');
     bindInput('sysInpTimerSeconds', 'timerSeconds', v => Math.max(0, parseInt(v, 10) || 0));
@@ -1777,7 +2575,7 @@
     api().upsertSystemWindowMessage({
       editMsgId: builderEditingMsgId,
       title: cleanCfg.headerTitle || 'SYSTEM WINDOW',
-      text: cleanCfg.bodyText || cleanCfg.subtitle || cleanCfg.headerTitle,
+      text: cleanCfg.bodyText || cleanCfg.subtitle || cleanCfg.levelTransition || cleanCfg.headerTitle,
       systemConfig: cleanCfg,
       delayMs: builderHoldMs
     });
@@ -1803,6 +2601,7 @@
     normalizeConfig,
     renderSystemWindowElement,
     animateBarsInElement,
+    applyTimerVisualState,
     parseSysWindowLine,
     serializeSysWindowToTag,
     playSfxForConfig,
@@ -1828,6 +2627,48 @@
       const sel = document.getElementById('sysSelMediaLayout');
       if (sel) sel.value = 'none';
       renderMediaPickerStrip();
+      refreshPreviewOnly();
+    },
+    setQuickTimer(sec) {
+      builderDraft.timerEnabled = true;
+      builderDraft.timerSeconds = sec;
+      const chk = document.getElementById('sysChkTimer');
+      const secInp = document.getElementById('sysInpTimerSeconds');
+      if (chk) chk.checked = true;
+      if (secInp) secInp.value = sec;
+      refreshPreviewOnly();
+    },
+    addStatBoost() {
+      builderDraft.statBoosts = builderDraft.statBoosts || [];
+      builderDraft.statBoosts.push({ label: 'STR', delta: '+10' });
+      renderBoostsEditor();
+      refreshPreviewOnly();
+    },
+    removeStatBoost(idx) {
+      builderDraft.statBoosts.splice(idx, 1);
+      renderBoostsEditor();
+      refreshPreviewOnly();
+    },
+    addInventoryItem() {
+      builderDraft.inventoryItems = builderDraft.inventoryItems || [];
+      builderDraft.inventoryItems.push({ icon: '🗡️', name: 'New Item', rarity: 'rare', qty: '1', equipped: false, locked: false });
+      renderInventoryEditor();
+      refreshPreviewOnly();
+    },
+    removeInventoryItem(idx) {
+      builderDraft.inventoryItems.splice(idx, 1);
+      renderInventoryEditor();
+      refreshPreviewOnly();
+    },
+    addShopItem() {
+      builderDraft.shopItems = builderDraft.shopItems || [];
+      builderDraft.shopItems.push({ icon: '🧪', name: 'Mystery Potion', rarity: 'epic', meta: 'Restores MP', price: '10,000 G', locked: false, owned: false });
+      renderShopEditor();
+      refreshPreviewOnly();
+    },
+    removeShopItem(idx) {
+      builderDraft.shopItems.splice(idx, 1);
+      renderShopEditor();
       refreshPreviewOnly();
     },
     addBar() {

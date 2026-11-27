@@ -8856,14 +8856,29 @@ if (msg.type === 'quest') {
     md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
     md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
     md += `• Manhwa RPG Status Window: [SYS_STATUS: Name | Rank/Job | HP:100 | MP:85 | STR:142, AGI:168]\n`;
+    md += `• Level-Up & Stat Surge Window: [SYS_LEVELUP: LV. 12 -> LV. 13 | NEW SKILL: Shadow Extraction | STR +15, AGI +12, ATK +20%, CRIT +5%]\n`;
+    md += `• Inventory Grid Vault: [SYS_INVENTORY: 125,400 G | Kasaka Fang (MYTHIC, EQUIPPED), Elixir of Life (EPIC, x3), Return Stone (RARE, x2), Monarch Key (MYTHIC, LOCKED)]\n`;
+    md += `• System Coin Shop: [SYS_SHOP: SYSTEM COIN SHOP | 120,000 G | Demon King Daggers (80,000 G, LEGENDARY), Full Potion (5,000 G, EPIC), Crown of Abyss (LOCKED LV.50, MYTHIC)]\n`;
+    md += `• Daily / Guild Quest Board: [SYS_QUESTBOARD: DAILY QUEST: TRAIN TO SURVIVE | 🔥 7-DAY STREAK | Push-ups 100/100, Squats 100/100, 10km Run 8/10]\n`;
+    md += `• Shadow Army / Ranker Roster: [SYS_SHADOWARMY: SHADOW ROSTER | 🌑 3/20 SLOTS | Igris (LEGENDARY, EQUIPPED), Beru (MYTHIC, EQUIPPED), Tank (EPIC)]\n`;
     md += `• Item / Artifact Drop Card: [SYS_ITEM: Name | S-RANK | ATK:+180, Crit:+30% | Item lore text]\n`;
-    md += `• Animated Loading Window: [SYS_LOADING: Title | 100 | Awakening progress text]\n`;
+    md += `• Animated Loading Window: [SYS_LOADING: Title | 100% | Awakening progress text]\n`;
     md += `• Otome Affection Meter: [SYS_AFFECTION: TargetName | 40->78 | Flustered reaction note]\n`;
     md += `• Constellation Sponsor Alert: [SYS_CONSTELLATION: ConstellationName | +1000 Coins | Message]\n`;
-    md += `• Penalty Countdown Timer: [SYS_TIMER: 300 | PENALTY COUNTDOWN | Failure warning]\n`;
+    md += `• Dynamic Penalty Countdown: [SYS_TIMER: 10s | PENALTY COUNTDOWN | Failure warning — animates bar & slams PENALTY stamp at 00:00!]\n`;
     md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
     md += `• App Screen Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
     md += `• Interactive Choice Dilemma: [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
+
+    md += `=== 🖥️ HOW TO USE MANHWA SYSTEM WINDOWS (FOR AI — ZERO JSON REQUIRED!) ===\n`;
+    md += `• IMPORTANT: NEVER output JSON (like [SYSWINDOW: {...}]). Always use the simple 1-line [SYS_*] tags listed above!\n`;
+    md += `• Each "|" separates parts of the card cleanly:\n`;
+    md += `  - Status: [SYS_STATUS: CharacterName | Rank/Title | HP:value | MP:value | STAT:val, STAT:val] (auto-shows character portrait if in Cast!)\n`;
+    md += `  - Level-Up: [SYS_LEVELUP: OldLv -> NewLv | NEW SKILL: Ability Name | Stat +Num, Stat +Pct%] (supports BOTH numbers like STR +15 and percentages like ATK +20%!)\n`;
+    md += `  - Inventory: [SYS_INVENTORY: Coins | Item (RARITY, xQty, EQUIPPED/LOCKED), ...] — Rarities: COMMON, RARE, EPIC, LEGENDARY, MYTHIC.\n`;
+    md += `  - Coin Shop: [SYS_SHOP: Shop Title | Coins | Item (Price, RARITY), Item (LOCKED LV.50, MYTHIC)]\n`;
+    md += `  - Dynamic Timer: Use short timers like "10s" or "15s" for YouTube Shorts climax impact — viewers watch it tick to 00:00 and trigger the Penalty!\n`;
+    md += `• Optional Color/Theme Override at end of ANY [SYS_*] tag: add | theme=shadow_violet (or hunter_blue, crimson_danger, murim_gold, cyber_green, otome_rose) or | stamp=COMPLETED!\n\n`;
 
     // 3. Pacing & Delay Rule
     md += `=== ⏳ MANDATORY READING DELAYS BEFORE APP & SCENE SWITCHES ===\n`;
@@ -9062,42 +9077,32 @@ if (msg.type === 'quest') {
     md += `[SYSTEM: 🎬 TO BE CONTINUED — LIKE FOR PART 2]\n\n`;
 
     // --- STYLE 4: MANHWA SOLO LEVELING ---
-    md += `--- 🟦 STYLE 4: MANHWA SOLO LEVELING & SYSTEM QUEST AWAKENING ---\n`;
-    md += `Vibe: Manhwa Solo Leveling parody, floating blue quest notifications, penalty countdowns, hunter awakening comedy, and sci-fi chime alerts.\n`;
+    md += `--- 🟦 STYLE 4: MANHWA SOLO LEVELING, LEVEL-UP, SHOP & PENALTY COUNTDOWN ---\n`;
+    md += `Vibe: Manhwa Solo Leveling action comedy, floating holographic system windows, live 10s penalty timers, Coin Shop panic-buying, Level-Up +stats, and Inventory reveals.\n`;
     md += `[SYSTEM: 🎬 EPISODE 4: THE HUNTER AWAKENING CRISIS]\n`;
     md += `[CHAT: group]\n`;
     md += `/delay 1.2sec\n`;
-    md += `[${povChar}:cry]: ${pDora}!! Gian is chasing me through the shopping district with full murderous intent!\n`;
-    md += `/delay 1.6sec\n`;
-    md += `[${pDora}:angry]: You ruined his manga collection, didn't you?!\n`;
+    md += `[${povChar}:cry]: ${pDora}!! I skipped today's running quest and Gian just cornered me!\n`;
     md += `/delay 1.5sec\n`;
-    md += `[PAUSE: 2s]\n`;
-    md += `[QUEST: ⚠️ SURVIVAL QUEST: Evade the Predator for 300 seconds without taking damage!]\n`;
+    md += `[SYS_LOADING: SYSTEM AWAKENING PROTOCOL | 100% | Syncing Hidden Monarch Authority... | theme=cyber_green]\n`;
+    md += `/delay 1.8sec\n`;
+    md += `[SYS_TIMER: 10s | PENALTY QUEST: SURVIVE GIAN | Defeat or evade Gian before 00:00 or enter Crimson Penalty Zone!]\n`;
     md += `/delay 2sec\n`;
-    md += `[${povChar}:shock:vineboom]: A floating blue holographic quest window just popped up in front of my eyes?!\n`;
+    md += `[${povChar}:shock:vineboom]: A TEN-SECOND PENALTY COUNTDOWN JUST STARTED IN FRONT OF MY EYES?!\n`;
+    md += `/delay 1.5sec\n`;
+    md += `[${pDora}:laugh:boing]: Quick! Open the System Coin Shop and buy an S-Rank weapon!\n`;
+    md += `/delay 1.8sec\n`;
+    md += `[SYS_SHOP: EMERGENCY HUNTER SHOP | 50,000 G | Demon King Daggers (45,000 G, LEGENDARY), Full Potion (5,000 G, EPIC), Monarch Armor (LOCKED LV.50, MYTHIC)]\n`;
+    md += `/delay 2.4sec\n`;
+    md += `[${povChar}:angry:sword]: Bought the Demon King Daggers for 45,000 G! EAT SHADOW BLADE, GIAN!!\n`;
     md += `[${povChar}:sfx]: 👑 ARISE!!\n`;
     md += `/delay 1.8sec\n`;
-    md += `[${pDora}:laugh:boing]: Bwahaha! The Solo Leveling System chose YOU as a player?!\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[SCENE: chatgpt]\n`;
-    md += `[${povChar}]: ChatGPT, analyze the System Quest parameters and give me an optimal evasion route!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[ChatGPT]: Player ${povChar}: Gian's current sprint velocity is 18 km/h. Turn left into the narrow alleyway and trigger maximum agility boost!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[SCENE: whatsapp]\n`;
-    md += `[CHAT: private: ${pShiz}]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:love:sparkle]: ${pShiz}, if I survive this hunter awakening, will you be my guild master?!\n`;
+    md += `[${pGian}:shock:vineboom]: NANI?! WHERE DID HE PULL DUAL S-RANK DAGGERS FROM?!\n`;
     md += `/delay 1.8sec\n`;
-    md += `[${pShiz}:bliss:sparkle]: Focus on running first, Mr. Hunter! 😂\n`;
+    md += `[SYS_LEVELUP: LV. 1 -> LV. 15 | NEW SKILL: Shadow Extraction (S-Rank) | STR +25, AGI +18, ATK +40%, CRIT +12% | theme=shadow_violet | stamp=LEVEL UP!]\n`;
+    md += `/delay 2.4sec\n`;
+    md += `[SYS_INVENTORY: 5,000 G | Demon King Daggers (LEGENDARY, EQUIPPED), Elixir of Life (EPIC, x2), Monarch Key (MYTHIC, LOCKED)]\n`;
     md += `/delay 2.2sec\n`;
-    md += `[CHAT: group]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[CHOICE: Penalty timer is at 00:03! | ⚡ Awaken Shadow Extraction -> ${povChar}: 👑 ARISE!! GIAN'S SHADOW IS MINE!! | 💨 Tactical Retreat -> ${povChar}: 💨 NIGERUNDAYO SPRINT!!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pGian}:shock:vineboom]: NANI?! HIS POWER LEVEL JUST SURPASSED 9000?!\n`;
-    md += `[${povChar}:sfx]: ⬆️ LEVEL UP!!\n`;
-    md += `/delay 1.8sec\n`;
     md += `[${povChar}:STICKER]: HYPE\n`;
     md += `/delay 1.8sec\n`;
     md += `[SYSTEM: 🎬 QUEST COMPLETED — PLAYER RANK: S-TIER]\n\n`;
@@ -9765,7 +9770,7 @@ if (msg.type === 'quest') {
 
     // 4. Auto-split packed scripts: insert newlines before directives if multiple tags are on one line
     cleaned = cleaned.replace(/\s+(\/(?:\s*delay|pause))/gi, '\n$1');
-    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|SYS_STATUS|SYS_ITEM|SYS_LOADING|SYS_AFFECTION|SYS_CONSTELLATION|SYS_TIMER|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
+    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|SYS_STATUS|SYS_LEVELUP|SYS_INVENTORY|SYS_SHOP|SYS_QUESTBOARD|SYS_SHADOWARMY|SYS_ITEM|SYS_LOADING|SYS_AFFECTION|SYS_CONSTELLATION|SYS_TIMER|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
     cleaned = cleaned.replace(/([.!?\"\'\)])\s+(\[[^\]]+\]\s*:)/gi, '$1\n$2');
 
     const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
