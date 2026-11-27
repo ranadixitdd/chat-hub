@@ -163,17 +163,17 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   box-shadow: 4px 4px 0 #020617, 0 0 18px color-mix(in srgb, var(--sys-accent) 30%, transparent);
 }
 
-/* 7. Demonic Thorn / Bone Relic Frame (Image 1 Style SVG Edge Overlay) */
+/* 7. Demonic Thorn / Bone Relic Frame (DEVOUR Organic Spiky Border) */
 .manhwa-sys-win.frame-demonic_thorn {
   border-radius: 22px;
-  border: 2px solid #dc2626;
-  padding: 24px 20px;
+  border: 2px solid color-mix(in srgb, var(--sys-accent-2) 85%, var(--sys-accent));
+  padding: 25px 21px;
   box-shadow: 0 0 28px color-mix(in srgb, var(--sys-accent-2) 85%, transparent),
-              0 0 54px color-mix(in srgb, var(--sys-accent-2) 48%, transparent),
-              inset 0 0 32px rgba(95, 8, 8, 0.9);
+              0 0 56px color-mix(in srgb, var(--sys-accent-2) 48%, transparent),
+              inset 0 0 34px color-mix(in srgb, var(--sys-accent-2) 55%, var(--sys-bg));
 }
 
-/* 8. Blueprint Double-Box Frame (Image 2 Illustrated Codex Style) */
+/* 8. Blueprint Double-Box Frame (Illustrated Codex Style) */
 .manhwa-sys-win.frame-blueprint_double {
   border-radius: 2px;
   border: 2px solid color-mix(in srgb, var(--sys-accent) 92%, #ffffff 8%);
@@ -187,27 +187,27 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 /* 9. Celestial Archangel Halo Frame */
 .manhwa-sys-win.frame-celestial_arcane {
   border-radius: 16px;
-  border: 2px solid #fde047;
-  padding: 22px 18px;
-  box-shadow: 0 0 26px rgba(250, 204, 21, 0.55),
-              0 0 44px rgba(56, 189, 248, 0.25),
-              inset 0 0 26px rgba(250, 204, 21, 0.14);
+  border: 2px solid var(--sys-accent);
+  padding: 23px 19px;
+  box-shadow: 0 0 26px color-mix(in srgb, var(--sys-accent) 58%, transparent),
+              0 0 46px color-mix(in srgb, var(--sys-accent-2) 28%, transparent),
+              inset 0 0 26px color-mix(in srgb, var(--sys-accent) 16%, transparent);
 }
 
 /* 10. Cursed Blood Chains Frame */
 .manhwa-sys-win.frame-cursed_chains {
   border-radius: 8px;
-  border: 2px solid color-mix(in srgb, var(--sys-accent) 82%, #ef4444);
-  padding: 22px 18px;
-  box-shadow: 0 0 24px rgba(239, 68, 68, 0.55),
-              inset 0 0 26px rgba(153, 27, 27, 0.45);
+  border: 2px solid color-mix(in srgb, var(--sys-accent-2) 70%, var(--sys-accent));
+  padding: 23px 19px;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--sys-accent-2) 58%, transparent),
+              inset 0 0 26px color-mix(in srgb, var(--sys-accent-2) 32%, var(--sys-bg));
 }
 
 /* 11. Holo Circuit Trace Frame */
 .manhwa-sys-win.frame-cyber_circuit {
   border-radius: 4px;
   border: 1.5px solid var(--sys-accent);
-  padding: 20px 17px;
+  padding: 21px 18px;
   box-shadow: 0 0 24px color-mix(in srgb, var(--sys-accent) 45%, transparent),
               inset 0 0 20px color-mix(in srgb, var(--sys-accent) 16%, transparent);
 }
@@ -219,6 +219,21 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   padding: 22px 18px;
   box-shadow: 0 0 24px color-mix(in srgb, var(--sys-accent) 48%, transparent),
               inset 0 0 24px color-mix(in srgb, var(--sys-accent) 18%, transparent);
+}
+
+/* 13-17. Ornate DEVOUR-Tier Relic & Custom Vector Frames */
+.manhwa-sys-win.frame-void_seraph,
+.manhwa-sys-win.frame-abyssal_crown,
+.manhwa-sys-win.frame-frost_monarch,
+.manhwa-sys-win.frame-necromancer_rib,
+.manhwa-sys-win.frame-divine_lotus,
+.manhwa-sys-win.has-custom-vector-frame {
+  border-radius: 18px;
+  border: 2px solid color-mix(in srgb, var(--sys-accent) 82%, var(--sys-accent-2));
+  padding: 25px 20px;
+  box-shadow: 0 0 28px color-mix(in srgb, var(--sys-accent-2) 65%, transparent),
+              0 0 50px color-mix(in srgb, var(--sys-accent) 30%, transparent),
+              inset 0 0 30px color-mix(in srgb, var(--sys-accent-2) 36%, var(--sys-bg));
 }
 
 /* Inline Built-In Vector Frame Border Overlay (always transparent center) */
@@ -256,8 +271,8 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 }
 .manhwa-sys-win.has-starburst .msw-fx-overlay.starburst {
   background:
-    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--sys-accent-2) 34%, transparent) 0%, rgba(12, 2, 4, 0.88) 78%),
-    repeating-conic-gradient(from 0deg at 50% 34%, color-mix(in srgb, var(--sys-accent) 18%, transparent) 0deg 2.5deg, transparent 2.5deg 9.5deg);
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--sys-accent-2) 40%, transparent) 0%, color-mix(in srgb, var(--sys-bg) 52%, transparent) 46%, color-mix(in srgb, var(--sys-bg) 96%, #020104) 88%),
+    repeating-conic-gradient(from 0deg at 50% 34%, color-mix(in srgb, var(--sys-accent-2) 22%, transparent) 0deg 2deg, color-mix(in srgb, var(--sys-accent) 12%, transparent) 2deg 3.5deg, transparent 3.5deg 9deg);
 }
 .manhwa-sys-win.has-sparkles::after {
   content: '✦   ✧   ✦   ✧';
@@ -1086,8 +1101,8 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 /* --- SUNBURST, RELIC EMBLEM & CODEX DIAGRAM CARDS --- */
 .manhwa-sys-win.has-starburst .msw-fx-overlay.starburst {
   background:
-    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--sys-accent-2) 34%, transparent) 0%, rgba(127, 29, 29, 0.25) 45%, rgba(20, 2, 4, 0.72) 100%),
-    repeating-conic-gradient(from 0deg at 50% 38%, color-mix(in srgb, var(--sys-accent) 16%, transparent) 0deg 2.5deg, transparent 2.5deg 9.5deg);
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--sys-accent-2) 42%, transparent) 0%, color-mix(in srgb, var(--sys-bg) 54%, transparent) 46%, color-mix(in srgb, var(--sys-bg) 96%, #020104) 88%),
+    repeating-conic-gradient(from 0deg at 50% 34%, color-mix(in srgb, var(--sys-accent-2) 24%, transparent) 0deg 2deg, color-mix(in srgb, var(--sys-accent) 13%, transparent) 2deg 3.6deg, transparent 3.6deg 9deg);
 }
 
 .manhwa-sys-win.is-card-centered {
@@ -1355,4 +1370,35 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 }
 .syswin-custom-icon-maker.open {
   display: flex;
+}
+.syswin-frame-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+  max-height: 185px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+.syswin-frame-btn {
+  min-height: 76px;
+  padding: 6px 5px;
+}
+.syswin-frame-thumb {
+  width: 34px;
+  height: 42px;
+  position: relative;
+  border-radius: 5px;
+  background: rgba(10, 18, 38, 0.9);
+  border: 1.5px solid color-mix(in srgb, var(--sys-accent, #fde047) 75%, transparent);
+  box-shadow: inset 0 0 8px color-mix(in srgb, var(--sys-accent-2, #ef4444) 35%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+.syswin-frame-thumb svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }

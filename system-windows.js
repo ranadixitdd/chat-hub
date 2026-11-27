@@ -7,6 +7,7 @@
 
   const PRESETS_STORAGE_KEY = 'chathub_sys_presets_v1';
   const CUSTOM_ICONS_STORAGE_KEY = 'chathub_sys_custom_icons_v1';
+  const CUSTOM_FRAMES_STORAGE_KEY = 'chathub_sys_custom_frames_v1';
 
   function esc(str) {
     return String(str ?? '')
@@ -672,63 +673,275 @@
     return null;
   }
 
+  const BUILT_IN_FRAMES = [
+    { id: 'tech_brackets', label: 'Tech Brackets', icon: '⌜⌟', isOrnate: false },
+    { id: 'cyber_bevel', label: 'Cyber Bevel', icon: '▱', isOrnate: false },
+    { id: 'imperial_ornate', label: 'Ornate Murim', icon: '❖', isOrnate: true },
+    { id: 'demonic_thorn', label: 'DEVOUR Thorn', icon: '🔥', isOrnate: true },
+    { id: 'void_seraph', label: 'Seraph Wings', icon: '🪽', isOrnate: true },
+    { id: 'abyssal_crown', label: 'Monarch Crown', icon: '👑', isOrnate: true },
+    { id: 'frost_monarch', label: 'Frost Crystal', icon: '❄️', isOrnate: true },
+    { id: 'necromancer_rib', label: 'Bone Scythe', icon: '💀', isOrnate: true },
+    { id: 'divine_lotus', label: 'Murim Lotus', icon: '🪷', isOrnate: true },
+    { id: 'blueprint_double', label: 'Blueprint Box', icon: '📐', isOrnate: false },
+    { id: 'celestial_arcane', label: 'Celestial Halo', icon: '⚜️', isOrnate: true },
+    { id: 'cursed_chains', label: 'Blood Chains', icon: '⛓️', isOrnate: true },
+    { id: 'cyber_circuit', label: 'Holo Circuit', icon: '🧬', isOrnate: true },
+    { id: 'dragon_scroll', label: 'Dragon Scroll', icon: '🐉', isOrnate: true },
+    { id: 'glitch_corrupted', label: 'Glitch Error', icon: '⚡', isOrnate: false },
+    { id: 'glass_hud', label: 'Glass HUD', icon: '💎', isOrnate: false },
+    { id: 'comic_ink', label: 'Comic Ink', icon: '💥', isOrnate: false }
+  ];
+
+  function loadCustomFrames() {
+    try {
+      let raw = null;
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.get === 'function') {
+        raw = window.ChatHubStorage.get(CUSTOM_FRAMES_STORAGE_KEY);
+      } else {
+        raw = localStorage.getItem(CUSTOM_FRAMES_STORAGE_KEY);
+      }
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustomFrames(list) {
+    try {
+      const json = JSON.stringify(list || []);
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.set === 'function') {
+        window.ChatHubStorage.set(CUSTOM_FRAMES_STORAGE_KEY, json);
+      } else {
+        localStorage.setItem(CUSTOM_FRAMES_STORAGE_KEY, json);
+      }
+    } catch (e) {}
+  }
+
+  function normalizeSvgFrameMarkup(rawSvg, clsName = 'msw-thorn-svg-frame') {
+    const clean = sanitizeCustomSvg(rawSvg);
+    if (!clean) return '';
+    return clean.replace(/^<svg\b([^>]*)>/i, (_, attrs) => {
+      let a = attrs || '';
+      if (!/\bclass\s*=/i.test(a)) a += ` class="${clsName}"`;
+      if (!/\bpreserveAspectRatio\s*=/i.test(a)) a += ' preserveAspectRatio="none"';
+      if (!/\baria-hidden\s*=/i.test(a)) a += ' aria-hidden="true"';
+      return `<svg${a}>`;
+    });
+  }
+
   function getThornFrameSvg() {
+    // Organic spiky DEVOUR vine + razor thorns + corner feathered wing flare using reactive theme colors
     return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="mswThornGold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#fef9c3"/>
-          <stop offset="50%" stop-color="#facc15"/>
-          <stop offset="100%" stop-color="#ea580c"/>
-        </linearGradient>
-      </defs>
-      <path d="M8 14 L22 2 L36 13 L50 2 L66 13 L82 2 L98 13 L114 2 L130 13 L146 2 L160 12 L176 2 L192 13 L208 2 L224 13 L240 2 L256 13 L272 2 L288 13 L302 2 L314 16 L305 32 L318 48 L305 64 L318 82 L305 100 L318 118 L305 138 L318 158 L305 178 L318 198 L305 220 L318 242 L305 264 L318 286 L305 308 L318 332 L305 354 L316 382 L298 397 L280 386 L262 398 L242 387 L222 398 L202 387 L182 398 L160 387 L138 398 L118 387 L98 398 L78 387 L58 398 L40 386 L22 397 L6 382 L15 354 L2 332 L15 308 L2 286 L15 264 L2 242 L15 220 L2 198 L15 178 L2 158 L15 138 L2 118 L15 100 L2 82 L15 64 L2 48 L15 32 Z"
-        fill="none" stroke="url(#mswThornGold)" stroke-width="3.6" stroke-linejoin="round"/>
-      <path d="M12 18 Q42 8 68 17 M252 17 Q278 8 308 18 M12 382 Q42 392 68 383 M252 383 Q278 392 308 382 M14 20 L36 30 L20 50 M306 20 L284 30 L300 50 M14 380 L36 370 L20 350 M306 380 L284 370 L300 350"
-        fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="11" y="11" width="298" height="378" rx="16" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="12 4"/>
+      <path d="M18 14 C36 2 58 18 82 10 C108 2 132 16 160 10 C188 16 212 2 238 10 C264 16 286 2 304 16 C318 32 304 58 312 86 C318 118 304 150 312 186 C318 222 304 256 312 292 C318 328 304 358 304 384 C286 398 260 384 234 391 C206 398 182 384 160 390 C138 384 114 398 86 391 C60 384 34 398 16 384 C4 366 16 336 8 302 C2 268 16 232 8 196 C2 160 16 124 8 88 C2 54 14 28 18 14 Z"
+        fill="none" stroke="var(--sys-accent-2)" stroke-width="8" stroke-opacity="0.45" stroke-linejoin="round"/>
+      <path d="M14 14 L22 2 L32 12 L46 2 L58 12 L74 2 L88 12 L104 2 L118 12 L134 2 L148 11 L160 2 L172 11 L186 2 L202 12 L216 2 L232 12 L246 2 L262 12 L276 2 L290 12 L308 4 L318 18 L307 34 L318 50 L307 68 L318 86 L307 104 L318 124 L307 144 L318 164 L307 184 L318 206 L307 228 L318 250 L307 272 L318 294 L307 316 L318 338 L307 360 L316 382 L298 397 L282 386 L264 397 L246 386 L228 397 L210 386 L192 397 L174 386 L160 396 L146 386 L128 397 L110 386 L92 397 L74 386 L56 397 L38 386 L22 397 L6 382 L14 360 L3 338 L14 316 L3 294 L14 272 L3 250 L14 228 L3 206 L14 184 L3 164 L14 144 L3 124 L14 104 L3 86 L14 68 L3 50 L14 34 L4 18 Z"
+        fill="none" stroke="var(--sys-accent)" stroke-width="3.4" stroke-linejoin="round"/>
+      <path d="M14 16 C40 6 70 22 100 11 C130 22 160 6 190 15 C220 6 260 10 306 20 M14 384 C45 372 78 392 114 381 C150 392 184 374 218 384 C254 392 282 376 306 384"
+        fill="none" stroke="var(--sys-accent-2)" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M16 18 C24 68 8 118 16 170 C24 222 8 282 16 380 M304 18 C296 74 312 130 304 188 C296 244 312 310 304 380"
+        fill="none" stroke="var(--sys-accent-2)" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M268 12 Q298 6 312 36 M280 20 Q302 22 308 50 M10 36 Q20 12 48 14 M10 364 Q22 388 50 386 M270 386 Q298 388 310 362"
+        fill="none" stroke="var(--sys-accent)" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="13" y="13" width="294" height="374" rx="16" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.6" stroke-opacity="0.72" stroke-dasharray="10 5"/>
     </svg>`;
   }
 
-  function getEmblemFrameSvg() {
-    return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M8 10 L20 3 L32 10 L46 3 L60 10 L74 3 L88 10 L100 3 L112 10 L117 22 L110 36 L117 50 L110 64 L117 78 L110 92 L117 108 L110 112 L98 117 L86 110 L72 117 L60 110 L48 117 L34 110 L22 117 L8 110 L3 94 L10 80 L3 66 L10 52 L3 38 L10 24 Z"
-        fill="none" stroke="#fde047" stroke-width="2.8" stroke-linejoin="round"/>
-      <rect x="6" y="6" width="108" height="108" rx="10" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6 3"/>
-    </svg>`;
+  function getEmblemFrameSvg(frameStyle = 'demonic_thorn', cfg = null) {
+    if (cfg && cfg.customFrameSvg) {
+      return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="4" y="4" width="112" height="112" rx="12" fill="none" stroke="var(--sys-accent)" stroke-width="2.4"/>
+        <rect x="9" y="9" width="102" height="102" rx="9" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.5" stroke-dasharray="6 4"/>
+      </svg>`;
+    }
+    if (frameStyle === 'demonic_thorn') {
+      return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M9 11 L20 3 L32 10 L46 3 L60 10 L74 3 L88 10 L100 3 L111 11 L117 22 L110 36 L117 50 L110 64 L117 78 L110 92 L117 108 L109 112 L98 117 L86 110 L72 117 L60 110 L48 117 L34 110 L22 117 L9 110 L3 94 L10 80 L3 66 L10 52 L3 38 L10 24 Z"
+          fill="none" stroke="var(--sys-accent)" stroke-width="2.8" stroke-linejoin="round"/>
+        <path d="M12 14 C34 6 58 14 82 8 C96 5 106 10 110 20 M10 106 C36 114 64 106 90 113 M11 16 C6 46 14 78 9 104 M109 16 C114 48 106 80 111 104"
+          fill="none" stroke="var(--sys-accent-2)" stroke-width="2.1" stroke-linecap="round"/>
+        <rect x="7" y="7" width="106" height="106" rx="10" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.6" stroke-dasharray="7 3"/>
+      </svg>`;
+    }
+    if (frameStyle === 'void_seraph' || frameStyle === 'celestial_arcane') {
+      return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="6" y="6" width="108" height="108" rx="14" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
+        <path d="M4 34 Q14 12 36 6 M116 34 Q106 12 84 6 M4 86 Q14 108 36 114 M116 86 Q106 108 84 114" fill="none" stroke="var(--sys-accent-2)" stroke-width="2.6" stroke-linecap="round"/>
+        <polygon points="60,2 65,9 60,16 55,9" fill="var(--sys-accent)"/>
+        <polygon points="60,104 65,111 60,118 55,111" fill="var(--sys-accent)"/>
+      </svg>`;
+    }
+    if (frameStyle === 'abyssal_crown' || frameStyle === 'necromancer_rib') {
+      return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M10 14 L24 4 L40 12 L60 2 L80 12 L96 4 L110 14 L115 36 L108 60 L115 84 L110 108 L94 116 L60 110 L26 116 L10 108 L5 84 L12 60 L5 36 Z"
+          fill="none" stroke="var(--sys-accent)" stroke-width="2.4" stroke-linejoin="round"/>
+        <rect x="10" y="10" width="100" height="100" rx="8" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.4" stroke-dasharray="5 3"/>
+      </svg>`;
+    }
+    if (frameStyle === 'frost_monarch' || frameStyle === 'cyber_circuit') {
+      return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+        <polygon points="18,4 102,4 116,18 116,102 102,116 18,116 4,102 4,18" fill="none" stroke="var(--sys-accent)" stroke-width="2.3"/>
+        <path d="M4 26 L26 4 M94 4 L116 26 M4 94 L26 116 M94 116 L116 94" stroke="var(--sys-accent-2)" stroke-width="2.2"/>
+      </svg>`;
+    }
+    if (frameStyle === 'cursed_chains' || frameStyle === 'dragon_scroll' || frameStyle === 'divine_lotus' || frameStyle === 'imperial_ornate') {
+      return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="6" y="6" width="108" height="108" rx="10" fill="none" stroke="var(--sys-accent)" stroke-width="2.2" stroke-dasharray="${frameStyle === 'cursed_chains' ? '10 4' : 'none'}"/>
+        <circle cx="14" cy="14" r="4.5" fill="none" stroke="var(--sys-accent-2)" stroke-width="2"/>
+        <circle cx="106" cy="14" r="4.5" fill="none" stroke="var(--sys-accent-2)" stroke-width="2"/>
+        <circle cx="14" cy="106" r="4.5" fill="none" stroke="var(--sys-accent-2)" stroke-width="2"/>
+        <circle cx="106" cy="106" r="4.5" fill="none" stroke="var(--sys-accent-2)" stroke-width="2"/>
+      </svg>`;
+    }
+    return '';
   }
 
-  function getFrameSvgOverlay(frameStyle) {
+  function generateCustomOrnateFrameSvg(motif = 'thorn', density = 'medium', colorMode = 'theme', colorA = '#fde047', colorB = '#ef4444') {
+    const c1 = colorMode === 'custom' && /^#[0-9a-f]{3,8}$/i.test(colorA) ? colorA : 'var(--sys-accent)';
+    const c2 = colorMode === 'custom' && /^#[0-9a-f]{3,8}$/i.test(colorB) ? colorB : 'var(--sys-accent-2)';
+    const stepsX = density === 'high' ? 14 : (density === 'low' ? 6 : 10);
+    const stepsY = density === 'high' ? 18 : (density === 'low' ? 8 : 12);
+    let paths = `<rect x="11" y="11" width="298" height="378" rx="14" fill="none" stroke="${c2}" stroke-width="2" stroke-opacity="0.75"/>`;
+
+    if (motif === 'wings') {
+      paths += `<path d="M6 74 C12 28 38 10 92 8 M314 74 C308 28 282 10 228 8 M6 326 C12 372 38 390 92 392 M314 326 C308 372 282 390 228 392" fill="none" stroke="${c1}" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M10 96 Q24 52 56 26 M310 96 Q296 52 264 26 M10 304 Q24 348 56 374 M310 304 Q296 348 264 374" fill="none" stroke="${c2}" stroke-width="2.4" stroke-linecap="round"/>
+        <polygon points="160,2 169,12 160,22 151,12" fill="${c1}"/><polygon points="160,378 169,388 160,398 151,388" fill="${c1}"/>`;
+    } else if (motif === 'crystal') {
+      paths += `<polygon points="18,6 302,6 314,18 314,382 302,394 18,394 6,382 6,18" fill="none" stroke="${c1}" stroke-width="3"/>
+        <polygon points="160,2 174,14 160,24 146,14" fill="none" stroke="${c1}" stroke-width="2.2"/><polygon points="160,376 174,386 160,398 146,386" fill="none" stroke="${c1}" stroke-width="2.2"/>
+        <path d="M4 46 L26 24 L46 4 M274 4 L294 24 L316 46 M4 354 L26 376 L46 396 M274 396 L294 376 L316 354" fill="none" stroke="${c2}" stroke-width="2.4"/>`;
+    } else if (motif === 'chains') {
+      paths += `<rect x="7" y="7" width="306" height="386" rx="8" fill="none" stroke="${c1}" stroke-width="3" stroke-dasharray="14 6"/>
+        <rect x="15" y="15" width="290" height="370" rx="6" fill="none" stroke="${c2}" stroke-width="2" stroke-dasharray="6 8"/>
+        <circle cx="16" cy="16" r="7" fill="none" stroke="${c1}" stroke-width="2.5"/><circle cx="304" cy="16" r="7" fill="none" stroke="${c1}" stroke-width="2.5"/>
+        <circle cx="16" cy="384" r="7" fill="none" stroke="${c1}" stroke-width="2.5"/><circle cx="304" cy="384" r="7" fill="none" stroke="${c1}" stroke-width="2.5"/>`;
+    } else if (motif === 'lotus') {
+      paths += `<path d="M160 3 Q174 16 188 10 Q176 22 160 22 Q144 22 132 10 Q146 16 160 3 Z" fill="none" stroke="${c1}" stroke-width="2.2"/>
+        <path d="M160 397 Q174 384 188 390 Q176 378 160 378 Q144 378 132 390 Q146 384 160 397 Z" fill="none" stroke="${c1}" stroke-width="2.2"/>
+        <path d="M10 38 Q12 12 38 10 L76 10 M310 38 Q308 12 282 10 L244 10 M10 362 Q12 388 38 390 L76 390 M310 362 Q308 388 282 390 L244 390" fill="none" stroke="${c1}" stroke-width="2.8" stroke-linecap="round"/>`;
+    } else {
+      // Procedural spiky thorns or demon crown spikes around full perimeter
+      let pts = [];
+      for (let i = 0; i < stepsX; i++) {
+        const x1 = 14 + (292 * i) / stepsX;
+        const xMid = 14 + (292 * (i + 0.5)) / stepsX;
+        pts.push(`${i === 0 ? 'M' : 'L'}${x1.toFixed(1)} 14 L${xMid.toFixed(1)} ${motif === 'crown' && i === Math.floor(stepsX / 2) ? 1 : 3}`);
+      }
+      for (let j = 0; j < stepsY; j++) {
+        const y1 = 14 + (372 * j) / stepsY;
+        const yMid = 14 + (372 * (j + 0.5)) / stepsY;
+        pts.push(`L306 ${y1.toFixed(1)} L317 ${yMid.toFixed(1)}`);
+      }
+      for (let i = stepsX; i > 0; i--) {
+        const x1 = 14 + (292 * i) / stepsX;
+        const xMid = 14 + (292 * (i - 0.5)) / stepsX;
+        pts.push(`L${x1.toFixed(1)} 386 L${xMid.toFixed(1)} 397`);
+      }
+      for (let j = stepsY; j > 0; j--) {
+        const y1 = 14 + (372 * j) / stepsY;
+        const yMid = 14 + (372 * (j - 0.5)) / stepsY;
+        pts.push(`L14 ${y1.toFixed(1)} L3 ${yMid.toFixed(1)}`);
+      }
+      pts.push('Z');
+      paths += `<path d="${pts.join(' ')}" fill="none" stroke="${c1}" stroke-width="3.2" stroke-linejoin="round"/>
+        <path d="M12 18 Q40 6 70 16 M250 16 Q280 6 308 18 M12 382 Q40 394 70 384 M250 384 Q280 394 308 382" fill="none" stroke="${c2}" stroke-width="2.4" stroke-linecap="round"/>`;
+    }
+    return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">${paths}</svg>`;
+  }
+
+  function getAllFrames() {
+    const customList = loadCustomFrames().map(cf => ({
+      id: String(cf.id),
+      label: String(cf.label || 'Custom Frame').slice(0, 18),
+      icon: '✨',
+      isCustom: true,
+      isOrnate: true,
+      svg: normalizeSvgFrameMarkup(cf.svg, 'msw-thorn-svg-frame')
+    })).filter(cf => cf.id && cf.svg);
+    return [...BUILT_IN_FRAMES, ...customList];
+  }
+
+  function getFrameSvgOverlay(frameStyle, customFrameSvg = '') {
+    if (customFrameSvg) {
+      const normalized = normalizeSvgFrameMarkup(customFrameSvg, 'msw-thorn-svg-frame');
+      if (normalized) return normalized;
+    }
+    const customSaved = loadCustomFrames().find(cf => String(cf.id) === String(frameStyle));
+    if (customSaved && customSaved.svg) {
+      return normalizeSvgFrameMarkup(customSaved.svg, 'msw-thorn-svg-frame');
+    }
     if (frameStyle === 'demonic_thorn') return getThornFrameSvg();
+    if (frameStyle === 'void_seraph') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="11" y="11" width="298" height="378" rx="18" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
+        <rect x="17" y="17" width="286" height="366" rx="13" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.2" stroke-dasharray="8 4"/>
+        <path d="M4 84 C8 34 38 10 104 8 M316 84 C312 34 282 10 216 8 M6 108 Q24 58 66 24 M314 108 Q296 58 254 24 M6 132 Q20 88 46 54 M314 132 Q300 88 274 54" fill="none" stroke="var(--sys-accent)" stroke-width="2.8" stroke-linecap="round"/>
+        <path d="M4 316 C8 366 38 390 104 392 M316 316 C312 366 282 390 216 392 M6 292 Q24 342 66 376 M314 292 Q296 342 254 376" fill="none" stroke="var(--sys-accent-2)" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="160" cy="10" r="6" fill="none" stroke="var(--sys-accent)" stroke-width="2"/>
+        <polygon points="160,378 167,388 160,398 153,388" fill="var(--sys-accent)"/>
+      </svg>`;
+    }
+    if (frameStyle === 'abyssal_crown') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M16 26 L44 6 L78 18 L118 4 L144 16 L160 2 L176 16 L202 4 L242 18 L276 6 L304 26 L316 62 L306 104 L316 154 L306 200 L316 246 L306 296 L316 338 L304 374 L274 394 L238 384 L198 396 L160 384 L122 396 L82 384 L46 394 L16 374 L4 338 L14 296 L4 246 L14 200 L4 154 L14 104 L4 62 Z"
+          fill="none" stroke="var(--sys-accent)" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="14" y="16" width="292" height="368" rx="14" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.8" stroke-dasharray="10 4"/>
+      </svg>`;
+    }
+    if (frameStyle === 'frost_monarch') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <polygon points="28,6 292,6 314,28 314,372 292,394 28,394 6,372 6,28" fill="none" stroke="var(--sys-accent)" stroke-width="2.6"/>
+        <polygon points="36,14 284,14 306,36 306,364 284,386 36,386 14,364 14,36" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.3" stroke-dasharray="12 5"/>
+        <path d="M6 52 L52 6 M268 6 L314 52 M6 348 L52 394 M268 394 L314 348 M148 6 L160 18 L172 6 M148 394 L160 382 L172 394" fill="none" stroke="var(--sys-accent)" stroke-width="2.4" stroke-linejoin="round"/>
+      </svg>`;
+    }
+    if (frameStyle === 'necromancer_rib') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M12 18 C52 2 98 22 146 10 M174 10 C222 22 268 2 308 18 M12 382 C52 398 98 378 146 390 M174 390 C222 378 268 398 308 382" fill="none" stroke="var(--sys-accent)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M16 42 C2 64 24 84 12 108 C2 132 24 152 12 178 C2 204 24 228 12 254 C2 280 24 306 12 332 L20 368 M304 42 C318 64 296 84 308 108 C318 132 296 152 308 178 C318 204 296 228 308 254 C318 280 296 306 308 332 L300 368" fill="none" stroke="var(--sys-accent-2)" stroke-width="2.5" stroke-linecap="round"/>
+        <polygon points="160,4 166,14 160,24 154,14" fill="var(--sys-accent)"/>
+        <polygon points="160,376 166,386 160,396 154,386" fill="var(--sys-accent)"/>
+      </svg>`;
+    }
+    if (frameStyle === 'divine_lotus') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="12" y="12" width="296" height="376" rx="14" fill="none" stroke="var(--sys-accent)" stroke-width="2"/>
+        <path d="M160 2 Q176 18 194 12 Q178 26 160 26 Q142 26 126 12 Q144 18 160 2 Z M160 398 Q176 382 194 388 Q178 374 160 374 Q142 374 126 388 Q144 382 160 398 Z" fill="none" stroke="var(--sys-accent)" stroke-width="2.4"/>
+        <path d="M12 50 C14 20 26 12 62 12 M308 50 C306 20 294 12 258 12 M12 350 C14 380 26 388 62 388 M308 350 C306 380 294 388 258 388" fill="none" stroke="var(--sys-accent-2)" stroke-width="2.8" stroke-linecap="round"/>
+      </svg>`;
+    }
     if (frameStyle === 'celestial_arcane') {
       return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
-        <rect x="8" y="8" width="304" height="384" rx="14" fill="none" stroke="#fde047" stroke-width="2"/>
-        <rect x="14" y="14" width="292" height="372" rx="10" fill="none" stroke="#fef08a" stroke-width="1" stroke-dasharray="6 4"/>
-        <path d="M10 48 C18 22 36 16 64 10 M310 48 C302 22 284 16 256 10 M10 352 C18 378 36 384 64 390 M310 352 C302 378 284 384 256 390" fill="none" stroke="#fde047" stroke-width="2.8" stroke-linecap="round"/>
-        <polygon points="160,3 166,11 160,19 154,11" fill="#fef08a"/>
-        <polygon points="160,381 166,389 160,397 154,389" fill="#fef08a"/>
+        <rect x="8" y="8" width="304" height="384" rx="14" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
+        <rect x="14" y="14" width="292" height="372" rx="10" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.2" stroke-dasharray="6 4"/>
+        <path d="M10 48 C18 22 36 16 64 10 M310 48 C302 22 284 16 256 10 M10 352 C18 378 36 384 64 390 M310 352 C302 378 284 384 256 390" fill="none" stroke="var(--sys-accent)" stroke-width="2.8" stroke-linecap="round"/>
+        <polygon points="160,3 166,11 160,19 154,11" fill="var(--sys-accent)"/>
+        <polygon points="160,381 166,389 160,397 154,389" fill="var(--sys-accent)"/>
       </svg>`;
     }
     if (frameStyle === 'cursed_chains') {
       return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
-        <rect x="9" y="9" width="302" height="382" rx="8" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-dasharray="14 6"/>
-        <path d="M4 34 L34 4 M286 4 L316 34 M4 366 L34 396 M286 396 L316 366" stroke="#fca5a5" stroke-width="3.2" stroke-linecap="round"/>
-        <circle cx="16" cy="16" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
-        <circle cx="304" cy="16" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
-        <circle cx="16" cy="384" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
-        <circle cx="304" cy="384" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
+        <rect x="9" y="9" width="302" height="382" rx="8" fill="none" stroke="var(--sys-accent-2)" stroke-width="2.6" stroke-dasharray="14 6"/>
+        <path d="M4 34 L34 4 M286 4 L316 34 M4 366 L34 396 M286 396 L316 366" stroke="var(--sys-accent)" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="16" cy="16" r="5" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
+        <circle cx="304" cy="16" r="5" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
+        <circle cx="16" cy="384" r="5" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
+        <circle cx="304" cy="384" r="5" fill="none" stroke="var(--sys-accent)" stroke-width="2.2"/>
       </svg>`;
     }
     if (frameStyle === 'cyber_circuit') {
       return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M12 40 V12 H66 L80 20 H130 M308 40 V12 H254 L240 20 H190 M12 360 V388 H66 L80 380 H130 M308 360 V388 H254 L240 380 H190" fill="none" stroke="#00f0ff" stroke-width="2.4" stroke-linejoin="round"/>
-        <circle cx="130" cy="20" r="3" fill="#00f0ff"/><circle cx="190" cy="20" r="3" fill="#00f0ff"/>
-        <circle cx="130" cy="380" r="3" fill="#00f0ff"/><circle cx="190" cy="380" r="3" fill="#00f0ff"/>
+        <path d="M12 40 V12 H66 L80 20 H130 M308 40 V12 H254 L240 20 H190 M12 360 V388 H66 L80 380 H130 M308 360 V388 H254 L240 380 H190" fill="none" stroke="var(--sys-accent)" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="130" cy="20" r="3" fill="var(--sys-accent)"/><circle cx="190" cy="20" r="3" fill="var(--sys-accent)"/>
+        <circle cx="130" cy="380" r="3" fill="var(--sys-accent)"/><circle cx="190" cy="380" r="3" fill="var(--sys-accent)"/>
       </svg>`;
     }
     if (frameStyle === 'dragon_scroll') {
       return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M10 38 H28 V16 H52 M310 38 H292 V16 H268 M10 362 H28 V384 H52 M310 362 H292 V384 H268" fill="none" stroke="#fde047" stroke-width="2.8" stroke-linejoin="round"/>
-        <rect x="14" y="14" width="292" height="372" rx="4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.6"/>
+        <path d="M10 38 H28 V16 H52 M310 38 H292 V16 H268 M10 362 H28 V384 H52 M310 362 H292 V384 H268" fill="none" stroke="var(--sys-accent)" stroke-width="2.8" stroke-linejoin="round"/>
+        <rect x="14" y="14" width="292" height="372" rx="4" fill="none" stroke="var(--sys-accent-2)" stroke-width="1.4" stroke-opacity="0.65"/>
       </svg>`;
     }
     return '';
@@ -1714,6 +1927,156 @@
         stampColor: '#38bdf8',
         footerText: ''
       }
+    },
+    {
+      id: 'relic_seraph',
+      icon: '👼',
+      name: 'Divine Relic',
+      desc: 'Archangel Seraph Wing blessing card',
+      config: {
+        presetId: 'relic_seraph',
+        ...themeProps('murim_gold'),
+        accentColor: '#fde047',
+        secondaryColor: '#38bdf8',
+        bgColor: '#120f24',
+        bgOpacity: 0.98,
+        frameStyle: 'void_seraph',
+        fontStyle: 'serif',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: true,
+        starburst: true,
+        hideHeader: true,
+        cardStyle: 'relic',
+        svgIcon: 'magic_circle',
+        animation: 'unroll',
+        sfx: 'sparkle',
+        headerIcon: '⚜️',
+        headerTitle: 'SERAPHIM GRACE',
+        subtitle: 'DIVINE AUTHORITY OF THE FIRST HEAVEN',
+        bodyText: 'PURIFIES ALL CURSES IN RANGE AND RESTORES LOST VITALITY UNDER SACRED LIGHT.',
+        buttons: [], stats: [], bars: [], pills: [], footerText: '', stampText: '', stampColor: '#fde047'
+      }
+    },
+    {
+      id: 'relic_crown',
+      icon: '👑',
+      name: 'Monarch Relic',
+      desc: 'Sovereign Crown & Violet Aura card',
+      config: {
+        presetId: 'relic_crown',
+        ...themeProps('shadow_violet'),
+        accentColor: '#e879f9',
+        secondaryColor: '#9333ea',
+        bgColor: '#120526',
+        bgOpacity: 0.98,
+        frameStyle: 'abyssal_crown',
+        fontStyle: 'serif',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: true,
+        starburst: true,
+        hideHeader: true,
+        cardStyle: 'relic',
+        svgIcon: 'shadow_crown',
+        animation: 'impact',
+        sfx: 'vineboom',
+        headerIcon: '👑',
+        headerTitle: "MONARCH'S DOMAIN",
+        subtitle: 'EXCLUSIVE AUTHORITY OF THE ABYSS KING',
+        bodyText: 'ALL SHADOW SOLDIERS WITHIN THE TERRITORY GAIN +100% ALL STATS AND INSTANT REGENERATION.',
+        buttons: [], stats: [], bars: [], pills: [], footerText: '', stampText: '', stampColor: '#e879f9'
+      }
+    },
+    {
+      id: 'relic_chains',
+      icon: '⛓️',
+      name: 'Cursed Seal',
+      desc: 'Blood Chains Forbidden Art card',
+      config: {
+        presetId: 'relic_chains',
+        ...themeProps('crimson_danger'),
+        accentColor: '#fb7185',
+        secondaryColor: '#dc2626',
+        bgColor: '#22040a',
+        bgOpacity: 0.98,
+        frameStyle: 'cursed_chains',
+        fontStyle: 'serif',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: true,
+        starburst: true,
+        hideHeader: true,
+        cardStyle: 'relic',
+        svgIcon: 'broken_chains',
+        animation: 'glitch',
+        sfx: 'sting',
+        headerIcon: '⛓️',
+        headerTitle: 'SOUL SHACKLES',
+        subtitle: 'FORBIDDEN SEAL OF THE CRIMSON PACT',
+        bodyText: 'BINDS THE TARGET’S MANA CIRCUIT FOR 30 SECONDS. ESCAPING CONVERTS PAIN INTO PURE DAMAGE.',
+        buttons: [], stats: [], bars: [], pills: [], footerText: '', stampText: '', stampColor: '#ef4444'
+      }
+    },
+    {
+      id: 'relic_frost',
+      icon: '❄️',
+      name: 'Frost Core',
+      desc: 'Ice Monarch Crystal Relic card',
+      config: {
+        presetId: 'relic_frost',
+        ...themeProps('hunter_blue'),
+        accentColor: '#7dd3fc',
+        secondaryColor: '#0284c7',
+        bgColor: '#041428',
+        bgOpacity: 0.98,
+        frameStyle: 'frost_monarch',
+        fontStyle: 'serif',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: true,
+        starburst: true,
+        hideHeader: true,
+        cardStyle: 'relic',
+        svgIcon: 'crystal_core',
+        animation: 'hologram',
+        sfx: 'scifi',
+        headerIcon: '❄️',
+        headerTitle: 'ABSOLUTE ZERO',
+        subtitle: 'ETERNAL HEART OF THE FROST EMPEROR',
+        bodyText: 'FREEZES SPACE, SPELLS, AND TIME ITSELF INSIDE A FIVE-METER GLACIAL SPHERE.',
+        buttons: [], stats: [], bars: [], pills: [], footerText: '', stampText: '', stampColor: '#7dd3fc'
+      }
+    },
+    {
+      id: 'relic_lotus',
+      icon: '🪷',
+      name: 'Murim Lotus',
+      desc: 'Immortal Sect Enlightenment card',
+      config: {
+        presetId: 'relic_lotus',
+        ...themeProps('cyber_green'),
+        accentColor: '#fcd34d',
+        secondaryColor: '#10b981',
+        bgColor: '#041a13',
+        bgOpacity: 0.98,
+        frameStyle: 'divine_lotus',
+        fontStyle: 'serif',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: true,
+        starburst: true,
+        hideHeader: true,
+        cardStyle: 'relic',
+        svgIcon: 'constellation_orb',
+        animation: 'unroll',
+        sfx: 'sparkle',
+        headerIcon: '🪷',
+        headerTitle: 'HEAVENLY QI LOTUS',
+        subtitle: 'TRANSCENDENT SUTRA OF MOUNT HUA',
+        bodyText: 'BLOOMS UPON BREAKING THE MORTAL WALL. SWORD INTENT MANIFESTS AS PURE GOLDEN PETALS.',
+        buttons: [], stats: [], bars: [], pills: [], footerText: '', stampText: '', stampColor: '#fcd34d'
+      }
     }
   ];
 
@@ -1733,6 +2096,7 @@
       iconBlendDark: false,
       svgIcon: '',
       customIconData: '',
+      customFrameSvg: '',
       animation: 'hologram',
       sfx: 'scifi',
       headerIcon: '',
@@ -1792,6 +2156,11 @@
     }
     delete merged.customFrameUrl;
     merged.transparentBg = false;
+    merged.customFrameSvg = merged.customFrameSvg ? sanitizeCustomSvg(merged.customFrameSvg) : '';
+    if (merged.frameStyle && !merged.customFrameSvg) {
+      const cf = loadCustomFrames().find(f => String(f.id) === String(merged.frameStyle));
+      if (cf && cf.svg) merged.customFrameSvg = sanitizeCustomSvg(cf.svg);
+    }
     merged.iconSeamless = Boolean(merged.iconSeamless);
     merged.iconBlendDark = Boolean(merged.iconBlendDark);
     merged.hideHeader = Boolean(merged.hideHeader);
@@ -1928,6 +2297,7 @@
       'anim-' + (cfg.animation || 'hologram')
     ];
     if (cfg.cardStyle && cfg.cardStyle !== 'standard') classes.push('is-card-centered', 'card-' + cfg.cardStyle);
+    if (cfg.customFrameSvg || String(cfg.frameStyle || '').startsWith('cframe_')) classes.push('has-custom-vector-frame');
     if (cfg.iconSeamless) classes.push('is-icon-seamless');
     if (cfg.iconBlendDark) classes.push('is-icon-blend-dark');
     if (cfg.hideHeader) classes.push('has-hidden-header');
@@ -2079,13 +2449,17 @@
 
     const topBannerMedia = (hasMedia && cfg.mediaLayout === 'banner_top') ? mediaHtml : '';
     const sideMedia = (hasMedia && cfg.mediaLayout !== 'banner_top') ? mediaHtml : '';
-    const frameSvgHtml = getFrameSvgOverlay(cfg.frameStyle);
+    const frameSvgHtml = getFrameSvgOverlay(cfg.frameStyle, cfg.customFrameSvg);
     const relicSparklesHtml = (cfg.sparkles && cfg.cardStyle === 'relic') ? `
       <div class="msw-sparkles-layer" aria-hidden="true">
-        <span style="top:16%; left:14%;">✦</span>
-        <span style="top:20%; right:15%; font-size:11px;">✧</span>
-        <span style="bottom:32%; left:11%;">✦</span>
-        <span style="bottom:28%; right:12%;">✦</span>
+        <span style="top:13%; left:15%;">✦</span>
+        <span style="top:17%; right:14%; font-size:11px;">✧</span>
+        <span style="top:38%; left:9%; font-size:10px;">✦</span>
+        <span style="top:42%; right:10%; font-size:12px;">✦</span>
+        <span style="bottom:36%; left:12%; font-size:15px;">✦</span>
+        <span style="bottom:30%; right:13%; font-size:11px;">✧</span>
+        <span style="bottom:14%; left:22%; font-size:10px;">✧</span>
+        <span style="bottom:12%; right:20%; font-size:14px;">✦</span>
       </div>` : '';
 
     let mainInnerBodyHtml = '';
@@ -2093,10 +2467,11 @@
       const emblemVisual = hasImgMedia
         ? `<img src="${esc(cfg.mediaUrl)}" alt="${esc(cfg.headerTitle)}">`
         : (svgObj ? svgObj.svg : `<span style="font-size:52px;">${esc(cfg.headerIcon || '👁️')}</span>`);
+      const emblemFrameHtml = getEmblemFrameSvg(cfg.frameStyle, cfg);
       mainInnerBodyHtml = `
         <div class="msw-relic-stage">
           <div class="msw-emblem-box ${cfg.frameStyle === 'demonic_thorn' ? 'is-thorn-emblem' : ''}">
-            ${cfg.frameStyle === 'demonic_thorn' ? getEmblemFrameSvg() : ''}
+            ${emblemFrameHtml}
             ${emblemVisual}
           </div>
           ${cfg.headerTitle ? `<div class="msw-relic-title">${esc(cfg.headerTitle)}</div>` : ''}
@@ -2279,7 +2654,19 @@
      -------------------------------------------------------------------------- */
   function applyThemeToConfig(cfg, themeId) {
     if (!THEMES[themeId]) return cfg;
-    return { ...cfg, ...themeProps(themeId) };
+    const t = themeProps(themeId);
+    if (cfg && (cfg.cardStyle === 'relic' || cfg.cardStyle === 'codex')) {
+      return {
+        ...cfg,
+        themeId: t.themeId,
+        accentColor: t.accentColor,
+        secondaryColor: t.secondaryColor,
+        bgColor: t.bgColor,
+        bgOpacity: t.bgOpacity,
+        glowIntensity: t.glowIntensity
+      };
+    }
+    return { ...cfg, ...t };
   }
 
   function applyOptionalTagModifiers(cfg, parts) {
@@ -2746,10 +3133,10 @@
       const statSeg = c.stats.map(s => `${s.label}:${s.value}`).join(', ');
       return `[SYS_ITEM: ${[c.headerTitle, c.headerBadge, statSeg, (c.bodyText || '').replace(/\n/g, ' ')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
-    if ((c.cardStyle === 'relic' || c.presetId === 'relic') && !c.mediaUrl?.startsWith('data:')) {
+    if ((c.cardStyle === 'relic' || String(c.presetId || '').startsWith('relic')) && !c.mediaUrl?.startsWith('data:') && !c.customIconData && !c.customFrameSvg) {
       return `[SYS_RELIC: ${[c.headerTitle, c.subtitle, (c.bodyText || '').replace(/\n/g, '\\n')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
-    if ((c.cardStyle === 'codex' || c.presetId === 'codex') && !c.mediaUrl?.startsWith('data:')) {
+    if ((c.cardStyle === 'codex' || c.presetId === 'codex') && !c.mediaUrl?.startsWith('data:') && !c.customIconData && !c.customFrameSvg) {
       return `[SYS_CODEX: ${[c.headerTitle, (c.bodyText || '').replace(/\n/g, '\\n')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
 
@@ -2798,12 +3185,18 @@
 
         <div class="syswin-body" id="sysWinBuilderBody">
           <div class="syswin-tab-panel active" id="sysTabPanel_presets">
-            <div style="font-size:11px; color:#94a3b8; font-weight:700;">Choose any of the 19 Manhwa System Windows (100% editable afterwards):</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span style="font-size:11px; color:#94a3b8; font-weight:700;">Choose any of 24 Manhwa Windows & Ornate Relic Cards (100% editable):</span>
+              <button type="button" class="syswin-chip-btn" style="border-color:#fde047; color:#fde047;" onclick="window.ChatHubSystemWindows.newCleanRelicCard()">🔮 + New Blank Relic</button>
+            </div>
             <div class="syswin-preset-grid" id="sysWinPresetGrid"></div>
             <div style="margin-top:6px; border-top:1px solid #1e293b; padding-top:8px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
                 <span style="font-size:11.5px; font-weight:800; color:#e2e8f0;">💾 My Saved Custom Styles</span>
-                <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.saveCurrentAsPersonalPreset()">+ Save Current Design</button>
+                <div style="display:flex; gap:5px; align-items:center;">
+                  <input type="text" class="syswin-input" id="sysNewPresetNameInput" placeholder="Style name..." style="width:125px; padding:4px 8px; font-size:11px;">
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.saveCurrentAsPersonalPreset()">+ Save Style</button>
+                </div>
               </div>
               <div id="sysWinSavedPresetsList" style="display:flex; flex-direction:column; gap:6px;"></div>
             </div>
@@ -3016,14 +3409,60 @@
               <label class="syswin-label">One-Click Manhwa OS Theme</label>
               <div class="syswin-chip-row" id="sysWinThemesRow"></div>
             </div>
+            <div style="background:#0f172a; border:1px solid #1e3a5f; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:7px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:12px; font-weight:800; color:#fde047;">🖼️ Ornate Card Frame (17 Built-In & Custom Vector Borders)</span>
+                <button type="button" class="syswin-chip-btn" style="border-color:#4ade80; color:#4ade80;" onclick="window.ChatHubSystemWindows.toggleCustomFrameDrawer()">+ Add Own Frame</button>
+              </div>
+              <div class="syswin-custom-icon-maker" id="sysCustomFrameDrawer">
+                <div style="font-size:11px; font-weight:800; color:#38bdf8;">✨ Create Procedural DEVOUR-Style Frame OR Upload Custom &lt;svg&gt; Frame</div>
+                <div class="syswin-field-row">
+                  <input type="text" class="syswin-input" id="sysNewFrameLabel" placeholder="Frame Name (e.g. Abyssal Vine)">
+                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
+                    <select class="syswin-select" id="sysNewFrameMotif">
+                      <option value="thorn">🔥 Spiky Thorns</option>
+                      <option value="crown">👑 Demon Crown</option>
+                      <option value="wings">🪽 Seraph Wings</option>
+                      <option value="crystal">❄️ Frost Shards</option>
+                      <option value="chains">⛓️ Blood Chains</option>
+                      <option value="lotus">🪷 Murim Lotus</option>
+                    </select>
+                    <select class="syswin-select" id="sysNewFrameDensity">
+                      <option value="medium">Medium Spikes</option>
+                      <option value="high">Intense Spikes</option>
+                      <option value="low">Clean Minimal</option>
+                    </select>
+                    <select class="syswin-select" id="sysNewFrameColorMode">
+                      <option value="theme">Match Card Theme</option>
+                      <option value="custom">Fixed Colors</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                  <button type="button" class="syswin-chip-btn" style="border-color:#fde047; color:#fde047;" onclick="window.ChatHubSystemWindows.createCustomGeneratedFrame()">✨ Generate Ornate Frame</button>
+                  <input type="file" id="sysNewFrameFileInput" accept=".svg,image/svg+xml" style="display:none;">
+                  <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysNewFrameFileInput').click()">📁 Upload .SVG Frame</button>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <input type="text" class="syswin-input" id="sysNewFrameSvgInput" placeholder="Or paste hollow <svg viewBox='0 0 320 400'>...</svg> border...">
+                  <button type="button" class="syswin-chip-btn" style="white-space:nowrap;" onclick="window.ChatHubSystemWindows.createCustomRawSvgFrame()">+ Save SVG</button>
+                </div>
+              </div>
+              <div class="syswin-frame-picker-grid" id="sysWinFramePickerGrid"></div>
+            </div>
             <div class="syswin-field-row">
               <div>
-                <label class="syswin-label">Frame Geometry (12 Built-In Vector Frames)</label>
+                <label class="syswin-label">Frame Geometry Selector</label>
                 <select class="syswin-select" id="sysSelFrameStyle">
                   <option value="tech_brackets">Tech L-Brackets (Solo Hunter)</option>
                   <option value="cyber_bevel">Cut-Corner Cyber Plate</option>
                   <option value="imperial_ornate">Ornate Imperial / Murim</option>
-                  <option value="demonic_thorn">🔥 DEVOUR Thorn & Bone (SVG Frame)</option>
+                  <option value="demonic_thorn">🔥 DEVOUR Organic Thorn & Vine (SVG)</option>
+                  <option value="void_seraph">🪽 Celestial Seraph Wings (SVG)</option>
+                  <option value="abyssal_crown">👑 Sovereign Demon Crown (SVG)</option>
+                  <option value="frost_monarch">❄️ Frost Monarch Crystal (SVG)</option>
+                  <option value="necromancer_rib">💀 Necromancer Bone Scythe (SVG)</option>
+                  <option value="divine_lotus">🪷 Immortal Murim Lotus (SVG)</option>
                   <option value="blueprint_double">📐 Twin-Line Blueprint Codex</option>
                   <option value="celestial_arcane">⚜️ Celestial Archangel Halo (SVG)</option>
                   <option value="cursed_chains">⛓️ Cursed Blood Chains (SVG)</option>
@@ -3046,11 +3485,14 @@
             </div>
             <div>
               <label class="syswin-label">Card Layout Archetype</label>
-              <select class="syswin-select" id="sysSelCardStyle">
-                <option value="standard">Standard Manhwa HUD Window</option>
-                <option value="relic">🔮 Centered Relic / Skill Emblem Card (DEVOUR Style)</option>
-                <option value="codex">📘 System Codex Diagram + Rule Card (Interverse Style)</option>
-              </select>
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <select class="syswin-select" id="sysSelCardStyle" style="flex:1; min-width:210px;">
+                  <option value="standard">Standard Manhwa HUD Window</option>
+                  <option value="relic">🔮 Centered Relic / Skill Emblem Card (DEVOUR Style)</option>
+                  <option value="codex">📘 System Codex Diagram + Rule Card (Interverse Style)</option>
+                </select>
+                <button type="button" class="syswin-chip-btn" style="border-color:#fde047; color:#fde047; white-space:nowrap;" onclick="window.ChatHubSystemWindows.convertToCleanRelicMode()" title="Hide header bar, remove buttons/stats & enable DEVOUR sunburst + sparkles">🧹 Pure DEVOUR Setup</button>
+              </div>
             </div>
             <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px;">
               <div>
@@ -3189,6 +3631,7 @@
     renderPresetGrid();
     renderSavedPresetsList();
     renderThemeChips();
+    renderFramePickerGrid();
     renderMediaPickerStrip();
     renderSvgIconPicker();
     renderBoostsEditor();
@@ -3239,6 +3682,51 @@
     row.innerHTML = Object.values(THEMES).map(t => `
       <button type="button" class="syswin-chip-btn ${builderDraft.themeId === t.id ? 'active' : ''}" onclick="window.ChatHubSystemWindows.selectTheme('${t.id}')">${esc(t.label)}</button>
     `).join('');
+  }
+
+  function renderFramePickerGrid() {
+    const grid = document.getElementById('sysWinFramePickerGrid');
+    const sel = document.getElementById('sysSelFrameStyle');
+    const allFrames = getAllFrames();
+    if (sel) {
+      const existingCustom = new Set(Array.from(sel.options).map(o => o.value));
+      allFrames.forEach(fr => {
+        if (fr.isCustom && !existingCustom.has(fr.id)) {
+          const opt = document.createElement('option');
+          opt.value = fr.id;
+          opt.textContent = `✨ ${fr.label}`;
+          sel.appendChild(opt);
+        }
+      });
+      sel.value = builderDraft.frameStyle || 'tech_brackets';
+    }
+    if (!grid) return;
+    const sorted = [...allFrames].sort((a, b) => (b.isCustom ? 1 : 0) - (a.isCustom ? 1 : 0) || (b.isOrnate ? 1 : 0) - (a.isOrnate ? 1 : 0));
+    grid.innerHTML = sorted.map(fr => {
+      const thumbSvg = fr.isCustom ? fr.svg : getFrameSvgOverlay(fr.id);
+      const isActive = builderDraft.frameStyle === fr.id;
+      return `
+        <div class="syswin-svg-cell">
+          <button type="button" class="syswin-svg-icon-btn syswin-frame-btn ${isActive ? 'active' : ''}" data-frame-key="${esc(fr.id)}" title="${esc(fr.label)}" style="--sys-accent:${esc(builderDraft.accentColor || '#fde047')}; --sys-accent-2:${esc(builderDraft.secondaryColor || '#ef4444')};">
+            <div class="syswin-frame-thumb">${thumbSvg || `<span style="font-size:15px;">${esc(fr.icon)}</span>`}</div>
+            <span>${esc(fr.label)}</span>
+          </button>
+          ${fr.isCustom ? `<button type="button" class="syswin-svg-del" data-del-frame-key="${esc(fr.id)}" title="Delete custom frame '${esc(fr.label)}'" aria-label="Delete frame">✕</button>` : ''}
+        </div>
+      `;
+    }).join('');
+    grid.querySelectorAll('.syswin-svg-icon-btn[data-frame-key]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.ChatHubSystemWindows.selectFrameStyle(btn.dataset.frameKey);
+      });
+    });
+    grid.querySelectorAll('.syswin-svg-del[data-del-frame-key]').forEach(delBtn => {
+      delBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.ChatHubSystemWindows.deleteCustomFrame(delBtn.dataset.delFrameKey);
+      });
+    });
   }
 
   function renderMediaPickerStrip() {
@@ -3522,7 +4010,26 @@
     bindInput('sysInpMediaCaption', 'mediaCaption');
     bindInput('sysInpMediaUrl', 'mediaUrl');
     bindChange('sysSelMediaLayout', 'mediaLayout');
-    bindChange('sysSelCardStyle', 'cardStyle');
+    const cardStyleEl = document.getElementById('sysSelCardStyle');
+    if (cardStyleEl) {
+      cardStyleEl.addEventListener('change', () => {
+        const nextStyle = cardStyleEl.value || 'standard';
+        builderDraft.cardStyle = nextStyle;
+        if (nextStyle === 'relic') {
+          builderDraft.hideHeader = true;
+          builderDraft.starburst = true;
+          builderDraft.sparkles = true;
+          if (!builderDraft.frameStyle || ['tech_brackets', 'cyber_bevel', 'glass_hud', 'comic_ink', 'blueprint_double'].includes(builderDraft.frameStyle)) {
+            builderDraft.frameStyle = 'demonic_thorn';
+            builderDraft.customFrameSvg = '';
+          }
+          if (!builderDraft.fontStyle || builderDraft.fontStyle === 'hud') builderDraft.fontStyle = 'serif';
+          syncInputsFromDraft();
+        } else {
+          refreshPreviewOnly();
+        }
+      });
+    }
 
     bindChange('sysSelStatsCols', 'statsCols', v => Number(v) || 2);
     bindInput('sysInpPills', 'pills', v => String(v).split(',').map(s => s.trim()).filter(Boolean));
@@ -3533,7 +4040,16 @@
     bindInput('sysInpStampText', 'stampText');
     bindInput('sysInpStampColor', 'stampColor');
 
-    bindChange('sysSelFrameStyle', 'frameStyle');
+    const frameSelEl = document.getElementById('sysSelFrameStyle');
+    if (frameSelEl) {
+      frameSelEl.addEventListener('change', () => {
+        window.ChatHubSystemWindows.selectFrameStyle(frameSelEl.value);
+      });
+    }
+    const accentEl = document.getElementById('sysInpAccentColor');
+    const secAccentEl = document.getElementById('sysInpSecondaryColor');
+    if (accentEl) accentEl.addEventListener('input', () => renderFramePickerGrid());
+    if (secAccentEl) secAccentEl.addEventListener('input', () => renderFramePickerGrid());
     bindChange('sysSelFontStyle', 'fontStyle');
     bindInput('sysInpAccentColor', 'accentColor');
     bindInput('sysInpSecondaryColor', 'secondaryColor');
@@ -3640,6 +4156,33 @@
         e.target.value = '';
       });
     }
+
+    const customFrameInp = document.getElementById('sysNewFrameFileInput');
+    if (customFrameInp) {
+      customFrameInp.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const labelInp = document.getElementById('sysNewFrameLabel');
+        const label = (labelInp && labelInp.value.trim()) || f.name.replace(/\.[^/.]+$/, '').slice(0, 18) || 'Custom Frame';
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const cleanSvg = sanitizeCustomSvg(ev.target.result);
+          if (!cleanSvg) {
+            if (api() && typeof api().showToast === 'function') api().showToast('⚠️ Invalid or unsafe SVG frame file.');
+            return;
+          }
+          const id = 'cframe_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+          const list = loadCustomFrames();
+          list.unshift({ id, label, svg: cleanSvg, createdAt: Date.now() });
+          saveCustomFrames(list.slice(0, 40));
+          if (labelInp) labelInp.value = '';
+          window.ChatHubSystemWindows.selectFrameStyle(id);
+          if (api() && typeof api().showToast === 'function') api().showToast(`🖼️ Added custom SVG frame "${label}"!`);
+        };
+        reader.readAsText(f);
+        e.target.value = '';
+      });
+    }
   }
 
   function openSystemWindowBuilder(editMsgId = null, parentModalId = null) {
@@ -3725,8 +4268,10 @@
   window.ChatHubSystemWindows = {
     THEMES,
     PRESETS,
+    BUILT_IN_FRAMES,
     NEON_SVG_ICONS,
     getAllSvgIcons,
+    getAllFrames,
     normalizeConfig,
     renderSystemWindowElement,
     animateBarsInElement,
@@ -3743,6 +4288,117 @@
       builderDraft = cloneObj(p.config);
       syncInputsFromDraft();
       playSfxForConfig(builderDraft);
+    },
+    newCleanRelicCard() {
+      const base = cloneObj(PRESETS.find(x => x.id === 'relic').config);
+      base.headerTitle = 'NEW RELIC SKILL';
+      base.subtitle = 'UNIQUE ABILITY / ARTIFACT RANK';
+      base.bodyText = 'DESCRIBE THE UNIQUE ABILITY OR BLESSING EFFECT HERE.';
+      base.svgIcon = 'soul_flame';
+      builderDraft = base;
+      syncInputsFromDraft();
+      switchTab('content');
+      playSfxForConfig(builderDraft);
+      if (api() && typeof api().showToast === 'function') api().showToast('🔮 Blank Relic template ready — edit title, icon & frame!');
+    },
+    convertToCleanRelicMode() {
+      builderDraft.cardStyle = 'relic';
+      builderDraft.hideHeader = true;
+      builderDraft.starburst = true;
+      builderDraft.sparkles = true;
+      builderDraft.scanlines = false;
+      builderDraft.gridPattern = false;
+      builderDraft.buttons = [];
+      builderDraft.stats = [];
+      builderDraft.bars = [];
+      builderDraft.statBoosts = [];
+      builderDraft.inventoryItems = [];
+      builderDraft.shopItems = [];
+      builderDraft.pills = [];
+      builderDraft.timerEnabled = false;
+      builderDraft.footerText = '';
+      builderDraft.currencyText = '';
+      builderDraft.headerBadge = '';
+      if (!builderDraft.frameStyle || ['tech_brackets', 'cyber_bevel', 'glass_hud', 'comic_ink', 'blueprint_double'].includes(builderDraft.frameStyle)) {
+        builderDraft.frameStyle = 'demonic_thorn';
+        builderDraft.customFrameSvg = '';
+      }
+      if (!builderDraft.fontStyle || builderDraft.fontStyle === 'hud') builderDraft.fontStyle = 'serif';
+      syncInputsFromDraft();
+      if (api() && typeof api().showToast === 'function') api().showToast('🧹 Converted to clean DEVOUR-style Relic Card!');
+    },
+    selectFrameStyle(frameId) {
+      const custom = loadCustomFrames().find(cf => String(cf.id) === String(frameId));
+      builderDraft.frameStyle = frameId || 'tech_brackets';
+      builderDraft.customFrameSvg = (custom && custom.svg) ? sanitizeCustomSvg(custom.svg) : '';
+      builderDraft.themeId = 'custom';
+      const sel = document.getElementById('sysSelFrameStyle');
+      if (sel) sel.value = builderDraft.frameStyle;
+      renderThemeChips();
+      renderFramePickerGrid();
+      refreshPreviewOnly();
+    },
+    toggleCustomFrameDrawer() {
+      const drw = document.getElementById('sysCustomFrameDrawer');
+      if (drw) drw.classList.toggle('open');
+    },
+    createCustomGeneratedFrame() {
+      const labelInp = document.getElementById('sysNewFrameLabel');
+      const motifEl = document.getElementById('sysNewFrameMotif');
+      const densityEl = document.getElementById('sysNewFrameDensity');
+      const modeEl = document.getElementById('sysNewFrameColorMode');
+      const label = (labelInp && labelInp.value.trim()) || 'Custom Frame';
+      const svg = generateCustomOrnateFrameSvg(
+        motifEl ? motifEl.value : 'thorn',
+        densityEl ? densityEl.value : 'medium',
+        modeEl ? modeEl.value : 'theme',
+        builderDraft.accentColor,
+        builderDraft.secondaryColor
+      );
+      const id = 'cframe_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+      const list = loadCustomFrames();
+      list.unshift({ id, label: label.slice(0, 18), svg, createdAt: Date.now() });
+      saveCustomFrames(list.slice(0, 40));
+      if (labelInp) labelInp.value = '';
+      this.selectFrameStyle(id);
+      if (api() && typeof api().showToast === 'function') api().showToast(`🖼️ Created custom frame "${label}"!`);
+    },
+    createCustomRawSvgFrame() {
+      const labelInp = document.getElementById('sysNewFrameLabel');
+      const svgInp = document.getElementById('sysNewFrameSvgInput');
+      const cleanSvg = sanitizeCustomSvg(svgInp ? svgInp.value : '');
+      if (!cleanSvg) {
+        if (api() && typeof api().showToast === 'function') api().showToast('⚠️ Paste valid <svg>...</svg> border markup first.');
+        return;
+      }
+      const label = (labelInp && labelInp.value.trim()) || 'Custom SVG Frame';
+      const id = 'cframe_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+      const list = loadCustomFrames();
+      list.unshift({ id, label: label.slice(0, 18), svg: cleanSvg, createdAt: Date.now() });
+      saveCustomFrames(list.slice(0, 40));
+      if (labelInp) labelInp.value = '';
+      if (svgInp) svgInp.value = '';
+      this.selectFrameStyle(id);
+      if (api() && typeof api().showToast === 'function') api().showToast(`🖼️ Saved custom SVG frame "${label}"!`);
+    },
+    deleteCustomFrame(frameKey) {
+      if (!frameKey) return false;
+      const before = loadCustomFrames();
+      const target = before.find(cf => String(cf.id) === String(frameKey));
+      saveCustomFrames(before.filter(cf => String(cf.id) !== String(frameKey)));
+      if (String(builderDraft.frameStyle || '') === String(frameKey)) {
+        builderDraft.frameStyle = 'demonic_thorn';
+        builderDraft.customFrameSvg = '';
+      }
+      renderFramePickerGrid();
+      refreshPreviewOnly();
+      if (target && api() && typeof api().showToast === 'function') {
+        api().showToast(`🗑️ Deleted frame "${target.label || 'Custom'}"`);
+      }
+      return Boolean(target);
+    },
+    getCustomFrames() {
+      return loadCustomFrames();
     },
     selectTheme(themeId) {
       builderDraft = applyThemeToConfig(builderDraft, themeId);
@@ -4023,10 +4679,13 @@
       playSfxForConfig(builderDraft);
     },
     saveCurrentAsPersonalPreset() {
-      const name = (builderDraft.headerTitle || 'Custom System Style').slice(0, 32);
+      const nameInp = document.getElementById('sysNewPresetNameInput');
+      const typedName = nameInp && nameInp.value.trim();
+      const name = (typedName || builderDraft.headerTitle || 'Custom System Style').slice(0, 32);
       const list = loadPersonalPresets();
       list.unshift({ name, savedAt: Date.now(), config: cloneObj(builderDraft) });
-      savePersonalPresets(list.slice(0, 20));
+      savePersonalPresets(list.slice(0, 60));
+      if (nameInp) nameInp.value = '';
       renderSavedPresetsList();
       if (api() && typeof api().showToast === 'function') api().showToast(`💾 Saved "${name}" to My Styles!`);
     },
