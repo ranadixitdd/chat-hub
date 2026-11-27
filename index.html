@@ -62,6 +62,7 @@
 <meta http-equiv="Expires" content="0">
 <link rel="stylesheet" href="style.css?v=3.4.7">
 <link rel="stylesheet" href="marketplace.css?v=1.1">
+<link rel="stylesheet" href="system-windows.css?v=1.0">
 
 <!-- Prevent and remove any Netlify badge / HUD iframe -->
 <style>
@@ -310,6 +311,7 @@
     <div class="dropdown-item" id="menuVfxSkinItem" onclick="cycleChatHubVfxSkin(); closeDropdownMenu();">🌸 VFX Skin: <b style="color:#b8b3ff;">Sakuga Classic</b></div>
     <div class="dropdown-item" onclick="openStoriesModal(); closeDropdownMenu();">📁 Saved Stories & Episodes</div>
     <div class="dropdown-item" onclick="openScriptModal(); closeDropdownMenu();">📜 AI Script Importer</div>
+    <div class="dropdown-item" style="color:#00f0ff; font-weight:800; background:rgba(0, 240, 255, 0.08);" onclick="openSystemWindowBuilder(); closeDropdownMenu();">🖥️ Manhwa System Studio</div>
     <div class="dropdown-item" onclick="openSpecialEventModal(); closeDropdownMenu();">✨ Insert Banner / Special Alert</div>
     <div class="dropdown-item" onclick="openGlobalSettingsModal(); closeDropdownMenu();">⚙️ Global Settings & Studio Hub</div>
     <div class="dropdown-item" style="color:#facc15; font-weight:800; background:rgba(250, 204, 21, 0.08);" onclick="openAboutModal(); closeDropdownMenu();">ℹ️ About Studio & Versions</div>
@@ -550,11 +552,18 @@
           <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">Notification pill for story narration & thoughts</div>
         </div>
       </button>
+      <button type="button" class="btn-secondary-comic" style="text-align:left; padding:12px 14px; display:flex; align-items:center; gap:12px; border-color:#00f0ff; background:rgba(0,240,255,0.08);" onclick="closeSpecialEventModal(); openSystemWindowBuilder(null, 'specialEventModal');">
+        <span style="font-size:24px;">🖥️</span>
+        <div>
+          <div style="font-weight:800; font-size:13px; color:#00f0ff;">Manhwa System Window Studio</div>
+          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">Status sheet, Item details, Loading bar, Affection, Images &amp; Custom Themes</div>
+        </div>
+      </button>
       <button type="button" class="btn-secondary-comic" style="text-align:left; padding:12px 14px; display:flex; align-items:center; gap:12px;" onclick="closeSpecialEventModal(); promptQuestAlert();">
         <span style="font-size:24px;">🟦</span>
         <div>
-          <div style="font-weight:800; font-size:13px; color:#f8fafc;">Solo Leveling Quest Alert</div>
-          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">Futuristic neon blue sci-fi quest prompt</div>
+          <div style="font-weight:800; font-size:13px; color:#f8fafc;">Quick Solo Leveling Quest Alert</div>
+          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">1-step fast futuristic blue neon quest prompt</div>
         </div>
       </button>
       <button type="button" class="btn-secondary-comic" style="text-align:left; padding:12px 14px; display:flex; align-items:center; gap:12px; border-color:#38bdf8;" onclick="closeSpecialEventModal(); promptSceneTransition();">
@@ -698,6 +707,9 @@
           </button>
           <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="openScriptModal('globalSettingsModal');">
             <span style="font-size:18px;">📜</span><span>AI Script Importer</span>
+          </button>
+          <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px; border-color:#00f0ff; background:rgba(0,240,255,0.08);" onclick="openSystemWindowBuilder(null, 'globalSettingsModal');">
+            <span style="font-size:18px;">🖥️</span><span>Manhwa System Studio</span>
           </button>
           <button type="button" class="btn-secondary-comic" style="padding:14px; font-size:13px; display:flex; align-items:center; gap:8px;" onclick="openSpecialEventModal('globalSettingsModal');">
             <span style="font-size:18px;">✨</span><span>Insert Banner / Quest</span>
@@ -1171,6 +1183,11 @@
             <span class="script-tag-pill" onclick="insertScriptTag('[CHAT: group]')" title="Click to switch to squad group chat">[CHAT: group]</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[CHAT: global]')" title="Click to switch to global community channel">[CHAT: global]</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[QUEST: ⚠️ URGENT QUEST: Enter mission objective here]')" title="Click to insert Solo Leveling quest alert">[QUEST: text]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SYS_STATUS: Kaito | S-RANK | HP:100 | MP:85 | STR:142, AGI:168]')" title="Click to insert Manhwa RPG Status Window" style="border-color:#00f0ff; color:#00f0ff;">[SYS_STATUS: ...]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SYS_ITEM: Shadow Fang | S-RANK | ATK:+185, Crit:+35% | Bleed effect on hit]')" title="Click to insert Item / Artifact Card" style="border-color:#a855f7; color:#d8b4fe;">[SYS_ITEM: ...]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SYS_LOADING: SYSTEM AWAKENING... | 100 | Synchronizing Monarch authority...]')" title="Click to insert Animated Loading Window" style="border-color:#10b981; color:#6ee7b7;">[SYS_LOADING: ...]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SYS_AFFECTION: Hana | 40->78 | Caught completely off-guard!]')" title="Click to insert Otome Affection Meter" style="border-color:#ec4899; color:#f9a8d4;">[SYS_AFFECTION: ...]</span>
+            <span class="script-tag-pill" onclick="insertScriptTag('[SYS_CONSTELLATION: Abyssal Flame Dragon | +500 Coins | Cheers at your comeback!]')" title="Click to insert Constellation Sponsor Alert" style="border-color:#facc15; color:#fde047;">[SYS_CONSTELLATION: ...]</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[SYSTEM: 🎬 EPISODE 1: TITLE]')" title="Click to insert episode or scene banner">[SYSTEM: text]</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:shock:vineboom]: NANI?!')" title="Click to insert dialogue with face and sound effect">[Name:shock:vineboom]: text</span>
             <span class="script-tag-pill" onclick="insertScriptTag('[Nobita:sfx]: 💥 BAM!!')" title="Click to insert animated Manga SFX Burst (BAM!!, NANI?!, BRUH..., ARISE!!)" style="border-color:#facc15; color:#facc15;">[Name:sfx]: 💥 BAM!!</span>
@@ -2277,6 +2294,7 @@
 <script src="storage.js?v=1.3"></script>
 <script src="sakuga-vfx/core.js?v=1.6"></script>
 <script src="app.js?v=3.4.7"></script>
+<script src="system-windows.js?v=1.0"></script>
 <script src="sakuga-vfx/sakuga-studio.js?v=1.5"></script>
 <script src="sakuga-vfx/chathub-vfx.js?v=1.7"></script>
 <script src="marketplace-catalog.js?v=1.1"></script>

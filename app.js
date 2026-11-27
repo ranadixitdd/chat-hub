@@ -2932,6 +2932,17 @@ function playSciFiChimeSound() {
       sys.onclick = () => openMessageEditModal(msg.id);
       return sys;
     }
+    if (msg.type === 'syswindow' || (msg.type === 'quest' && msg.systemConfig)) {
+      if (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.renderSystemWindowElement === 'function') {
+        return window.ChatHubSystemWindows.renderSystemWindowElement(msg, {
+          onEditClick: (m) => {
+            if (!isCinemaPlaying && !messageSelectMode && typeof window.openSystemWindowBuilder === 'function') {
+              window.openSystemWindowBuilder(m.id);
+            }
+          }
+        });
+      }
+    }
 if (msg.type === 'quest') {
       const quest = document.createElement('div');
       quest.className = 'system-quest-box';
@@ -5303,6 +5314,10 @@ if (msg.type === 'quest') {
     if (isCinemaPlaying) return;
     const msg = messages.find(m => m.id === msgId);
     if (!msg) return;
+    if (msg.type === 'syswindow' && typeof window.openSystemWindowBuilder === 'function') {
+      window.openSystemWindowBuilder(msgId);
+      return;
+    }
     editingMessageId = msgId;
 
     const speakerGroup = document.getElementById('msgEditSpeakerGroup');
@@ -5744,7 +5759,7 @@ if (msg.type === 'quest') {
       if (statusText) statusText.textContent = `Line ${stepIndex + 1}/${fullQueue.length}`;
 
       // Dynamic Camera
-      if (nextMsg.type === 'quest') {
+      if (nextMsg.type === 'quest' || nextMsg.type === 'syswindow') {
         setCinemaCamera('cam-zoom-climax', 3200);
       } else if (nextMsg.expr === 'angry' || nextMsg.expr === 'shock' || nextMsg.expr === 'cry' || nextMsg.type === 'sfx') {
         const char = characters.find(c => c.id === nextMsg.charId) || characters[0];
@@ -5918,24 +5933,34 @@ if (msg.type === 'quest') {
         return;
       }
 
-      if (nextMsg.type === 'divider' || nextMsg.type === 'system' || nextMsg.type === 'quest') {
+      if (nextMsg.type === 'divider' || nextMsg.type === 'system' || nextMsg.type === 'quest' || nextMsg.type === 'syswindow') {
         const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
         stream.appendChild(el);
         if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
         scrollStreamBottomNow(stream);
-        if (nextMsg.type === 'quest' && window.ChatHubVfx) {
+        if ((nextMsg.type === 'quest' || nextMsg.type === 'syswindow') && window.ChatHubVfx) {
           requestAnimationFrame(() => {
             if (window.ChatHubVfx) {
               window.ChatHubVfx.playBubbleVfx('quest', 'shock', el.querySelector('.quest-card') || el);
             }
           });
         }
-        if (soundEnabled) {
+        if (nextMsg.type === 'syswindow' && window.ChatHubSystemWindows) {
+          window.ChatHubSystemWindows.animateBarsInElement(el);
+          if (soundEnabled) {
+            const cfg = nextMsg.systemConfig || {};
+            if (cfg.sfx !== undefined) {
+              if (cfg.sfx) window.ChatHubSystemWindows.playSfxForConfig(cfg);
+            } else {
+              playSciFiChimeSound();
+            }
+          }
+        } else if (soundEnabled) {
           if (nextMsg.type === 'quest') playSciFiChimeSound();
           else playPopSound();
         }
         stepIndex++;
-        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' ? 1400 : 1000)) / cinemaSpeedMultiplier, sessionId);
+        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' || nextMsg.type === 'syswindow' ? 1600 : 1000)) / cinemaSpeedMultiplier, sessionId);
         return;
       }
 
@@ -7238,7 +7263,8 @@ if (msg.type === 'quest') {
       if (m.delayMs) cleanMsg.delayMs = m.delayMs;
       if (m.targetApp) cleanMsg.targetApp = m.targetApp;
       if (m.question) cleanMsg.question = m.question;
-      if (Array.isArray(m.options)) cleanMsg.options = m.options;
+      if (m.options && Array.isArray(m.options)) cleanMsg.options = m.options;
+      if (m.systemConfig && typeof m.systemConfig === 'object') cleanMsg.systemConfig = m.systemConfig;
       if (m.replyToId) cleanMsg.replyToId = m.replyToId;
 
       if (m.type === 'sticker' && m.stickerData) {
@@ -7352,6 +7378,7 @@ if (msg.type === 'quest') {
             targetApp: m.targetApp || '',
             question: m.question || '',
             options: m.options || null,
+            systemConfig: m.systemConfig || null,
             stickerData: m.sticker ? { id: m.sticker.id, label: m.sticker.label, emoji: m.sticker.emoji } : (m.stickerData || null)
           };
         });
@@ -8828,6 +8855,12 @@ if (msg.type === 'quest') {
     md += `• Suspense Pause: [PAUSE: 2s]\n`;
     md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
     md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
+    md += `• Manhwa RPG Status Window: [SYS_STATUS: Name | Rank/Job | HP:100 | MP:85 | STR:142, AGI:168]\n`;
+    md += `• Item / Artifact Drop Card: [SYS_ITEM: Name | S-RANK | ATK:+180, Crit:+30% | Item lore text]\n`;
+    md += `• Animated Loading Window: [SYS_LOADING: Title | 100 | Awakening progress text]\n`;
+    md += `• Otome Affection Meter: [SYS_AFFECTION: TargetName | 40->78 | Flustered reaction note]\n`;
+    md += `• Constellation Sponsor Alert: [SYS_CONSTELLATION: ConstellationName | +1000 Coins | Message]\n`;
+    md += `• Penalty Countdown Timer: [SYS_TIMER: 300 | PENALTY COUNTDOWN | Failure warning]\n`;
     md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
     md += `• App Screen Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
     md += `• Interactive Choice Dilemma: [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
@@ -9651,6 +9684,8 @@ if (msg.type === 'quest') {
       }
       if (m.type === 'divider') {
         lines.push(`[SYSTEM: ${m.text || ''}]`);
+      } else if (m.type === 'syswindow' && m.systemConfig && typeof window !== 'undefined' && window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.serializeSysWindowToTag === 'function') {
+        lines.push(window.ChatHubSystemWindows.serializeSysWindowToTag(m));
       } else if (m.type === 'quest') {
         lines.push(`[QUEST: ${m.text || ''}]`);
       } else if (m.type === 'choice') {
@@ -9730,7 +9765,7 @@ if (msg.type === 'quest') {
 
     // 4. Auto-split packed scripts: insert newlines before directives if multiple tags are on one line
     cleaned = cleaned.replace(/\s+(\/(?:\s*delay|pause))/gi, '\n$1');
-    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
+    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|SYS_STATUS|SYS_ITEM|SYS_LOADING|SYS_AFFECTION|SYS_CONSTELLATION|SYS_TIMER|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
     cleaned = cleaned.replace(/([.!?\"\'\)])\s+(\[[^\]]+\]\s*:)/gi, '$1\n$2');
 
     const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
@@ -9819,6 +9854,16 @@ if (msg.type === 'quest') {
           delayMs: 1600
         });
         return;
+      }
+
+      // 2b. Manhwa System Window Studio tags ([SYSWINDOW: ...], [SYS_STATUS: ...], [SYS_ITEM: ...], etc.)
+      if (typeof window !== 'undefined' && window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.parseSysWindowLine === 'function') {
+        const sysWinMsg = window.ChatHubSystemWindows.parseSysWindowLine(line, idx);
+        if (sysWinMsg) {
+          sysWinMsg.preDelayMs = eventPreDelay;
+          parsedMsgs.push(sysWinMsg);
+          return;
+        }
       }
 
       // [CHOICE: optionA | optionB] or [CHOICE: Question: ... | Option A | Option B]
@@ -10398,6 +10443,7 @@ if (msg.type === 'quest') {
             audioUrl: m.audioUrl || null,
             question: m.question || '',
             options: m.options || null,
+            systemConfig: m.systemConfig || null,
             stickerData: m.sticker ? { id: m.sticker.id, label: m.sticker.label, emoji: m.sticker.emoji } : (m.stickerData || null)
           };
         });
@@ -11051,6 +11097,35 @@ if (msg.type === 'quest') {
     getVfxSkin: () => (window.ChatHubVfx && typeof window.ChatHubVfx.getSkin === 'function' ? window.ChatHubVfx.getSkin() : 'sakuga'),
     getChatStyle: () => chatThemeStyle,
     exportCurrentChatAsScript: () => convertChatMessagesToScriptText(messages),
+    saveStudioState: () => saveStudioState(),
+    deleteMessageById: (msgId) => deleteMessageById(msgId, '🗑️ System Window deleted'),
+    upsertSystemWindowMessage({ editMsgId, title, text, systemConfig, delayMs }) {
+      if (editMsgId) {
+        const existing = messages.find(m => m.id === editMsgId);
+        if (existing) {
+          existing.type = 'syswindow';
+          existing.title = title || existing.title;
+          existing.text = text || existing.text;
+          existing.systemConfig = systemConfig;
+          existing.delayMs = delayMs || existing.delayMs || 1900;
+        }
+      } else {
+        messages.push({
+          id: 'm_syswin_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          type: 'syswindow',
+          title: title || 'SYSTEM WINDOW',
+          text: text || '',
+          systemConfig,
+          delayMs: delayMs || 1900
+        });
+      }
+      saveStudioState();
+      renderChatStream();
+      if (!editMsgId) {
+        const s = document.getElementById('chatStream');
+        if (s && typeof scrollStreamBottomNow === 'function') scrollStreamBottomNow(s);
+      }
+    },
 
     installCharacters(packId, charDefs = []) {
       let count = 0;

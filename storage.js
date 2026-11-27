@@ -178,7 +178,8 @@
         'chathub_gemini_model',
         'chathub_director_deck_mode',
         'chathub_director_layout',
-        'chathub_marketplace_v1'
+        'chathub_marketplace_v1',
+        'chathub_sys_presets_v1'
       ];
 
       for (const k of keysToCheck) {
@@ -499,7 +500,7 @@
           'wh_chat_theme_style', 'wh_builtin_sticker_sounds', 'manhwa_script_library_custom',
           'chathub_active_app', 'chathub_gpt_model', 'chathub_gemini_model',
           'chathub_director_deck_mode', 'chathub_director_layout', 'wh_legacy_v1_migrated',
-          'chathub_marketplace_v1'
+          'chathub_marketplace_v1', 'chathub_sys_presets_v1'
         ];
         for (const k of knownStateKeys) {
           if (stateObj[k] === undefined) {

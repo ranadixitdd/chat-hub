@@ -1,0 +1,765 @@
+/* ============================================================================
+   MANHWA CHAT HUB — MODULAR MANHWA SYSTEM WINDOW STUDIO STYLES
+   6 Frame Geometries • 7 Themes • Surface Textures • Dynamic Blocks • Live Builder
+   ============================================================================ */
+
+/* --- BASE SYSTEM WINDOW CONTAINER --- */
+.manhwa-sys-win {
+  --sys-accent: #00f0ff;
+  --sys-accent-2: #38bdf8;
+  --sys-bg: rgba(4, 18, 38, 0.94);
+  --sys-text: #f0f9ff;
+  --sys-muted: #94a3b8;
+
+  align-self: center;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  width: 92%;
+  max-width: 380px;
+  height: auto;
+  margin: 8px auto;
+  position: relative;
+  padding: 12px 14px;
+  color: var(--sys-text);
+  background: var(--sys-bg);
+  border-radius: 10px;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid var(--sys-accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--sys-accent) 42%, transparent),
+              inset 0 0 16px color-mix(in srgb, var(--sys-accent) 18%, transparent);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.manhwa-sys-win:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--sys-accent) 62%, transparent),
+              inset 0 0 20px color-mix(in srgb, var(--sys-accent) 26%, transparent);
+}
+body.msg-select-mode .manhwa-sys-win {
+  padding-left: 34px;
+}
+body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
+  z-index: 10;
+}
+
+/* Glow intensities */
+.manhwa-sys-win.glow-low {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), inset 0 0 6px color-mix(in srgb, var(--sys-accent) 12%, transparent);
+}
+.manhwa-sys-win.glow-high {
+  box-shadow: 0 0 26px color-mix(in srgb, var(--sys-accent) 60%, transparent),
+              0 0 48px color-mix(in srgb, var(--sys-accent-2) 26%, transparent),
+              inset 0 0 22px color-mix(in srgb, var(--sys-accent) 25%, transparent);
+}
+
+/* Typography Moods */
+.manhwa-sys-win.font-hud {
+  font-family: 'Segoe UI', 'Rajdhani', system-ui, -apple-system, sans-serif;
+}
+.manhwa-sys-win.font-hud .msw-header-title,
+.manhwa-sys-win.font-hud .msw-badge,
+.manhwa-sys-win.font-hud .msw-stat-val,
+.manhwa-sys-win.font-hud .msw-timer-clock {
+  letter-spacing: 0.7px;
+  font-variant-numeric: tabular-nums;
+}
+.manhwa-sys-win.font-manhwa {
+  font-family: system-ui, -apple-system, 'Nunito', sans-serif;
+}
+.manhwa-sys-win.font-serif {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.manhwa-sys-win.font-mono {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+/* --- 6 FRAME GEOMETRIES --- */
+/* 1. Tech L-Brackets */
+.manhwa-sys-win.frame-tech_brackets {
+  border-radius: 6px;
+  border: 1.5px solid color-mix(in srgb, var(--sys-accent) 55%, transparent);
+}
+.msw-corner {
+  display: none;
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+  z-index: 3;
+}
+.manhwa-sys-win.frame-tech_brackets .msw-corner {
+  display: block;
+}
+.msw-corner.tl { top: 2px; left: 2px; border-top: 2.5px solid var(--sys-accent); border-left: 2.5px solid var(--sys-accent); }
+.msw-corner.tr { top: 2px; right: 2px; border-top: 2.5px solid var(--sys-accent); border-right: 2.5px solid var(--sys-accent); }
+.msw-corner.bl { bottom: 2px; left: 2px; border-bottom: 2.5px solid var(--sys-accent); border-left: 2.5px solid var(--sys-accent); }
+.msw-corner.br { bottom: 2px; right: 2px; border-bottom: 2.5px solid var(--sys-accent); border-right: 2.5px solid var(--sys-accent); }
+
+/* 2. Cut-Corner Cyber Plate (Chamfered polygon feel via inner clip & glowing rim) */
+.manhwa-sys-win.frame-cyber_bevel {
+  border-radius: 2px;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  border: 2px solid var(--sys-accent);
+}
+.manhwa-sys-win.frame-cyber_bevel::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed color-mix(in srgb, var(--sys-accent) 40%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 3. Ornate Imperial / Murim Double Frame */
+.manhwa-sys-win.frame-imperial_ornate {
+  border-radius: 4px;
+  border: 2px solid var(--sys-accent);
+  outline: 1.5px solid color-mix(in srgb, var(--sys-accent) 45%, transparent);
+  outline-offset: -6px;
+  padding: 15px 16px;
+}
+.manhwa-sys-win.frame-imperial_ornate .msw-corner {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--sys-accent);
+  transform: rotate(45deg);
+  opacity: 0.85;
+}
+.manhwa-sys-win.frame-imperial_ornate .msw-corner.tl { top: 4px; left: 4px; border: none; }
+.manhwa-sys-win.frame-imperial_ornate .msw-corner.tr { top: 4px; right: 4px; border: none; }
+.manhwa-sys-win.frame-imperial_ornate .msw-corner.bl { bottom: 4px; left: 4px; border: none; }
+.manhwa-sys-win.frame-imperial_ornate .msw-corner.br { bottom: 4px; right: 4px; border: none; }
+
+/* 4. Corrupted Glitch Frame */
+.manhwa-sys-win.frame-glitch_corrupted {
+  border-radius: 4px;
+  border: 2px solid var(--sys-accent);
+  box-shadow: -3px 0 0 color-mix(in srgb, var(--sys-accent-2) 70%, transparent),
+              3px 0 0 #ff2a6d,
+              0 0 22px color-mix(in srgb, var(--sys-accent) 45%, transparent);
+}
+
+/* 5. Glassmorphic Minimal HUD */
+.manhwa-sys-win.frame-glass_hud {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--sys-accent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* 6. Bold Comic Ink Box (Parody / Comedy Manhwa) */
+.manhwa-sys-win.frame-comic_ink {
+  border-radius: 12px;
+  border: 3px solid #020617;
+  outline: 2px solid var(--sys-accent);
+  outline-offset: -4px;
+  box-shadow: 4px 4px 0 #020617, 0 0 18px color-mix(in srgb, var(--sys-accent) 30%, transparent);
+}
+
+/* --- SURFACE TEXTURES (SCANLINES / GRID / SPARKLES) --- */
+.msw-fx-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.manhwa-sys-win.has-scanlines .msw-fx-overlay.scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0px,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+.manhwa-sys-win.has-grid .msw-fx-overlay.grid {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--sys-accent) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--sys-accent) 9%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.manhwa-sys-win.has-sparkles::after {
+  content: '✦  ✧  ✦';
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  font-size: 11px;
+  color: var(--sys-accent);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.msw-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --- ENTRANCE ANIMATIONS --- */
+@keyframes mswHologramBoot {
+  0% { opacity: 0; transform: scaleY(0.15) scaleX(0.92); filter: brightness(1.8); }
+  55% { opacity: 1; transform: scaleY(1.04) scaleX(1.01); }
+  100% { opacity: 1; transform: scaleY(1) scaleX(1); filter: brightness(1); }
+}
+@keyframes mswGlitchSnap {
+  0% { opacity: 0; transform: translateX(-8px) skewX(6deg); filter: hue-rotate(85deg); }
+  35% { opacity: 1; transform: translateX(5px) skewX(-4deg); }
+  70% { transform: translateX(-2px) skewX(1deg); }
+  100% { opacity: 1; transform: translateX(0) skewX(0); filter: hue-rotate(0); }
+}
+@keyframes mswImperialUnroll {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.94); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes mswImpactShake {
+  0% { opacity: 0; transform: scale(1.12); }
+  30% { opacity: 1; transform: translate(-3px, 2px) scale(0.98); }
+  60% { transform: translate(3px, -2px) scale(1.01); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes mswPopBounce {
+  0% { opacity: 0; transform: scale(0.75); }
+  70% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.manhwa-sys-win.anim-hologram { animation: mswHologramBoot 0.34s cubic-bezier(0.18, 0.89, 0.32, 1.2) forwards; }
+.manhwa-sys-win.anim-glitch   { animation: mswGlitchSnap 0.32s steps(4, end) forwards; }
+.manhwa-sys-win.anim-unroll   { animation: mswImperialUnroll 0.36s ease-out forwards; }
+.manhwa-sys-win.anim-impact   { animation: mswImpactShake 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.manhwa-sys-win.anim-pop      { animation: mswPopBounce 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
+
+/* --- HEADER BLOCK --- */
+.msw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--sys-accent) 36%, transparent);
+  padding-bottom: 6px;
+}
+.msw-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.msw-header-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--sys-accent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--sys-accent) 75%, transparent);
+}
+.msw-header-title {
+  font-size: 11.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--sys-accent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--sys-accent) 55%, transparent);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msw-badge {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sys-accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sys-accent) 55%, transparent);
+  color: var(--sys-accent);
+  text-transform: uppercase;
+}
+.msw-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sys-muted);
+  margin-top: -4px;
+}
+
+/* --- MEDIA & CONTENT LAYOUTS --- */
+.msw-main-split {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msw-main-split.layout-portrait_left {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+}
+.msw-main-split.layout-icon_title {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.msw-media-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.msw-media-wrap.layout-banner_top {
+  width: 100%;
+}
+.msw-media-img {
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1.5px solid color-mix(in srgb, var(--sys-accent) 60%, transparent);
+  background: rgba(2, 6, 23, 0.65);
+}
+.layout-portrait_left .msw-media-img {
+  width: 78px;
+  height: 98px;
+  object-fit: cover;
+  object-position: top center;
+}
+.layout-icon_title .msw-media-img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  padding: 2px;
+}
+.layout-banner_top .msw-media-img {
+  width: 100%;
+  max-height: 145px;
+  object-fit: cover;
+}
+.layout-circle_halo .msw-media-img {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  border: 2.5px solid var(--sys-accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--sys-accent) 65%, transparent);
+}
+.msw-media-caption {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--sys-accent-2);
+  text-align: center;
+}
+
+.msw-content-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.msw-body-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--sys-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --- PROGRESS / STAT / LOADING / AFFECTION BARS --- */
+.msw-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.msw-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.msw-bar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.msw-bar-label {
+  color: var(--sys-text);
+  text-transform: uppercase;
+}
+.msw-bar-val {
+  color: var(--sys-accent);
+  font-variant-numeric: tabular-nums;
+}
+.msw-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  position: relative;
+}
+.msw-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--bar-color, var(--sys-accent)), color-mix(in srgb, var(--bar-color, var(--sys-accent)) 65%, #ffffff));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--bar-color, var(--sys-accent)) 75%, transparent);
+  transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+.msw-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-100%);
+  animation: mswBarShine 2s ease-in-out infinite;
+}
+@keyframes mswBarShine {
+  100% { transform: translateX(100%); }
+}
+
+/* --- KEY-VALUE STATS GRID --- */
+.msw-stats-grid {
+  display: grid;
+  gap: 5px;
+}
+.msw-stats-grid.cols-1 { grid-template-columns: 1fr; }
+.msw-stats-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.msw-stats-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.msw-stat-cell {
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid color-mix(in srgb, var(--sys-accent) 28%, transparent);
+  border-radius: 6px;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.msw-stat-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--sys-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.msw-stat-val {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--sys-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- TRAIT / PASSIVE PILLS --- */
+.msw-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.msw-pill-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sys-accent) 14%, rgba(15, 23, 42, 0.8));
+  border: 1px solid color-mix(in srgb, var(--sys-accent) 42%, transparent);
+  color: var(--sys-accent-2);
+}
+
+/* --- LIVE COUNTDOWN TIMER --- */
+.msw-timer-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: rgba(2, 6, 23, 0.65);
+  border: 1px solid color-mix(in srgb, var(--sys-accent) 45%, transparent);
+}
+.msw-timer-lbl {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--sys-muted);
+  text-transform: uppercase;
+}
+.msw-timer-clock {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--sys-accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--sys-accent) 60%, transparent);
+}
+
+/* --- INTERACTIVE ACTION BUTTONS --- */
+.msw-btn-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.msw-action-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border: 1.5px solid var(--sys-accent);
+  text-transform: uppercase;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.msw-action-btn:hover { transform: scale(1.02); }
+.msw-action-btn.primary {
+  background: color-mix(in srgb, var(--sys-accent) 22%, rgba(2, 6, 23, 0.85));
+  color: var(--sys-accent);
+}
+.msw-action-btn.ghost {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #cbd5e1;
+}
+.msw-action-btn.selected {
+  background: var(--sys-accent);
+  color: #020617;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--sys-accent) 75%, transparent);
+}
+
+/* --- DIAGONAL SEAL / WATERMARK STAMP --- */
+.msw-stamp {
+  position: absolute;
+  right: 12px;
+  bottom: 18px;
+  padding: 3px 10px;
+  border: 2.5px solid var(--stamp-color, #facc15);
+  border-radius: 6px;
+  color: var(--stamp-color, #facc15);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transform: rotate(-14deg);
+  opacity: 0.82;
+  background: rgba(2, 6, 23, 0.55);
+  pointer-events: none;
+  z-index: 4;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+}
+
+.msw-footer {
+  border-top: 1px dashed color-mix(in srgb, var(--sys-accent) 28%, transparent);
+  padding-top: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--sys-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ============================================================================
+   SYSTEM WINDOW STUDIO BUILDER MODAL
+   ============================================================================ */
+.syswin-builder-window {
+  max-width: 580px !important;
+  width: 96vw !important;
+  max-height: 92vh !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b1120 !important;
+  border: 1.5px solid #38bdf8 !important;
+}
+
+.syswin-preview-stage {
+  background: radial-gradient(circle at top, #131f38 0%, #060a14 100%);
+  border-bottom: 1px solid #1e293b;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-height: 270px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.syswin-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.syswin-tab-btn {
+  flex: 1;
+  white-space: nowrap;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.syswin-tab-btn.active {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.syswin-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.syswin-tab-panel { display: none; flex-direction: column; gap: 10px; }
+.syswin-tab-panel.active { display: flex; }
+
+.syswin-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+@media (max-width: 500px) {
+  .syswin-preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.syswin-preset-card {
+  background: #131c31;
+  border: 1.5px solid #293548;
+  border-radius: 10px;
+  padding: 9px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+  cursor: pointer;
+  color: #e2e8f0;
+  transition: border-color 0.14s, transform 0.14s;
+}
+.syswin-preset-card:hover {
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+.syswin-preset-card.active {
+  border-color: #00f0ff;
+  background: rgba(0, 240, 255, 0.12);
+}
+
+.syswin-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .syswin-field-row { grid-template-columns: 1fr; }
+}
+
+.syswin-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.syswin-input, .syswin-select, .syswin-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.syswin-input:focus, .syswin-select:focus, .syswin-textarea:focus {
+  outline: none;
+  border-color: #38bdf8;
+}
+
+.syswin-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.syswin-chip-btn {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.syswin-chip-btn.active {
+  border-color: #00f0ff;
+  background: rgba(0, 240, 255, 0.16);
+  color: #00f0ff;
+}
+
+.syswin-media-picker-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+.syswin-media-thumb-btn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1.5px solid #334155;
+  background: #020617;
+  padding: 2px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.syswin-media-thumb-btn.active {
+  border-color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+.syswin-media-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.syswin-block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.syswin-block-row {
+  background: #131c31;
+  border: 1px solid #293548;
+  border-radius: 8px;
+  padding: 7px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
