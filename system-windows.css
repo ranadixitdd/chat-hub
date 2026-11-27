@@ -398,7 +398,25 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   object-fit: cover;
   border-radius: 8px;
   border: 1.5px solid color-mix(in srgb, var(--sys-accent) 60%, transparent);
-  background: rgba(2, 6, 23, 0.65);
+  background: transparent;
+}
+.msw-svg-icon-slot {
+  width: 58px;
+  height: 58px;
+  padding: 2px;
+  color: var(--sys-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.msw-svg-icon-slot svg,
+.msw-svg-icon-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--sys-accent) 60%, transparent));
 }
 .layout-portrait_left .msw-media-img {
   width: 78px;
@@ -411,6 +429,10 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   height: 58px;
   object-fit: contain;
   padding: 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--sys-accent) 55%, transparent));
 }
 .layout-banner_top .msw-media-img {
   width: 100%;
@@ -1090,14 +1112,37 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   height: 132px;
   border-radius: 14px;
   border: 2.5px solid var(--sys-accent);
-  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--sys-accent-2) 45%, #3b0709) 0%, #240305 100%);
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--sys-accent) 20%, var(--sys-bg)) 0%, var(--sys-bg) 100%);
   box-shadow: 0 0 22px color-mix(in srgb, var(--sys-accent-2) 72%, transparent),
-              inset 0 0 18px rgba(0, 0, 0, 0.75);
+              inset 0 0 18px rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   padding: 8px;
+}
+.manhwa-sys-win.is-icon-seamless .msw-emblem-box {
+  border-color: transparent !important;
+  border-width: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible;
+  padding: 2px;
+}
+.manhwa-sys-win.is-icon-seamless .msw-emblem-frame-svg {
+  display: none;
+}
+.manhwa-sys-win.is-icon-seamless .msw-media-img {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--sys-accent) 60%, transparent));
+}
+.manhwa-sys-win.is-icon-blend-dark .msw-emblem-box img,
+.manhwa-sys-win.is-icon-blend-dark .msw-codex-diagram img,
+.manhwa-sys-win.is-icon-blend-dark .msw-svg-icon-slot img,
+.manhwa-sys-win.is-icon-blend-dark .msw-media-img {
+  mix-blend-mode: screen;
 }
 .msw-emblem-box.is-thorn-emblem {
   border-color: #fde047;
@@ -1172,7 +1217,7 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   min-height: 132px;
   max-height: 168px;
   border: 1.5px solid color-mix(in srgb, var(--sys-accent) 78%, transparent);
-  background-color: rgba(4, 12, 34, 0.85);
+  background-color: color-mix(in srgb, var(--sys-bg) 92%, transparent);
   background-image:
     linear-gradient(color-mix(in srgb, var(--sys-accent) 11%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--sys-accent) 11%, transparent) 1px, transparent 1px);
@@ -1183,6 +1228,14 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   justify-content: center;
   padding: 12px;
   overflow: hidden;
+}
+.manhwa-sys-win.is-icon-seamless .msw-codex-diagram {
+  border-color: transparent !important;
+  border-width: 0 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  padding: 4px;
 }
 .msw-codex-diagram img,
 .msw-codex-diagram svg {
@@ -1221,8 +1274,14 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   overflow-y: auto;
   padding: 4px 2px;
 }
+.syswin-svg-cell {
+  position: relative;
+  display: flex;
+}
 .syswin-svg-icon-btn {
   position: relative;
+  width: 100%;
+  min-height: 68px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1252,22 +1311,38 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   width: 30px;
   height: 30px;
   object-fit: contain;
+  pointer-events: none;
+}
+.syswin-svg-icon-btn > span {
+  pointer-events: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .syswin-svg-del {
   position: absolute;
   top: 2px;
   right: 2px;
-  width: 14px;
-  height: 14px;
+  z-index: 4;
+  width: 19px;
+  height: 19px;
   border-radius: 50%;
-  background: rgba(127, 29, 29, 0.9);
-  color: #fecaca;
-  font-size: 8px;
-  line-height: 14px;
+  background: rgba(185, 28, 28, 0.96);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 17px;
   text-align: center;
-  border: none;
+  border: 1.5px solid rgba(254, 202, 202, 0.85);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
   cursor: pointer;
   padding: 0;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.syswin-svg-del:hover {
+  background: #ef4444;
+  transform: scale(1.1);
 }
 .syswin-custom-icon-maker {
   display: none;

@@ -412,7 +412,16 @@
 
   function sanitizeCustomSvg(raw) {
     if (!raw || typeof raw !== 'string') return '';
-    let s = raw.trim();
+    let s = raw.trim()
+      .replace(/^<\?xml[\s\S]*?\?>\s*/i, '')
+      .replace(/^<!DOCTYPE[\s\S]*?>\s*/i, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .trim();
+    const svgStart = s.search(/<svg[\s>]/i);
+    const svgEnd = s.toLowerCase().lastIndexOf('</svg>');
+    if (svgStart > 0 && svgEnd > svgStart) {
+      s = s.slice(svgStart, svgEnd + 6).trim();
+    }
     if (!/^<svg[\s>]/i.test(s) || !/<\/svg>$/i.test(s)) return '';
     s = s.replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
@@ -420,6 +429,170 @@
       .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
       .replace(/javascript\s*:/gi, '');
     return s.length <= 24000 ? s : '';
+  }
+
+  function stripImageBackgroundDataUrl(dataUrl, opts = {}) {
+    if (!dataUrl || typeof dataUrl !== 'string') return Promise.resolve('');
+    if (typeof document === 'undefined' || typeof Image === 'undefined') return Promise.resolve(dataUrl);
+    if (/^data:image\/svg\+xml/i.test(dataUrl)) return Promise.resolve(dataUrl);
+    if (/^data:image\/gif/i.test(dataUrl) && !opts.forceGif) return Promise.resolve(dataUrl);
+    const maxSize = Number(opts.maxSize) || 256;
+    const removeBg = opts.removeBg !== false;
+
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const natW = img.naturalWidth || img.width || 128;
+            const natH = img.naturalHeight || img.height || 128;
+            const scale = Math.min(1, maxSize / Math.max(1, natW, natH));
+            const w = Math.max(1, Math.round(natW * scale));
+            const h = Math.max(1, Math.round(natH * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { resolve(dataUrl); return; }
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, w, h);
+
+            if (!removeBg) {
+              resolve(canvas.toDataURL('image/png'));
+              return;
+            }
+
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const d = imgData.data;
+            const border = [];
+            let transCount = 0;
+            const addSample = (x, y) => {
+              const p = (y * w + x) * 4;
+              if (d[p + 3] < 32) transCount++;
+              border.push([d[p], d[p + 1], d[p + 2], d[p + 3]]);
+            };
+            for (let x = 0; x < w; x++) {
+              addSample(x, 0);
+              if (h > 1) addSample(x, h - 1);
+            }
+            for (let y = 1; y < h - 1; y++) {
+              addSample(0, y);
+              if (w > 1) addSample(w - 1, y);
+            }
+
+            if (border.length === 0 || (transCount / border.length) >= 0.12) {
+              resolve(canvas.toDataURL('image/png'));
+              return;
+            }
+
+            const rs = border.map(b => b[0]).sort((a, b) => a - b);
+            const gs = border.map(b => b[1]).sort((a, b) => a - b);
+            const bs = border.map(b => b[2]).sort((a, b) => a - b);
+            const mid = Math.floor(border.length / 2);
+            const bgR = rs[mid], bgG = gs[mid], bgB = bs[mid];
+            const bgLuma = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB;
+
+            let nearBgCount = 0;
+            for (let i = 0; i < border.length; i++) {
+              const [r, g, b] = border[i];
+              const dist = Math.hypot(r - bgR, g - bgG, b - bgB);
+              if (dist <= 45) nearBgCount++;
+            }
+            const uniformRatio = nearBgCount / border.length;
+
+            if (bgLuma <= 76 && uniformRatio >= 0.55) {
+              // Dark / black neon icon background knockout with smooth glow feather & de-darkening
+              const low = 14;
+              const high = 88;
+              for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3];
+                if (a === 0) continue;
+                const r = d[i], g = d[i + 1], b = d[i + 2];
+                const dr = Math.max(0, r - bgR);
+                const dg = Math.max(0, g - bgG);
+                const db = Math.max(0, b - bgB);
+                const dist = Math.hypot(r - bgR, g - bgG, b - bgB);
+                const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+                const signal = Math.max(dr, dg, db, dist * 0.62) + chroma * 0.28;
+                if (signal <= low) {
+                  d[i + 3] = 0;
+                } else if (signal < high) {
+                  const t = Math.pow((signal - low) / (high - low), 0.78);
+                  const inv = 1 / Math.max(0.22, t);
+                  d[i] = Math.min(255, Math.max(0, Math.round(bgR + (r - bgR) * inv)));
+                  d[i + 1] = Math.min(255, Math.max(0, Math.round(bgG + (g - bgG) * inv)));
+                  d[i + 2] = Math.min(255, Math.max(0, Math.round(bgB + (b - bgB) * inv)));
+                  d[i + 3] = Math.min(a, Math.round(t * 255));
+                }
+              }
+              ctx.putImageData(imgData, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+              return;
+            }
+
+            if (uniformRatio >= 0.65) {
+              // White / light / solid outer rectangle: 4-edge BFS flood-fill keeps interior highlights intact
+              const visited = new Uint8Array(w * h);
+              const removed = new Uint8Array(w * h);
+              const queue = new Int32Array(w * h);
+              let head = 0, tail = 0;
+              const hardDist = 52;
+              const tryPush = (x, y) => {
+                const idx = y * w + x;
+                if (visited[idx]) return;
+                const p = idx * 4;
+                const dist = Math.hypot(d[p] - bgR, d[p + 1] - bgG, d[p + 2] - bgB);
+                if (dist <= hardDist) {
+                  visited[idx] = 1;
+                  queue[tail++] = idx;
+                }
+              };
+              for (let x = 0; x < w; x++) { tryPush(x, 0); tryPush(x, h - 1); }
+              for (let y = 1; y < h - 1; y++) { tryPush(0, y); tryPush(w - 1, y); }
+              while (head < tail) {
+                const idx = queue[head++];
+                removed[idx] = 1;
+                d[idx * 4 + 3] = 0;
+                const cx = idx % w;
+                const cy = (idx - cx) / w;
+                if (cx > 0) tryPush(cx - 1, cy);
+                if (cx < w - 1) tryPush(cx + 1, cy);
+                if (cy > 0) tryPush(cx, cy - 1);
+                if (cy < h - 1) tryPush(cx, cy + 1);
+              }
+              // Smooth 1px edge feathering next to flood-filled region
+              for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                  const idx = y * w + x;
+                  if (removed[idx]) continue;
+                  if (removed[idx - 1] || removed[idx + 1] || removed[idx - w] || removed[idx + w]) {
+                    const p = idx * 4;
+                    const dist = Math.hypot(d[p] - bgR, d[p + 1] - bgG, d[p + 2] - bgB);
+                    if (dist <= 84) {
+                      const ratio = Math.max(0, Math.min(1, (dist - 36) / 48));
+                      d[p + 3] = Math.min(d[p + 3], Math.round(ratio * 255));
+                    }
+                  }
+                }
+              }
+              ctx.putImageData(imgData, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+              return;
+            }
+
+            resolve(canvas.toDataURL('image/png'));
+          } catch (innerErr) {
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      } catch (e) {
+        resolve(dataUrl);
+      }
+    });
   }
 
   function generateNeonBadgeSvg(glyph = '⚡', shape = 'hex', glow = '#00f0ff') {
@@ -459,6 +632,9 @@
       const json = JSON.stringify(list || []);
       if (window.ChatHubStorage && typeof window.ChatHubStorage.set === 'function') {
         window.ChatHubStorage.set(CUSTOM_ICONS_STORAGE_KEY, json);
+        if (json.length > 1500000) {
+          try { localStorage.removeItem(CUSTOM_ICONS_STORAGE_KEY); } catch (e) {}
+        }
       } else {
         localStorage.setItem(CUSTOM_ICONS_STORAGE_KEY, json);
       }
@@ -1553,6 +1729,8 @@
       hideHeader: false,
       starburst: false,
       transparentBg: false,
+      iconSeamless: false,
+      iconBlendDark: false,
       svgIcon: '',
       customIconData: '',
       animation: 'hologram',
@@ -1614,6 +1792,8 @@
     }
     delete merged.customFrameUrl;
     merged.transparentBg = false;
+    merged.iconSeamless = Boolean(merged.iconSeamless);
+    merged.iconBlendDark = Boolean(merged.iconBlendDark);
     merged.hideHeader = Boolean(merged.hideHeader);
     merged.starburst = Boolean(merged.starburst);
     merged.bars = Array.isArray(merged.bars) ? merged.bars.map(b => ({
@@ -1748,6 +1928,8 @@
       'anim-' + (cfg.animation || 'hologram')
     ];
     if (cfg.cardStyle && cfg.cardStyle !== 'standard') classes.push('is-card-centered', 'card-' + cfg.cardStyle);
+    if (cfg.iconSeamless) classes.push('is-icon-seamless');
+    if (cfg.iconBlendDark) classes.push('is-icon-blend-dark');
     if (cfg.hideHeader) classes.push('has-hidden-header');
     if (cfg.scanlines) classes.push('has-scanlines');
     if (cfg.gridPattern) classes.push('has-grid');
@@ -1771,7 +1953,7 @@
       : (svgObj ? svgObj.svg : '');
     const mediaHtml = hasMedia ? `
       <div class="msw-media-wrap layout-${esc(cfg.mediaLayout || 'icon_title')}">
-        ${hasImgMedia ? `<img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">` : `<div style="width:58px;height:58px;padding:4px;color:var(--sys-accent);">${svgObj ? svgObj.svg : ''}</div>`}
+        ${hasImgMedia ? `<img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">` : `<div class="msw-svg-icon-slot">${svgObj ? svgObj.svg : ''}</div>`}
         ${cfg.mediaCaption ? `<div class="msw-media-caption">${esc(cfg.mediaCaption)}</div>` : ''}
       </div>
     ` : '';
@@ -2666,9 +2848,10 @@
             <div style="background:#131c31; border:1px solid #293548; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                 <span style="font-size:12px; font-weight:800; color:#38bdf8;">🖼️ Attach Image / Character / Item Icon</span>
-                <div style="display:flex; gap:5px;">
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
                   <input type="file" id="sysWinImageFileInput" accept="image/*" style="display:none;">
                   <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysWinImageFileInput').click()">📁 Upload PNG/GIF</button>
+                  <button type="button" class="syswin-chip-btn" style="border-color:#c084fc; color:#e9d5ff;" onclick="window.ChatHubSystemWindows.stripCurrentImageBg()" title="Auto-strip dark or white box background from current image/badge">🪄 Remove BG</button>
                   <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.clearImage()">✕ Clear</button>
                 </div>
               </div>
@@ -2700,7 +2883,9 @@
                 <span style="font-size:12px; font-weight:800; color:#facc15;">✨ Neon Vector & Relic Icons (36+ Built-In & Custom)</span>
                 <div style="display:flex; gap:5px; flex-wrap:wrap;">
                   <button type="button" class="syswin-chip-btn" style="border-color:#4ade80; color:#4ade80;" onclick="window.ChatHubSystemWindows.toggleCustomIconDrawer()">+ Add Own Icon</button>
-                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.selectSvgIcon('')">✕ None</button>
+                  <button type="button" class="syswin-chip-btn" id="sysBtnDelSelectedSvg" style="display:none; border-color:#f87171; color:#fca5a5;" onclick="window.ChatHubSystemWindows.deleteSelectedCustomIcon()" title="Delete selected custom badge from your library">🗑️ Delete Badge</button>
+                  <button type="button" class="syswin-chip-btn" id="sysBtnClearCustomSvgs" style="display:none; border-color:#fb923c; color:#fdba74;" onclick="window.ChatHubSystemWindows.clearAllUserCustomIcons()" title="Delete all uploaded custom badges">🧹 Clear Uploads</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.selectSvgIcon('')" title="Remove badge/icon from preview card">✕ None</button>
                 </div>
               </div>
               <div class="syswin-chip-row" id="sysWinSvgFilterRow">
@@ -2708,6 +2893,10 @@
                 <button type="button" class="syswin-chip-btn" data-svg-filter="relic" onclick="window.ChatHubSystemWindows.setSvgFilter('relic')">🔮 Relic & Skills</button>
                 <button type="button" class="syswin-chip-btn" data-svg-filter="codex" onclick="window.ChatHubSystemWindows.setSvgFilter('codex')">📘 Codex & Diagrams</button>
                 <button type="button" class="syswin-chip-btn" data-svg-filter="custom" onclick="window.ChatHubSystemWindows.setSvgFilter('custom')">⭐ My Custom</button>
+              </div>
+              <div class="syswin-chip-row">
+                <label class="syswin-chip-btn" title="Hide outer icon box border & backdrop so only the glowing icon floats on your template"><input type="checkbox" id="sysChkIconSeamless"> 🫥 No Box Behind Icon</label>
+                <label class="syswin-chip-btn" title="Screen-blend dark/black PNG backgrounds straight onto your template color & scanlines"><input type="checkbox" id="sysChkIconBlendDark"> 🌌 Dissolve Black PNG BG</label>
               </div>
               <div class="syswin-custom-icon-maker" id="sysCustomIconDrawer">
                 <div style="font-size:11px; font-weight:800; color:#38bdf8;">⚡ Create Neon Badge Icon OR Upload SVG / Transparent Icon</div>
@@ -2726,8 +2915,9 @@
                 </div>
                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                   <button type="button" class="syswin-chip-btn" style="border-color:#00f0ff; color:#00f0ff;" onclick="window.ChatHubSystemWindows.createCustomBadgeIcon()">✨ Save Neon Badge</button>
-                  <input type="file" id="sysNewIconFileInput" accept=".svg,image/svg+xml,image/png,image/webp,image/gif" style="display:none;">
+                  <input type="file" id="sysNewIconFileInput" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp,image/gif" multiple style="display:none;">
                   <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysNewIconFileInput').click()">📁 Upload .SVG / Icon PNG</button>
+                  <label class="syswin-chip-btn" style="color:#a5f3fc; border-color:#0891b2;" title="Automatically converts solid black/dark or white PNG backgrounds to transparency"><input type="checkbox" id="sysChkNewIconRemoveBg" checked> 🪄 Auto-Remove BG</label>
                 </div>
                 <div style="display:flex; gap:6px; align-items:center;">
                   <input type="text" class="syswin-input" id="sysNewIconSvgInput" placeholder="Or paste <svg>...</svg> code here...">
@@ -2989,6 +3179,8 @@
     setChk('sysChkSparkles', builderDraft.sparkles);
     setChk('sysChkStarburst', builderDraft.starburst);
     setChk('sysChkHideHeader', builderDraft.hideHeader);
+    setChk('sysChkIconSeamless', builderDraft.iconSeamless);
+    setChk('sysChkIconBlendDark', builderDraft.iconBlendDark);
     setVal('sysSelAnimation', builderDraft.animation || 'hologram');
     setVal('sysSelSfx', builderDraft.sfx !== undefined ? builderDraft.sfx : 'scifi');
     setVal('sysSelGlow', builderDraft.glowIntensity || 'high');
@@ -3098,9 +3290,20 @@
         b.classList.toggle('active', b.dataset.svgFilter === builderSvgFilter);
       });
     }
+    const all = getAllSvgIcons();
+    const customList = loadCustomIcons();
+    const delSelectedBtn = document.getElementById('sysBtnDelSelectedSvg');
+    if (delSelectedBtn) {
+      const selEntry = builderDraft.svgIcon ? all[builderDraft.svgIcon] : null;
+      delSelectedBtn.style.display = (selEntry && selEntry.isCustom) ? 'inline-flex' : 'none';
+    }
+    const clearUploadsBtn = document.getElementById('sysBtnClearCustomSvgs');
+    if (clearUploadsBtn) {
+      const userUploadCount = customList.filter(ci => !ci.marketplacePackId).length;
+      clearUploadsBtn.style.display = userUploadCount > 0 ? 'inline-flex' : 'none';
+    }
     const grid = document.getElementById('sysWinSvgPickerGrid');
     if (!grid) return;
-    const all = getAllSvgIcons();
     const entries = Object.entries(all).filter(([, item]) => {
       if (builderSvgFilter === 'all') return true;
       if (builderSvgFilter === 'custom') return Boolean(item.isCustom);
@@ -3113,12 +3316,27 @@
       return;
     }
     grid.innerHTML = entries.map(([key, item]) => `
-      <button type="button" class="syswin-svg-icon-btn ${builderDraft.svgIcon === key ? 'active' : ''}" data-svg-key="${esc(key)}" title="${esc(item.label)}" onclick="window.ChatHubSystemWindows.selectSvgIcon('${esc(key)}')">
-        ${item.isCustom ? `<span class="syswin-svg-del" title="Delete custom icon" onclick="event.stopPropagation(); window.ChatHubSystemWindows.deleteCustomIcon('${esc(key)}')">✕</span>` : ''}
-        ${item.svg}
-        <span>${esc(item.label)}</span>
-      </button>
+      <div class="syswin-svg-cell">
+        <button type="button" class="syswin-svg-icon-btn ${builderDraft.svgIcon === key ? 'active' : ''}" data-svg-key="${esc(key)}" title="${esc(item.label)}">
+          ${item.svg}
+          <span>${esc(item.label)}</span>
+        </button>
+        ${item.isCustom ? `<button type="button" class="syswin-svg-del" data-del-svg-key="${esc(key)}" title="Delete custom badge '${esc(item.label)}'" aria-label="Delete ${esc(item.label)}">✕</button>` : ''}
+      </div>
     `).join('');
+
+    grid.querySelectorAll('.syswin-svg-icon-btn[data-svg-key]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.ChatHubSystemWindows.selectSvgIcon(btn.dataset.svgKey);
+      });
+    });
+    grid.querySelectorAll('.syswin-svg-del[data-del-svg-key]').forEach(delBtn => {
+      delBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.ChatHubSystemWindows.deleteCustomIcon(delBtn.dataset.delSvgKey);
+      });
+    });
   }
 
   function renderBoostsEditor() {
@@ -3326,6 +3544,8 @@
     bindChange('sysChkSparkles', 'sparkles');
     bindChange('sysChkStarburst', 'starburst');
     bindChange('sysChkHideHeader', 'hideHeader');
+    bindChange('sysChkIconSeamless', 'iconSeamless');
+    bindChange('sysChkIconBlendDark', 'iconBlendDark');
     bindChange('sysSelAnimation', 'animation');
     bindChange('sysSelSfx', 'sfx');
     bindChange('sysSelGlow', 'glowIntensity');
@@ -3362,41 +3582,60 @@
 
     const customIconInp = document.getElementById('sysNewIconFileInput');
     if (customIconInp) {
-      customIconInp.addEventListener('change', (e) => {
-        const f = e.target.files && e.target.files[0];
-        if (!f) return;
+      customIconInp.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
         const labelInp = document.getElementById('sysNewIconLabel');
-        const label = (labelInp && labelInp.value.trim()) || f.name.replace(/\.[^/.]+$/, '').slice(0, 16) || 'My Icon';
-        const reader = new FileReader();
-        if (/svg/i.test(f.type) || /\.svg$/i.test(f.name)) {
-          reader.onload = (ev) => {
-            const cleanSvg = sanitizeCustomSvg(ev.target.result);
+        const removeBgChk = document.getElementById('sysChkNewIconRemoveBg');
+        const autoRemoveBg = removeBgChk ? removeBgChk.checked : true;
+        let lastAddedId = '';
+        let addedCount = 0;
+
+        for (let idx = 0; idx < files.length; idx++) {
+          const f = files[idx];
+          const label = ((files.length === 1 && labelInp && labelInp.value.trim()) || f.name.replace(/\.[^/.]+$/, '').slice(0, 18) || 'My Icon').slice(0, 18);
+          if (/svg/i.test(f.type) || /\.svg$/i.test(f.name)) {
+            const rawText = await new Promise(res => {
+              const r = new FileReader();
+              r.onload = ev => res(ev.target.result || '');
+              r.onerror = () => res('');
+              r.readAsText(f);
+            });
+            const cleanSvg = sanitizeCustomSvg(rawText);
             if (!cleanSvg) {
-              if (api() && typeof api().showToast === 'function') api().showToast('⚠️ Invalid or unsafe SVG file.');
-              return;
+              if (files.length === 1 && api() && typeof api().showToast === 'function') api().showToast('⚠️ Invalid or unsafe SVG file.');
+              continue;
             }
-            const id = 'custom_' + Date.now().toString(36);
+            const id = 'custom_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
             const list = loadCustomIcons();
             list.unshift({ id, label, svg: cleanSvg, createdAt: Date.now() });
             saveCustomIcons(list);
-            if (labelInp) labelInp.value = '';
-            window.ChatHubSystemWindows.selectSvgIcon(id);
-            if (api() && typeof api().showToast === 'function') api().showToast(`✨ Added SVG icon "${label}"!`);
-          };
-          reader.readAsText(f);
-        } else {
-          reader.onload = (ev) => {
-            const url = ev.target.result;
-            if (!isSafeUrl(url)) return;
-            const id = 'custom_' + Date.now().toString(36);
+            lastAddedId = id;
+            addedCount++;
+          } else {
+            const rawUrl = await new Promise(res => {
+              const r = new FileReader();
+              r.onload = ev => res(ev.target.result || '');
+              r.onerror = () => res('');
+              r.readAsDataURL(f);
+            });
+            if (!isSafeUrl(rawUrl)) continue;
+            const processedUrl = await stripImageBackgroundDataUrl(rawUrl, { maxSize: 256, removeBg: autoRemoveBg });
+            if (!isSafeUrl(processedUrl)) continue;
+            const id = 'custom_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
             const list = loadCustomIcons();
-            list.unshift({ id, label, imageUrl: url, createdAt: Date.now() });
+            list.unshift({ id, label, imageUrl: processedUrl, createdAt: Date.now() });
             saveCustomIcons(list);
-            if (labelInp) labelInp.value = '';
-            window.ChatHubSystemWindows.selectSvgIcon(id);
-            if (api() && typeof api().showToast === 'function') api().showToast(`✨ Added icon "${label}"!`);
-          };
-          reader.readAsDataURL(f);
+            lastAddedId = id;
+            addedCount++;
+          }
+        }
+        if (labelInp && addedCount > 0) labelInp.value = '';
+        if (lastAddedId) {
+          window.ChatHubSystemWindows.selectSvgIcon(lastAddedId);
+          if (api() && typeof api().showToast === 'function') {
+            api().showToast(addedCount > 1 ? `✨ Added ${addedCount} custom neon badges!` : `✨ Added custom icon (${autoRemoveBg ? 'BG cleaned' : 'saved'})!`);
+          }
         }
         e.target.value = '';
       });
@@ -3527,7 +3766,7 @@
       const shape = (shapeInp && shapeInp.value) || 'hex';
       const color = (colorInp && colorInp.value) || '#00f0ff';
       const svg = generateNeonBadgeSvg(glyph, shape, color);
-      const id = 'custom_' + Date.now().toString(36);
+      const id = 'custom_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
       const list = loadCustomIcons();
       list.unshift({ id, label: label.slice(0, 18), svg, createdAt: Date.now() });
       saveCustomIcons(list);
@@ -3546,7 +3785,7 @@
         return;
       }
       const label = (labelInp && labelInp.value.trim()) || 'Custom SVG';
-      const id = 'custom_' + Date.now().toString(36);
+      const id = 'custom_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
       const list = loadCustomIcons();
       list.unshift({ id, label: label.slice(0, 18), svg: cleanSvg, createdAt: Date.now() });
       saveCustomIcons(list);
@@ -3557,14 +3796,74 @@
       if (api() && typeof api().showToast === 'function') api().showToast(`✨ Saved Custom SVG "${label}"!`);
     },
     deleteCustomIcon(iconKey) {
-      const list = loadCustomIcons().filter(ci => ci.id !== iconKey);
+      if (!iconKey) return false;
+      const before = loadCustomIcons();
+      const target = before.find(ci => String(ci.id) === String(iconKey));
+      const list = before.filter(ci => String(ci.id) !== String(iconKey));
       saveCustomIcons(list);
-      if (builderDraft.svgIcon === iconKey) {
+      const removedMatchData = target && (builderDraft.customIconData === target.svg || builderDraft.customIconData === target.imageUrl);
+      if (String(builderDraft.svgIcon || '') === String(iconKey) || removedMatchData) {
         builderDraft.svgIcon = '';
         builderDraft.customIconData = '';
       }
       renderSvgIconPicker();
       refreshPreviewOnly();
+      if (target && api() && typeof api().showToast === 'function') {
+        api().showToast(`🗑️ Deleted badge "${target.label || 'Custom'}"`);
+      }
+      return Boolean(target);
+    },
+    deleteSelectedCustomIcon() {
+      if (!builderDraft.svgIcon) return false;
+      return this.deleteCustomIcon(builderDraft.svgIcon);
+    },
+    clearAllUserCustomIcons() {
+      const before = loadCustomIcons();
+      const kept = before.filter(ci => Boolean(ci.marketplacePackId));
+      const removedIds = new Set(before.filter(ci => !ci.marketplacePackId).map(ci => String(ci.id)));
+      if (removedIds.size === 0) {
+        if (api() && typeof api().showToast === 'function') api().showToast('ℹ️ Remaining badges belong to installed Marketplace packs (manage them in Marketplace).');
+        return 0;
+      }
+      saveCustomIcons(kept);
+      if (removedIds.has(String(builderDraft.svgIcon || ''))) {
+        builderDraft.svgIcon = '';
+        builderDraft.customIconData = '';
+      }
+      renderSvgIconPicker();
+      refreshPreviewOnly();
+      if (api() && typeof api().showToast === 'function') api().showToast(`🧹 Removed ${removedIds.size} uploaded custom badge${removedIds.size === 1 ? '' : 's'}!`);
+      return removedIds.size;
+    },
+    async stripCurrentImageBg() {
+      const all = getAllSvgIcons();
+      const selEntry = builderDraft.svgIcon ? all[builderDraft.svgIcon] : null;
+      if (isSafeUrl(builderDraft.mediaUrl)) {
+        const cleaned = await stripImageBackgroundDataUrl(builderDraft.mediaUrl, { maxSize: 480, removeBg: true, forceGif: true });
+        if (cleaned && isSafeUrl(cleaned)) {
+          builderDraft.mediaUrl = cleaned;
+          refreshPreviewOnly();
+          if (api() && typeof api().showToast === 'function') api().showToast('🪄 Background removed from image!');
+          return true;
+        }
+      } else if (selEntry && selEntry.isCustom && selEntry.imageUrl) {
+        const cleaned = await stripImageBackgroundDataUrl(selEntry.imageUrl, { maxSize: 256, removeBg: true, forceGif: true });
+        if (cleaned && isSafeUrl(cleaned)) {
+          const list = loadCustomIcons();
+          const idx = list.findIndex(ci => String(ci.id) === String(builderDraft.svgIcon));
+          if (idx >= 0) {
+            list[idx].imageUrl = cleaned;
+            saveCustomIcons(list);
+          }
+          builderDraft.customIconData = cleaned;
+          renderSvgIconPicker();
+          refreshPreviewOnly();
+          if (api() && typeof api().showToast === 'function') api().showToast(`🪄 Cleaned background from "${selEntry.label}"!`);
+          return true;
+        }
+      }
+      if (api() && typeof api().showToast === 'function') api().showToast('ℹ️ Upload or attach a raster PNG/JPG icon first.');
+      return false;
     },
     selectSvgIcon(iconKey) {
       const all = getAllSvgIcons();
