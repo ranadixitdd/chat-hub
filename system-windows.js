@@ -71,6 +71,178 @@
   }
 
   /* --------------------------------------------------------------------------
+     16 NEON VECTOR & RELIC EMBLEM SVG ICONS (Recolorable & Sharp at Any Size)
+     -------------------------------------------------------------------------- */
+  const NEON_SVG_ICONS = {
+    demonic_eye: {
+      label: 'Devour Eye',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="mswEyeGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fef08a"/>
+            <stop offset="55%" stop-color="#ef4444"/>
+            <stop offset="100%" stop-color="#450a0a"/>
+          </radialGradient>
+        </defs>
+        <path d="M18 16L36 30L50 10L60 28L70 10L84 30L102 16L90 38L110 52L90 64L108 82L84 90L72 110L60 92L48 110L36 90L12 82L30 64L10 52L30 38Z" fill="url(#mswEyeGlow)" stroke="#fde047" stroke-width="2.5"/>
+        <circle cx="60" cy="60" r="34" fill="#450a0a" stroke="#facc15" stroke-width="2.2"/>
+        <path d="M36 42L44 50L50 38L60 48L70 38L76 50L84 42M36 78L44 70L50 82L60 72L70 82L76 70L84 78" stroke="#fca5a5" stroke-width="2" stroke-linecap="round"/>
+        <path d="M60 33C73 44 76 60 60 87C44 60 47 44 60 33Z" fill="#fef08a" stroke="#ef4444" stroke-width="2"/>
+        <ellipse cx="60" cy="60" rx="5.5" ry="15" fill="#7f1d1d" stroke="#fde047" stroke-width="1.5"/>
+        <circle cx="60" cy="60" r="3" fill="#fef08a"/>
+      </svg>`
+    },
+    gold_exchange: {
+      label: 'Coin Exchange',
+      svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 30L46 30L41 20L29 20Z" stroke="#fb923c" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M24 30C12 40 10 74 20 82H46" stroke="#fb923c" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="27" y="64" fill="#fdba74" font-family="sans-serif" font-weight="900" font-size="22">G</text>
+        <rect x="44" y="64" width="22" height="6" rx="1.5" stroke="#fdba74" stroke-width="2.2" fill="#07122e"/>
+        <rect x="44" y="71" width="22" height="6" rx="1.5" stroke="#fdba74" stroke-width="2.2" fill="#07122e"/>
+        <rect x="44" y="78" width="22" height="6" rx="1.5" stroke="#fdba74" stroke-width="2.2" fill="#07122e"/>
+        <path d="M74 52H88M83 47L89 52L83 57" stroke="#e0f2fe" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="97" y="34" width="42" height="36" rx="2" stroke="#4ade80" stroke-width="2.6"/>
+        <path d="M101 75H142V40M105 80H146V45" stroke="#4ade80" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="118" cy="52" r="8" stroke="#86efac" stroke-width="2.4"/>
+        <text x="114" y="56" fill="#86efac" font-size="11" font-weight="900">$</text>
+      </svg>`
+    },
+    neon_miners: {
+      label: 'Guild Miners',
+      svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#bae6fd" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="42" cy="24" r="6" fill="rgba(56,189,248,0.28)"/>
+          <path d="M35 34L44 34L54 55L44 82M42 54L30 82M37 42L24 55"/>
+          <path d="M15 44C20 34 32 34 38 40M26 39L14 68" stroke="#7dd3fc" stroke-width="2.6"/>
+          <circle cx="80" cy="24" r="6" fill="rgba(56,189,248,0.28)"/>
+          <path d="M73 34L82 34L92 55L82 82M80 54L68 82M75 42L62 55"/>
+          <path d="M53 44C58 34 70 34 76 40M64 39L52 68" stroke="#7dd3fc" stroke-width="2.6"/>
+          <circle cx="118" cy="24" r="6" fill="rgba(56,189,248,0.28)"/>
+          <path d="M111 34L120 34L130 55L120 82M118 54L106 82M113 42L100 55"/>
+          <path d="M91 44C96 34 108 34 114 40M102 39L90 68" stroke="#7dd3fc" stroke-width="2.6"/>
+        </g>
+        <path d="M16 74L20 71M56 76L60 72M96 74L100 71M24 81L28 79" stroke="#facc15" stroke-width="2" stroke-linecap="round"/>
+      </svg>`
+    },
+    death_skull: {
+      label: 'Death Penalty',
+      svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M80 12C65 12 56 21 56 34C56 42 60 47 64 51V58H96V51C100 47 104 42 104 34C104 21 95 12 80 12Z" fill="#ef4444" stroke="#fca5a5" stroke-width="2"/>
+        <circle cx="71" cy="35" r="5" fill="#07122e"/><circle cx="89" cy="35" r="5" fill="#07122e"/>
+        <path d="M77 45L80 40L83 45H77Z" fill="#07122e"/>
+        <path d="M70 53V58M77 53V58M83 53V58M90 53V58" stroke="#07122e" stroke-width="2"/>
+        <circle cx="32" cy="79" r="9" stroke="#93c5fd" stroke-width="2.6"/>
+        <path d="M44 74H128C134 74 134 83 128 83H86L84 86H44C40 86 40 74 44 74Z" stroke="#93c5fd" stroke-width="2.6" fill="rgba(56,189,248,0.12)"/>
+      </svg>`
+    },
+    cursed_spear: {
+      label: 'Cursed Spear',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 10L74 42L66 46V106L60 112L54 106V46L46 42Z" fill="rgba(239,68,68,0.35)" stroke="#fde047" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M36 46L60 28L84 46L60 64Z" stroke="#ef4444" stroke-width="2.4"/>
+        <circle cx="60" cy="46" r="5" fill="#fef08a"/>
+      </svg>`
+    },
+    shadow_crown: {
+      label: 'Monarch Crown',
+      svg: `<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 76L26 30L46 50L60 18L74 50L94 30L102 76H18Z" stroke="currentColor" stroke-width="3" fill="rgba(168,85,247,0.22)" stroke-linejoin="round"/>
+        <rect x="20" y="80" width="80" height="8" rx="3" stroke="currentColor" stroke-width="2.5"/>
+        <circle cx="60" cy="54" r="5" fill="#fde047"/>
+      </svg>`
+    },
+    crimson_fangs: {
+      label: 'Twin Daggers',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22 96L42 74L32 66L86 16L74 52L96 96" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M98 96L78 74L88 66L34 16L46 52L24 96" stroke="#ef4444" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    void_gate: {
+      label: 'Dungeon Gate',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="60" cy="60" rx="34" ry="46" stroke="currentColor" stroke-width="3"/>
+        <ellipse cx="60" cy="60" rx="22" ry="34" stroke="#a855f7" stroke-width="2.2" stroke-dasharray="6 4"/>
+        <path d="M60 28C72 44 72 76 60 92C48 76 48 44 60 28Z" fill="rgba(56,189,248,0.25)" stroke="#fde047" stroke-width="1.8"/>
+      </svg>`
+    },
+    broken_chains: {
+      label: 'Seal Broken',
+      svg: `<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="12" y="38" width="32" height="20" rx="9" transform="rotate(-18 28 48)" stroke="currentColor" stroke-width="3"/>
+        <rect x="76" y="42" width="32" height="20" rx="9" transform="rotate(18 92 52)" stroke="currentColor" stroke-width="3"/>
+        <path d="M54 20L60 44L70 30M50 82L58 58L66 74" stroke="#fde047" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    aegis_shield: {
+      label: 'Aegis Shield',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 14L98 30V58C98 82 78 99 60 108C42 99 22 82 22 58V30L60 14Z" fill="rgba(0,240,255,0.16)" stroke="currentColor" stroke-width="3"/>
+        <path d="M60 28V92M36 52H84" stroke="currentColor" stroke-width="2.2" stroke-opacity="0.7"/>
+      </svg>`
+    },
+    soul_flame: {
+      label: 'Soul Flame',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 14C76 34 92 50 92 72C92 92 78 106 60 106C42 106 28 92 28 72C28 54 42 40 48 32C48 44 54 48 58 46C54 32 56 22 60 14Z" fill="rgba(239,68,68,0.28)" stroke="#facc15" stroke-width="2.8"/>
+        <path d="M60 54C68 64 72 72 72 80C72 88 66 94 60 94C54 94 48 88 48 80C48 70 54 62 60 54Z" fill="#ef4444" stroke="#fef08a" stroke-width="1.8"/>
+      </svg>`
+    },
+    constellation_orb: {
+      label: 'Constellation',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="38" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/>
+        <path d="M60 16L68 50L102 58L68 66L60 100L52 66L18 58L52 50Z" fill="rgba(250,204,21,0.24)" stroke="#fde047" stroke-width="2.4"/>
+      </svg>`
+    },
+    hourglass_doom: {
+      label: 'Doom Timer',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M30 18H90M30 102H90M38 18C38 44 56 54 60 60C64 54 82 44 82 18M38 102C38 76 56 66 60 60C64 66 82 76 82 102" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+        <path d="M46 96L60 76L74 96H46Z" fill="rgba(239,68,68,0.55)"/>
+      </svg>`
+    },
+    guild_crest: {
+      label: 'Guild Crest',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 14V104M46 82H74M20 34C28 54 42 62 56 64M100 34C92 54 78 62 64 64M28 56C36 72 46 78 56 80M92 56C84 72 74 78 64 80" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>
+      </svg>`
+    },
+    heart_lock: {
+      label: 'Soul Pact',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 98C60 98 20 74 20 44C20 28 32 20 44 20C52 20 57 25 60 30C63 25 68 20 76 20C88 20 100 28 100 44C100 74 60 98 60 98Z" fill="rgba(236,72,153,0.22)" stroke="#f472b6" stroke-width="3"/>
+        <rect x="49" y="54" width="22" height="18" rx="3" stroke="#fde047" stroke-width="2.4"/>
+        <path d="M53 54V48C53 43 67 43 67 48V54" stroke="#fde047" stroke-width="2.4"/>
+      </svg>`
+    },
+    level_wings: {
+      label: 'Ascension',
+      svg: `<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 76V18M48 30L60 16L72 30M14 26C24 44 40 52 54 54M106 26C96 44 80 52 66 54M22 48C32 62 44 68 54 70M98 48C88 62 76 68 66 70" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    }
+  };
+
+  function getThornFrameSvg() {
+    return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="mswThornGold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a"/>
+          <stop offset="50%" stop-color="#facc15"/>
+          <stop offset="100%" stop-color="#fb923c"/>
+        </linearGradient>
+      </defs>
+      <path d="M10 14 L28 3 L44 13 L64 2 L84 12 L106 2 L128 12 L150 2 L170 12 L194 2 L216 12 L238 2 L258 13 L278 3 L310 14 L318 40 L306 62 L318 88 L307 116 L318 148 L307 180 L318 214 L307 248 L318 282 L307 316 L318 350 L310 386 L282 397 L258 386 L234 397 L208 387 L182 397 L158 387 L132 397 L106 387 L80 397 L56 386 L34 397 L10 386 L2 350 L13 316 L2 282 L13 248 L2 214 L13 180 L2 148 L13 116 L2 88 L13 62 L2 40 Z"
+        fill="none" stroke="url(#mswThornGold)" stroke-width="3.4" stroke-linejoin="round"/>
+      <path d="M16 18 L34 26 L22 44 M304 18 L286 26 L298 44 M16 382 L34 374 L22 356 M304 382 L286 374 L298 356"
+        fill="none" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="9" width="302" height="382" rx="14" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="10 4"/>
+    </svg>`;
+  }
+
+  /* --------------------------------------------------------------------------
      7 CURATED MANHWA SYSTEM THEMES (Clean helpers prevent id/label leakage)
      -------------------------------------------------------------------------- */
   const THEMES = {
@@ -946,6 +1118,110 @@
         stampColor: '#facc15',
         footerText: 'Thank you for your patronage!'
       }
+    },
+    {
+      id: 'relic',
+      icon: '🔮',
+      name: 'Relic / Ability',
+      desc: 'Ornate DEVOUR-style skill card',
+      config: {
+        presetId: 'relic',
+        ...themeProps('crimson_danger'),
+        accentColor: '#fde047',
+        secondaryColor: '#ef4444',
+        bgColor: '#2d0407',
+        bgOpacity: 0.98,
+        frameStyle: 'demonic_thorn',
+        fontStyle: 'serif',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: true,
+        starburst: true,
+        hideHeader: true,
+        cardStyle: 'relic',
+        svgIcon: 'demonic_eye',
+        customFrameUrl: '',
+        transparentBg: false,
+        animation: 'impact',
+        sfx: 'vineboom',
+        headerIcon: '👁️',
+        headerTitle: 'DEVOUR',
+        headerBadge: '',
+        currencyText: '',
+        subtitle: 'UNIQUE ABILITY OF THE SPEAR OF LIFE',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: 'WHEN ALL VITALITY IS LOST, IT INDISCRIMINATELY ABSORBS ALL SURROUNDING AURA.',
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
+        bars: [],
+        statsCols: 2,
+        stats: [],
+        pills: [],
+        timerEnabled: false,
+        timerSeconds: 0,
+        timerLabel: '',
+        buttons: [],
+        stampText: '',
+        stampColor: '#fde047',
+        footerText: ''
+      }
+    },
+    {
+      id: 'codex',
+      icon: '📘',
+      name: 'Codex / Rule',
+      desc: 'Blueprint diagram & bullet lore',
+      config: {
+        presetId: 'codex',
+        ...themeProps('hunter_blue'),
+        accentColor: '#38bdf8',
+        secondaryColor: '#60a5fa',
+        bgColor: '#07122e',
+        bgOpacity: 0.98,
+        frameStyle: 'blueprint_double',
+        fontStyle: 'hud',
+        scanlines: false,
+        gridPattern: false,
+        sparkles: false,
+        starburst: false,
+        hideHeader: true,
+        cardStyle: 'codex',
+        svgIcon: 'gold_exchange',
+        customFrameUrl: '',
+        transparentBg: false,
+        animation: 'hologram',
+        sfx: 'scifi',
+        headerIcon: '📘',
+        headerTitle: '[INTERVERSE MONEY EXCHANGE]',
+        headerBadge: '',
+        currencyText: '',
+        subtitle: '',
+        mediaUrl: '',
+        mediaLayout: 'none',
+        mediaCaption: '',
+        bodyText: "- ALL THE WORLDS IN INTERVERSE USE A CURRENCY CALLED 'GOLD'.\n- ONE CAN EXCHANGE THE GOLD INTO CASH BY PAYING A CERTAIN FEE.\n- ONLY AFTER CONFIRMING ONE'S AGE AND PROVING ONESELF AN ADULT MAY SOMEONE USE THE EXCHANGE SYSTEM.",
+        levelTransition: '',
+        unlockedAbility: '',
+        statBoosts: [],
+        inventoryItems: [],
+        shopItems: [],
+        bars: [],
+        statsCols: 2,
+        stats: [],
+        pills: [],
+        timerEnabled: false,
+        timerSeconds: 0,
+        timerLabel: '',
+        buttons: [],
+        stampText: '',
+        stampColor: '#38bdf8',
+        footerText: ''
+      }
     }
   ];
 
@@ -973,6 +1249,12 @@
     if (!merged.bodyText && raw.bodyText === undefined && msgOrCfg && msgOrCfg.text && !msgOrCfg.systemConfig) {
       merged.bodyText = msgOrCfg.text;
     }
+    merged.cardStyle = ['relic', 'codex'].includes(merged.cardStyle) ? merged.cardStyle : 'standard';
+    merged.svgIcon = (merged.svgIcon && NEON_SVG_ICONS[merged.svgIcon]) ? merged.svgIcon : '';
+    merged.customFrameUrl = isSafeUrl(merged.customFrameUrl) ? String(merged.customFrameUrl).trim() : '';
+    merged.hideHeader = Boolean(merged.hideHeader);
+    merged.starburst = Boolean(merged.starburst);
+    merged.transparentBg = Boolean(merged.transparentBg);
     merged.bars = Array.isArray(merged.bars) ? merged.bars.map(b => ({
       label: String(b.label || 'STAT'),
       value: clampPct(b.value, 100),
@@ -1104,9 +1386,13 @@
       'glow-' + (cfg.glowIntensity || 'high'),
       'anim-' + (cfg.animation || 'hologram')
     ];
+    if (cfg.cardStyle && cfg.cardStyle !== 'standard') classes.push('is-card-centered', 'card-' + cfg.cardStyle);
+    if (cfg.hideHeader) classes.push('has-hidden-header');
     if (cfg.scanlines) classes.push('has-scanlines');
     if (cfg.gridPattern) classes.push('has-grid');
+    if (cfg.starburst) classes.push('has-starburst');
     if (cfg.sparkles) classes.push('has-sparkles');
+    if (cfg.transparentBg) classes.push('is-transparent-bg');
     if (cfg.timerEnabled && Number(cfg.timerSeconds) > 0 && Number(cfg.timerSeconds) <= 10) {
       classes.push('is-timer-urgent');
     }
@@ -1117,10 +1403,15 @@
     el.style.setProperty('--sys-bg', hexToRgba(cfg.bgColor || '#041226', cfg.bgOpacity ?? 0.94));
     el.title = previewMode ? 'Live System Window Preview' : 'Click to customize System Window';
 
-    const hasMedia = cfg.mediaLayout && cfg.mediaLayout !== 'none' && isSafeUrl(cfg.mediaUrl);
+    const svgObj = cfg.svgIcon && NEON_SVG_ICONS[cfg.svgIcon] ? NEON_SVG_ICONS[cfg.svgIcon] : null;
+    const hasImgMedia = isSafeUrl(cfg.mediaUrl);
+    const hasMedia = (cfg.mediaLayout && cfg.mediaLayout !== 'none' && hasImgMedia) || (cfg.cardStyle === 'standard' && svgObj && !hasImgMedia && cfg.mediaLayout !== 'none');
+    const artworkHtml = hasImgMedia
+      ? `<img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">`
+      : (svgObj ? svgObj.svg : '');
     const mediaHtml = hasMedia ? `
-      <div class="msw-media-wrap layout-${esc(cfg.mediaLayout)}">
-        <img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">
+      <div class="msw-media-wrap layout-${esc(cfg.mediaLayout || 'icon_title')}">
+        ${hasImgMedia ? `<img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">` : `<div style="width:58px;height:58px;padding:4px;color:var(--sys-accent);">${svgObj ? svgObj.svg : ''}</div>`}
         ${cfg.mediaCaption ? `<div class="msw-media-caption">${esc(cfg.mediaCaption)}</div>` : ''}
       </div>
     ` : '';
@@ -1246,26 +1537,48 @@
 
     const topBannerMedia = (hasMedia && cfg.mediaLayout === 'banner_top') ? mediaHtml : '';
     const sideMedia = (hasMedia && cfg.mediaLayout !== 'banner_top') ? mediaHtml : '';
+    const thornSvgHtml = cfg.frameStyle === 'demonic_thorn' ? getThornFrameSvg() : '';
+    const customFrameHtml = isSafeUrl(cfg.customFrameUrl) ? `<img class="msw-custom-frame-img" src="${esc(cfg.customFrameUrl)}" alt="">` : '';
 
-    el.innerHTML = `
-      <div class="msw-corner tl"></div>
-      <div class="msw-corner tr"></div>
-      <div class="msw-corner bl"></div>
-      <div class="msw-corner br"></div>
-      <div class="msw-fx-overlay scanlines"></div>
-      <div class="msw-fx-overlay grid"></div>
-      ${stampHtml}
-      <div class="msw-inner">
-        <div class="msw-header">
-          <div class="msw-header-left">
-            ${cfg.headerIcon ? `<span class="msw-header-icon">${esc(cfg.headerIcon)}</span>` : ''}
-            <span class="msw-header-title">${esc(cfg.headerTitle || 'SYSTEM WINDOW')}</span>
+    let mainInnerBodyHtml = '';
+    if (cfg.cardStyle === 'relic') {
+      const emblemVisual = hasImgMedia
+        ? `<img src="${esc(cfg.mediaUrl)}" alt="${esc(cfg.headerTitle)}">`
+        : (svgObj ? svgObj.svg : `<span style="font-size:52px;">${esc(cfg.headerIcon || '👁️')}</span>`);
+      mainInnerBodyHtml = `
+        <div class="msw-relic-stage">
+          <div class="msw-emblem-box ${cfg.frameStyle === 'demonic_thorn' ? 'is-thorn-emblem' : ''}">
+            ${emblemVisual}
           </div>
-          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
-            ${cfg.currencyText ? `<span class="msw-currency-pill">${esc(cfg.currencyText)}</span>` : ''}
-            ${cfg.headerBadge ? `<span class="msw-badge">${esc(cfg.headerBadge)}</span>` : ''}
-          </div>
+          ${cfg.headerTitle ? `<div class="msw-relic-title">${esc(cfg.headerTitle)}</div>` : ''}
+          ${cfg.subtitle ? `<div class="msw-relic-subtitle">${esc(cfg.subtitle)}</div>` : ''}
+          ${cfg.bodyText ? `<div class="msw-relic-desc">${esc(cfg.bodyText)}</div>` : ''}
         </div>
+        ${levelUpHtml}
+        ${inventoryHtml}
+        ${shopHtml}
+        ${barsHtml}
+        ${statsHtml}
+      `;
+    } else if (cfg.cardStyle === 'codex') {
+      const diagramVisual = hasImgMedia
+        ? `<img src="${esc(cfg.mediaUrl)}" alt="${esc(cfg.headerTitle)}">`
+        : (svgObj ? svgObj.svg : `<span style="font-size:48px;">${esc(cfg.headerIcon || '📘')}</span>`);
+      mainInnerBodyHtml = `
+        <div class="msw-codex-stage">
+          <div class="msw-codex-diagram">${diagramVisual}</div>
+          ${cfg.headerTitle ? `<div class="msw-codex-title">${esc(cfg.headerTitle)}</div>` : ''}
+          ${cfg.subtitle ? `<div class="msw-subtitle" style="text-align:center;">${esc(cfg.subtitle)}</div>` : ''}
+          ${cfg.bodyText ? `<div class="msw-codex-rules">${esc(cfg.bodyText)}</div>` : ''}
+        </div>
+        ${levelUpHtml}
+        ${inventoryHtml}
+        ${shopHtml}
+        ${barsHtml}
+        ${statsHtml}
+      `;
+    } else {
+      mainInnerBodyHtml = `
         ${cfg.subtitle ? `<div class="msw-subtitle">${esc(cfg.subtitle)}</div>` : ''}
         ${topBannerMedia}
         <div class="msw-main-split ${splitClass}">
@@ -1279,6 +1592,32 @@
             ${statsHtml}
           </div>
         </div>
+      `;
+    }
+
+    el.innerHTML = `
+      <div class="msw-corner tl"></div>
+      <div class="msw-corner tr"></div>
+      <div class="msw-corner bl"></div>
+      <div class="msw-corner br"></div>
+      <div class="msw-fx-overlay scanlines"></div>
+      <div class="msw-fx-overlay grid"></div>
+      <div class="msw-fx-overlay starburst"></div>
+      ${thornSvgHtml}
+      ${customFrameHtml}
+      ${stampHtml}
+      <div class="msw-inner">
+        <div class="msw-header">
+          <div class="msw-header-left">
+            ${cfg.headerIcon ? `<span class="msw-header-icon">${esc(cfg.headerIcon)}</span>` : ''}
+            <span class="msw-header-title">${esc(cfg.headerTitle || 'SYSTEM WINDOW')}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+            ${cfg.currencyText ? `<span class="msw-currency-pill">${esc(cfg.currencyText)}</span>` : ''}
+            ${cfg.headerBadge ? `<span class="msw-badge">${esc(cfg.headerBadge)}</span>` : ''}
+          </div>
+        </div>
+        ${mainInnerBodyHtml}
         ${pillsHtml}
         ${timerHtml}
         ${btnsHtml}
@@ -1412,7 +1751,11 @@
         } else if (key === 'badge') {
           cfg.headerBadge = val;
         } else if (key === 'icon') {
-          cfg.headerIcon = val;
+          if (NEON_SVG_ICONS[val]) {
+            cfg.svgIcon = val;
+          } else {
+            cfg.headerIcon = val;
+          }
         }
       } else {
         cleanParts.push(p);
@@ -1506,6 +1849,34 @@
         const parsed = JSON.parse(fullMatch[1]);
         return makeMsg(parsed, Number(parsed.holdMs) || 1900, idx);
       } catch (e) {}
+    }
+
+    const relicMatch = line.match(/^\[SYS_RELIC:\s*(.+)\]$/i);
+    if (relicMatch) {
+      const rawParts = relicMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'relic').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      base.headerTitle = parts[0] || 'DEVOUR';
+      if (parts.length >= 3) {
+        base.subtitle = parts[1] || '';
+        base.bodyText = parts.slice(2).join('\n').replace(/\\n/g, '\n');
+      } else {
+        base.subtitle = '';
+        base.bodyText = (parts[1] || '').replace(/\\n/g, '\n');
+      }
+      return makeMsg(base, 2400, idx);
+    }
+
+    const codexMatch = line.match(/^\[SYS_CODEX:\s*(.+)\]$/i);
+    if (codexMatch) {
+      const rawParts = codexMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'codex').config);
+      const parts = applyOptionalTagModifiers(base, rawParts);
+      const rawTitle = parts[0] || 'SYSTEM CODEX';
+      base.headerTitle = /^\[.+\]$/.test(rawTitle) ? rawTitle : `[${rawTitle}]`;
+      const rawRules = parts.slice(1).join('\n').replace(/\\n/g, '\n').replace(/\s*;;\s*|\s*;\s+/g, '\n').trim();
+      base.bodyText = rawRules || '- ALL SYSTEM RULES APPLY EQUALLY.';
+      return makeMsg(base, 2400, idx);
     }
 
     const statusMatch = line.match(/^\[SYS_STATUS:\s*(.+)\]$/i);
@@ -1753,6 +2124,12 @@
     if (c.themeId && (!defPreset || c.themeId !== defPreset.config.themeId) && c.themeId !== 'custom') {
       mods.push(`theme=${c.themeId}`);
     }
+    if (c.frameStyle && (!defPreset || c.frameStyle !== defPreset.config.frameStyle)) {
+      mods.push(`frame=${c.frameStyle}`);
+    }
+    if (c.svgIcon && (!defPreset || c.svgIcon !== defPreset.config.svgIcon)) {
+      mods.push(`icon=${c.svgIcon}`);
+    }
     if (c.stampText && (!defPreset || c.stampText !== defPreset.config.stampText)) {
       mods.push(`stamp=${c.stampText}`);
     }
@@ -1820,6 +2197,12 @@
       const statSeg = c.stats.map(s => `${s.label}:${s.value}`).join(', ');
       return `[SYS_ITEM: ${[c.headerTitle, c.headerBadge, statSeg, (c.bodyText || '').replace(/\n/g, ' ')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
+    if ((c.cardStyle === 'relic' || c.presetId === 'relic') && !c.mediaUrl?.startsWith('data:') && !c.customFrameUrl?.startsWith('data:')) {
+      return `[SYS_RELIC: ${[c.headerTitle, c.subtitle, (c.bodyText || '').replace(/\n/g, '\\n')].filter(Boolean).join(' | ')}${modSuffix}]`;
+    }
+    if ((c.cardStyle === 'codex' || c.presetId === 'codex') && !c.mediaUrl?.startsWith('data:') && !c.customFrameUrl?.startsWith('data:')) {
+      return `[SYS_CODEX: ${[c.headerTitle, (c.bodyText || '').replace(/\n/g, '\\n')].filter(Boolean).join(' | ')}${modSuffix}]`;
+    }
 
     return `[SYSWINDOW: ${JSON.stringify(c)}]`;
   }
@@ -1865,7 +2248,7 @@
 
         <div class="syswin-body" id="sysWinBuilderBody">
           <div class="syswin-tab-panel active" id="sysTabPanel_presets">
-            <div style="font-size:11px; color:#94a3b8; font-weight:700;">Choose any of the 17 Manhwa System Windows (100% editable afterwards):</div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:700;">Choose any of the 19 Manhwa System Windows (100% editable afterwards):</div>
             <div class="syswin-preset-grid" id="sysWinPresetGrid"></div>
             <div style="margin-top:6px; border-top:1px solid #1e293b; padding-top:8px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -1942,6 +2325,26 @@
                 <input type="text" class="syswin-input" id="sysInpMediaUrl" placeholder="assets/characters/... or https://...">
               </div>
               <div class="syswin-media-picker-strip" id="sysWinMediaPickerStrip"></div>
+            </div>
+
+            <div style="background:#0f172a; border:1px solid #1e3a5f; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:12px; font-weight:800; color:#facc15;">✨ Built-In Neon Vector & Relic Icons (16 Icons)</span>
+                <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.selectSvgIcon('')">✕ No Vector Icon</button>
+              </div>
+              <div class="syswin-svg-picker-grid" id="sysWinSvgPickerGrid"></div>
+            </div>
+
+            <div style="background:#131c31; border:1px solid #293548; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:12px; font-weight:800; color:#f472b6;">🪧 Custom PNG Frame Border Overlay</span>
+                <div style="display:flex; gap:5px;">
+                  <input type="file" id="sysWinCustomFrameInput" accept="image/*" style="display:none;">
+                  <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysWinCustomFrameInput').click()">📁 Upload Frame PNG</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.clearCustomFrame()">✕ Clear</button>
+                </div>
+              </div>
+              <input type="text" class="syswin-input" id="sysInpCustomFrameUrl" placeholder="Paste transparent PNG frame URL or upload above...">
             </div>
           </div>
 
@@ -2040,6 +2443,8 @@
                   <option value="tech_brackets">Tech L-Brackets (Solo Hunter)</option>
                   <option value="cyber_bevel">Cut-Corner Cyber Plate</option>
                   <option value="imperial_ornate">Ornate Imperial / Murim</option>
+                  <option value="demonic_thorn">🔥 Demonic Thorn Relic (SVG Frame)</option>
+                  <option value="blueprint_double">📐 Twin-Line Blueprint Codex</option>
                   <option value="glitch_corrupted">Corrupted Glitch Frame</option>
                   <option value="glass_hud">Glassmorphic Minimal HUD</option>
                   <option value="comic_ink">Bold Comic Ink Box</option>
@@ -2054,6 +2459,14 @@
                   <option value="mono">Hacker Terminal Monospace</option>
                 </select>
               </div>
+            </div>
+            <div>
+              <label class="syswin-label">Card Layout Archetype</label>
+              <select class="syswin-select" id="sysSelCardStyle">
+                <option value="standard">Standard Manhwa HUD Window</option>
+                <option value="relic">🔮 Centered Relic / Skill Emblem Card (DEVOUR Style)</option>
+                <option value="codex">📘 System Codex Diagram + Rule Card (Interverse Style)</option>
+              </select>
             </div>
             <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px;">
               <div>
@@ -2077,6 +2490,9 @@
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkScanlines"> Scanlines</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkGrid"> Tactical Grid</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkSparkles"> Corner Sparkles</label>
+              <label class="syswin-chip-btn"><input type="checkbox" id="sysChkStarburst"> Starburst Rays</label>
+              <label class="syswin-chip-btn"><input type="checkbox" id="sysChkHideHeader"> Hide Header Bar</label>
+              <label class="syswin-chip-btn"><input type="checkbox" id="sysChkTransparentBg"> Transparent Card Bg</label>
             </div>
             <div class="syswin-field-row">
               <div>
@@ -2158,6 +2574,7 @@
     setVal('sysSelMediaLayout', builderDraft.mediaLayout || 'none');
     setVal('sysInpMediaCaption', builderDraft.mediaCaption || '');
     setVal('sysInpMediaUrl', builderDraft.mediaUrl || '');
+    setVal('sysInpCustomFrameUrl', builderDraft.customFrameUrl || '');
 
     setVal('sysSelStatsCols', String(builderDraft.statsCols || 2));
     setVal('sysInpPills', (builderDraft.pills || []).join(', '));
@@ -2170,6 +2587,7 @@
 
     setVal('sysSelFrameStyle', builderDraft.frameStyle || 'tech_brackets');
     setVal('sysSelFontStyle', builderDraft.fontStyle || 'hud');
+    setVal('sysSelCardStyle', builderDraft.cardStyle || 'standard');
     setVal('sysInpAccentColor', builderDraft.accentColor || '#00f0ff');
     setVal('sysInpSecondaryColor', builderDraft.secondaryColor || '#38bdf8');
     setVal('sysInpBgColor', builderDraft.bgColor || '#041226');
@@ -2177,6 +2595,9 @@
     setChk('sysChkScanlines', builderDraft.scanlines);
     setChk('sysChkGrid', builderDraft.gridPattern);
     setChk('sysChkSparkles', builderDraft.sparkles);
+    setChk('sysChkStarburst', builderDraft.starburst);
+    setChk('sysChkHideHeader', builderDraft.hideHeader);
+    setChk('sysChkTransparentBg', builderDraft.transparentBg);
     setVal('sysSelAnimation', builderDraft.animation || 'hologram');
     setVal('sysSelSfx', builderDraft.sfx !== undefined ? builderDraft.sfx : 'scifi');
     setVal('sysSelGlow', builderDraft.glowIntensity || 'high');
@@ -2186,6 +2607,7 @@
     renderSavedPresetsList();
     renderThemeChips();
     renderMediaPickerStrip();
+    renderSvgIconPicker();
     renderBoostsEditor();
     renderInventoryEditor();
     renderShopEditor();
@@ -2276,6 +2698,17 @@
         refreshPreviewOnly();
       };
     });
+  }
+
+  function renderSvgIconPicker() {
+    const grid = document.getElementById('sysWinSvgPickerGrid');
+    if (!grid) return;
+    grid.innerHTML = Object.entries(NEON_SVG_ICONS).map(([key, item]) => `
+      <button type="button" class="syswin-svg-icon-btn ${builderDraft.svgIcon === key ? 'active' : ''}" data-svg-key="${esc(key)}" title="${esc(item.label)}" onclick="window.ChatHubSystemWindows.selectSvgIcon('${esc(key)}')">
+        ${item.svg}
+        <span>${esc(item.label)}</span>
+      </button>
+    `).join('');
   }
 
   function renderBoostsEditor() {
@@ -2460,7 +2893,9 @@
     bindInput('sysInpUnlockedAbility', 'unlockedAbility');
     bindInput('sysInpMediaCaption', 'mediaCaption');
     bindInput('sysInpMediaUrl', 'mediaUrl');
+    bindInput('sysInpCustomFrameUrl', 'customFrameUrl');
     bindChange('sysSelMediaLayout', 'mediaLayout');
+    bindChange('sysSelCardStyle', 'cardStyle');
 
     bindChange('sysSelStatsCols', 'statsCols', v => Number(v) || 2);
     bindInput('sysInpPills', 'pills', v => String(v).split(',').map(s => s.trim()).filter(Boolean));
@@ -2480,6 +2915,9 @@
     bindChange('sysChkScanlines', 'scanlines');
     bindChange('sysChkGrid', 'gridPattern');
     bindChange('sysChkSparkles', 'sparkles');
+    bindChange('sysChkStarburst', 'starburst');
+    bindChange('sysChkHideHeader', 'hideHeader');
+    bindChange('sysChkTransparentBg', 'transparentBg');
     bindChange('sysSelAnimation', 'animation');
     bindChange('sysSelSfx', 'sfx');
     bindChange('sysSelGlow', 'glowIntensity');
@@ -2507,6 +2945,23 @@
           const urlInp = document.getElementById('sysInpMediaUrl');
           if (urlInp) urlInp.value = '(Uploaded Image Attached)';
           renderMediaPickerStrip();
+          refreshPreviewOnly();
+        };
+        reader.readAsDataURL(f);
+        e.target.value = '';
+      });
+    }
+
+    const frameFileInp = document.getElementById('sysWinCustomFrameInput');
+    if (frameFileInp) {
+      frameFileInp.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          builderDraft.customFrameUrl = ev.target.result;
+          const urlInp = document.getElementById('sysInpCustomFrameUrl');
+          if (urlInp) urlInp.value = '(Uploaded Custom Frame Attached)';
           refreshPreviewOnly();
         };
         reader.readAsDataURL(f);
@@ -2598,6 +3053,7 @@
   window.ChatHubSystemWindows = {
     THEMES,
     PRESETS,
+    NEON_SVG_ICONS,
     normalizeConfig,
     renderSystemWindowElement,
     animateBarsInElement,
@@ -2618,6 +3074,28 @@
     selectTheme(themeId) {
       builderDraft = applyThemeToConfig(builderDraft, themeId);
       syncInputsFromDraft();
+    },
+    selectSvgIcon(iconKey) {
+      builderDraft.svgIcon = (iconKey && NEON_SVG_ICONS[iconKey]) ? iconKey : '';
+      if (builderDraft.svgIcon) {
+        builderDraft.mediaUrl = '';
+        const urlInp = document.getElementById('sysInpMediaUrl');
+        if (urlInp) urlInp.value = '';
+        if (builderDraft.cardStyle === 'standard' && (!builderDraft.mediaLayout || builderDraft.mediaLayout === 'none')) {
+          builderDraft.mediaLayout = 'icon_title';
+          const sel = document.getElementById('sysSelMediaLayout');
+          if (sel) sel.value = 'icon_title';
+        }
+      }
+      renderSvgIconPicker();
+      renderMediaPickerStrip();
+      refreshPreviewOnly();
+    },
+    clearCustomFrame() {
+      builderDraft.customFrameUrl = '';
+      const inp = document.getElementById('sysInpCustomFrameUrl');
+      if (inp) inp.value = '';
+      refreshPreviewOnly();
     },
     clearImage() {
       builderDraft.mediaUrl = '';

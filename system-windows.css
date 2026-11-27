@@ -163,7 +163,56 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   box-shadow: 4px 4px 0 #020617, 0 0 18px color-mix(in srgb, var(--sys-accent) 30%, transparent);
 }
 
-/* --- SURFACE TEXTURES (SCANLINES / GRID / SPARKLES) --- */
+/* 7. Demonic Thorn / Eldritch Bone Frame (Image 1 Relic Card Style) */
+.manhwa-sys-win.frame-demonic_thorn {
+  border-radius: 20px;
+  border: 3px solid var(--sys-accent);
+  padding: 22px 18px;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--sys-accent-2) 80%, transparent),
+              0 0 46px color-mix(in srgb, var(--sys-accent-2) 44%, transparent),
+              inset 0 0 28px rgba(127, 29, 29, 0.78);
+}
+
+/* 8. Twin-Line Blueprint Codex Frame (Image 2 Illustrated Codex Style) */
+.manhwa-sys-win.frame-blueprint_double {
+  border-radius: 2px;
+  border: 2px solid color-mix(in srgb, var(--sys-accent) 90%, #ffffff 10%);
+  outline: 1.5px solid color-mix(in srgb, var(--sys-accent) 70%, transparent);
+  outline-offset: -7px;
+  padding: 20px 17px 16px;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--sys-accent) 38%, transparent),
+              inset 0 0 24px color-mix(in srgb, var(--sys-accent) 16%, transparent);
+}
+
+/* Transparent Outer Box Mode (for self-made full PNG frames with spiky/transparent edges) */
+.manhwa-sys-win.is-transparent-bg {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Custom Transparent PNG Frame Overlay & Inline Demonic Thorn SVG Overlay */
+.msw-custom-frame-img,
+.msw-thorn-svg-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+.msw-custom-frame-img {
+  object-fit: fill;
+  display: block;
+}
+.msw-thorn-svg-frame {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--sys-accent-2) 90%, #ef4444));
+}
+
+/* --- SURFACE TEXTURES (SCANLINES / GRID / STARBURST / SPARKLES) --- */
 .msw-fx-overlay {
   position: absolute;
   inset: 0;
@@ -181,18 +230,27 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 }
 .manhwa-sys-win.has-grid .msw-fx-overlay.grid {
   background-image:
-    linear-gradient(color-mix(in srgb, var(--sys-accent) 9%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--sys-accent) 9%, transparent) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--sys-accent) 11%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--sys-accent) 11%, transparent) 1px, transparent 1px);
   background-size: 18px 18px;
 }
+.manhwa-sys-win.has-starburst .msw-fx-overlay.starburst {
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--sys-accent-2) 34%, transparent) 0%, rgba(12, 2, 4, 0.88) 78%),
+    repeating-conic-gradient(from 0deg at 50% 34%, color-mix(in srgb, var(--sys-accent) 18%, transparent) 0deg 2.5deg, transparent 2.5deg 9.5deg);
+}
 .manhwa-sys-win.has-sparkles::after {
-  content: '✦  ✧  ✦';
+  content: '✦   ✧   ✦   ✧';
   position: absolute;
-  top: 6px;
-  right: 12px;
-  font-size: 11px;
-  color: var(--sys-accent);
-  opacity: 0.45;
+  bottom: 14px;
+  left: 16px;
+  right: 16px;
+  text-align: center;
+  letter-spacing: 14px;
+  font-size: 12px;
+  color: #fffbeb;
+  text-shadow: 0 0 8px var(--sys-accent), 0 0 14px var(--sys-accent-2);
+  opacity: 0.65;
   pointer-events: none;
   z-index: 1;
 }
@@ -981,4 +1039,174 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+}
+
+/* --- SUNBURST, RELIC EMBLEM & CODEX DIAGRAM CARDS --- */
+.manhwa-sys-win.has-starburst .msw-fx-overlay.starburst {
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--sys-accent-2) 34%, transparent) 0%, rgba(127, 29, 29, 0.25) 45%, rgba(20, 2, 4, 0.72) 100%),
+    repeating-conic-gradient(from 0deg at 50% 38%, color-mix(in srgb, var(--sys-accent) 16%, transparent) 0deg 2.5deg, transparent 2.5deg 9.5deg);
+}
+
+.manhwa-sys-win.is-card-centered {
+  max-width: 344px;
+}
+.manhwa-sys-win.has-hidden-header .msw-header {
+  display: none !important;
+}
+
+/* Relic Emblem Stage (Image 1: DEVOUR Card) */
+.msw-relic-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 6px 4px 4px;
+}
+.msw-emblem-box {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 14px;
+  border: 2.5px solid var(--sys-accent);
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--sys-accent-2) 45%, #3b0709) 0%, #240305 100%);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--sys-accent-2) 72%, transparent),
+              inset 0 0 18px rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 8px;
+}
+.msw-emblem-box.is-thorn-emblem {
+  border-color: #fde047;
+  outline: 2px solid #dc2626;
+  outline-offset: -4px;
+}
+.msw-emblem-box img,
+.msw-emblem-box svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.msw-relic-title {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fffbeb;
+  text-shadow: 0 0 12px var(--sys-accent-2), 0 0 24px color-mix(in srgb, var(--sys-accent) 70%, transparent);
+  margin-top: 2px;
+}
+.msw-relic-subtitle {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--sys-accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--sys-accent-2) 85%, transparent);
+}
+.msw-relic-desc {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: #fef3c7;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9), 0 0 10px color-mix(in srgb, var(--sys-accent-2) 60%, transparent);
+  white-space: pre-line;
+  max-width: 96%;
+}
+
+/* Codex Blueprint Stage (Image 2: System Rule Cards) */
+.msw-codex-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 4px;
+}
+.msw-codex-diagram {
+  width: 100%;
+  min-height: 132px;
+  max-height: 168px;
+  border: 1.5px solid color-mix(in srgb, var(--sys-accent) 78%, transparent);
+  background-color: rgba(4, 12, 34, 0.85);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--sys-accent) 11%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--sys-accent) 11%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--sys-accent) 18%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  overflow: hidden;
+}
+.msw-codex-diagram img,
+.msw-codex-diagram svg {
+  max-width: 100%;
+  max-height: 136px;
+  object-fit: contain;
+  display: block;
+}
+.msw-codex-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--sys-accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--sys-accent) 65%, transparent);
+}
+.msw-codex-rules {
+  width: 100%;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.48;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  color: #dbeafe;
+  white-space: pre-line;
+  text-align: left;
+}
+
+/* Neon SVG Vector Icon Picker Grid inside Builder */
+.syswin-svg-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 6px;
+  max-height: 152px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+.syswin-svg-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1.5px solid #293548;
+  background: #071029;
+  color: #94a3b8;
+  font-size: 8.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.14s ease, transform 0.12s ease;
+}
+.syswin-svg-icon-btn:hover {
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+.syswin-svg-icon-btn.active {
+  border-color: #facc15;
+  background: rgba(250, 204, 21, 0.14);
+  color: #fde047;
+}
+.syswin-svg-icon-btn svg {
+  width: 28px;
+  height: 28px;
 }

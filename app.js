@@ -8865,6 +8865,8 @@ if (msg.type === 'quest') {
     md += `• Animated Loading Window: [SYS_LOADING: Title | 100% | Awakening progress text]\n`;
     md += `• Otome Affection Meter: [SYS_AFFECTION: TargetName | 40->78 | Flustered reaction note]\n`;
     md += `• Constellation Sponsor Alert: [SYS_CONSTELLATION: ConstellationName | +1000 Coins | Message]\n`;
+    md += `• Ornate Relic / Unique Ability Card: [SYS_RELIC: DEVOUR | UNIQUE ABILITY OF THE SPEAR | Absorbs all surrounding aura. | icon=demonic_eye]\n`;
+    md += `• System Codex / Illustrated World Rule Box: [SYS_CODEX: [INTERVERSE MONEY EXCHANGE] | - All worlds use GOLD. ; - Pay fee to cash out. | icon=gold_exchange]\n`;
     md += `• Dynamic Penalty Countdown: [SYS_TIMER: 10s | PENALTY COUNTDOWN | Failure warning — animates bar & slams PENALTY stamp at 00:00!]\n`;
     md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
     md += `• App Screen Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
@@ -9770,7 +9772,7 @@ if (msg.type === 'quest') {
 
     // 4. Auto-split packed scripts: insert newlines before directives if multiple tags are on one line
     cleaned = cleaned.replace(/\s+(\/(?:\s*delay|pause))/gi, '\n$1');
-    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|SYS_STATUS|SYS_LEVELUP|SYS_INVENTORY|SYS_SHOP|SYS_QUESTBOARD|SYS_SHADOWARMY|SYS_ITEM|SYS_LOADING|SYS_AFFECTION|SYS_CONSTELLATION|SYS_TIMER|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
+    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|SYS_STATUS|SYS_LEVELUP|SYS_INVENTORY|SYS_SHOP|SYS_QUESTBOARD|SYS_SHADOWARMY|SYS_RELIC|SYS_CODEX|SYS_ITEM|SYS_LOADING|SYS_AFFECTION|SYS_CONSTELLATION|SYS_TIMER|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
     cleaned = cleaned.replace(/([.!?\"\'\)])\s+(\[[^\]]+\]\s*:)/gi, '$1\n$2');
 
     const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
