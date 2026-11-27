@@ -170,6 +170,7 @@
   function categoryLabel(cat) {
     return {
       characters: '🎭 Character',
+      syspacks: '🖥️ System UI',
       stickers: '🖼️ Stickers',
       themes: '🎨 Theme & VFX',
       audio: '🔊 Audio & SFX',
@@ -251,7 +252,7 @@
   }
 
   function updateCategoryCounts(allPacks) {
-    const counts = { all: allPacks.length, user: 0, characters: 0, stickers: 0, themes: 0, audio: 0, stories: 0 };
+    const counts = { all: allPacks.length, user: 0, characters: 0, syspacks: 0, stickers: 0, themes: 0, audio: 0, stories: 0 };
     allPacks.forEach(p => {
       if (!p.isOfficial) counts.user++;
       if (counts[p.category] !== undefined) counts[p.category]++;
@@ -259,6 +260,7 @@
     const labels = {
       all: '✨ All',
       characters: '🎭 Characters',
+      syspacks: '🖥️ System UI',
       stickers: '🖼️ Stickers',
       themes: '🎨 Themes & VFX',
       audio: '🔊 Audio & SFX',
@@ -534,6 +536,39 @@
       interactiveHtml += `<div style="display:flex; flex-direction:column; gap:8px;">${tplBlocks}</div>`;
     }
 
+    // 6. System UI Cards & Neon Vector Icons preview
+    if (Array.isArray(items.sysIcons) && items.sysIcons.length > 0) {
+      const iconTiles = items.sysIcons.map(ic => `
+        <div class="mkt-preview-mini-card" style="background:#071029; border-color:#1e3a5f;">
+          <div style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; color:#38bdf8;">${ic.svg || '✨'}</div>
+          <strong style="font-size:10.5px; color:#fde047;">${esc(ic.label || 'Vector Icon')}</strong>
+        </div>
+      `).join('');
+      interactiveHtml += `
+        <div>
+          <div style="font-size:11.5px; font-weight:800; color:#38bdf8; margin-bottom:6px; text-transform:uppercase;">⚡ Neon Vector Icons (${items.sysIcons.length})</div>
+          <div class="mkt-preview-items-grid">${iconTiles}</div>
+        </div>
+      `;
+    }
+    if (Array.isArray(items.sysPresets) && items.sysPresets.length > 0) {
+      const cardsHtml = items.sysPresets.map(sp => {
+        if (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.renderSystemWindowElement === 'function') {
+          try {
+            const el = window.ChatHubSystemWindows.renderSystemWindowElement({ systemConfig: sp.config }, { previewMode: true });
+            return `<div style="display:flex; justify-content:center;">${el.outerHTML}</div>`;
+          } catch (e) {}
+        }
+        return `<div style="background:#0b1120; border:1px solid #38bdf8; border-radius:8px; padding:8px;"><b>${esc(sp.name || sp.config?.headerTitle || 'System Card')}</b></div>`;
+      }).join('');
+      interactiveHtml += `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="font-size:11.5px; font-weight:800; color:#facc15; text-transform:uppercase;">🖥️ Included System Cards & Frames (${items.sysPresets.length})</div>
+          ${cardsHtml}
+        </div>
+      `;
+    }
+
     const planned = Number(pack.plannedPriceUsd || 0);
     const futureCreatorShare = (planned * (1 - COMMISSION_RATE)).toFixed(2);
     const futureHubFee = (planned * COMMISSION_RATE).toFixed(2);
@@ -590,6 +625,14 @@
     if (Array.isArray(items.templates) && items.templates.length > 0) {
       const count = bridge.installTemplates(pack.id, items.templates);
       installedSummary.push(`${count} story template${count === 1 ? '' : 's'}`);
+    }
+    if (Array.isArray(items.sysIcons) && items.sysIcons.length > 0 && typeof bridge.installSystemIcons === 'function') {
+      const count = bridge.installSystemIcons(pack.id, items.sysIcons);
+      installedSummary.push(`${count} vector icon${count === 1 ? '' : 's'}`);
+    }
+    if (Array.isArray(items.sysPresets) && items.sysPresets.length > 0 && typeof bridge.installSystemPresets === 'function') {
+      const count = bridge.installSystemPresets(pack.id, items.sysPresets);
+      installedSummary.push(`${count} system style${count === 1 ? '' : 's'}`);
     }
 
     if (!state.installedPackIds.includes(pack.id)) {
@@ -693,6 +736,8 @@
     if (extrasEl) {
       const hasCustomWall = groupProf.wallpaper === 'wall-custom' && groupProf.customWallpaperData;
       const curScriptTitle = bridge.getCurrentStoryTitle() || 'Current Chat Story';
+      const sysStyles = typeof bridge.getSystemPresets === 'function' ? bridge.getSystemPresets() : [];
+      const sysIcons = typeof bridge.getSystemIcons === 'function' ? bridge.getSystemIcons() : [];
       extrasEl.innerHTML = `
         <label class="mkt-pick-row">
           <input type="checkbox" id="mktIncludeCurrentScriptCb">
@@ -710,6 +755,16 @@
             <div style="font-size:10.5px; color:#94a3b8;">VFX: ${esc(bridge.getVfxSkin())} • Chat: ${esc(bridge.getChatStyle())}</div>
           </div>
         </label>
+        ${sysStyles.length > 0 || sysIcons.length > 0 ? `
+          <label class="mkt-pick-row">
+            <input type="checkbox" id="mktIncludeSystemAssetsCb">
+            <span>🖥️</span>
+            <div style="flex:1;">
+              <div style="font-weight:800; color:#f8fafc;">Include My Saved System Cards & Custom Icons</div>
+              <div style="font-size:10.5px; color:#38bdf8;">${sysStyles.length} saved style${sysStyles.length === 1 ? '' : 's'} • ${sysIcons.length} custom icon${sysIcons.length === 1 ? '' : 's'}</div>
+            </div>
+          </label>
+        ` : ''}
       `;
     }
 
@@ -920,11 +975,25 @@
       };
     }
 
+    // System UI Presets & Custom Vector Icons
+    if (document.getElementById('mktIncludeSystemAssetsCb')?.checked) {
+      const sysStyles = typeof bridge.getSystemPresets === 'function' ? bridge.getSystemPresets() : [];
+      const sysIcons = typeof bridge.getSystemIcons === 'function' ? bridge.getSystemIcons() : [];
+      if (sysStyles.length > 0) {
+        items.sysPresets = sysStyles.map((p, idx) => ({ sourceId: 'sp_' + idx, name: p.name, config: p.config }));
+      }
+      if (sysIcons.length > 0) {
+        items.sysIcons = sysIcons.map(ci => ({ id: ci.id, label: ci.label, svg: ci.svg, imageUrl: ci.imageUrl }));
+      }
+    }
+
     const totalItems =
       (items.characters ? items.characters.length : 0) +
       (items.stickers ? items.stickers.length : 0) +
       (items.audio ? items.audio.length : 0) +
       (items.templates ? items.templates.length : 0) +
+      (items.sysPresets ? items.sysPresets.length : 0) +
+      (items.sysIcons ? items.sysIcons.length : 0) +
       (items.theme ? 1 : 0);
 
     if (totalItems === 0) {
@@ -1092,8 +1161,27 @@
         chatStyle: raw.items.theme.chatStyle === 'realistic' ? 'realistic' : 'comic'
       };
     }
+    if (Array.isArray(raw.items.sysIcons)) {
+      items.sysIcons = raw.items.sysIcons.map((ic, idx) => {
+        let svg = typeof ic.svg === 'string' ? ic.svg.trim() : '';
+        svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '').replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '').replace(/javascript\s*:/gi, '');
+        return {
+          id: String(ic.id || ('imp_ico_' + idx)).replace(/[^a-zA-Z0-9_-]/g, ''),
+          label: String(ic.label || 'Icon').slice(0, 18),
+          svg: /^<svg[\s>]/i.test(svg) ? svg : '',
+          imageUrl: sanitizeUrl(ic.imageUrl)
+        };
+      }).filter(ic => ic.svg || ic.imageUrl);
+    }
+    if (Array.isArray(raw.items.sysPresets)) {
+      items.sysPresets = raw.items.sysPresets.filter(sp => sp && sp.config && typeof sp.config === 'object').map((sp, idx) => ({
+        sourceId: String(sp.sourceId || ('imp_sp_' + idx)),
+        name: String(sp.name || sp.config.headerTitle || 'System Card').slice(0, 32),
+        config: sp.config
+      }));
+    }
 
-    const allowedCats = ['characters', 'stickers', 'themes', 'audio', 'stories'];
+    const allowedCats = ['characters', 'syspacks', 'stickers', 'themes', 'audio', 'stories'];
     const category = allowedCats.includes(raw.category) ? raw.category : 'characters';
     return {
       format: 'ChatHub_Marketplace_Pack',

@@ -735,11 +735,313 @@
     }
   ];
 
+  function makeSysPackCoverSvg(badge, title, accent, bg1, innerSvg) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+      <defs>
+        <radialGradient id="spg" cx="50%" cy="42%" r="60%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="${bg1}"/>
+        </radialGradient>
+      </defs>
+      <rect width="320" height="200" rx="16" fill="url(#spg)"/>
+      <rect x="8" y="8" width="304" height="184" rx="12" fill="none" stroke="${accent}" stroke-width="2.5"/>
+      <rect x="14" y="14" width="292" height="172" rx="9" fill="none" stroke="${accent}" stroke-opacity="0.45" stroke-width="1" stroke-dasharray="6 4"/>
+      <g transform="translate(100,26) scale(1.0)">${innerSvg}</g>
+      <text x="160" y="158" font-family="sans-serif" font-weight="900" font-size="14" fill="#f8fafc" text-anchor="middle">${escXml(title)}</text>
+      <text x="160" y="177" font-family="sans-serif" font-weight="800" font-size="10" fill="${accent}" text-anchor="middle">${escXml(badge)}</text>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  const CORE_SYSTEM_PACKS = [
+    {
+      id: 'mkt_sys_devour_relics',
+      title: 'DEVOUR & Cursed Relics Vault',
+      category: 'syspacks',
+      author: 'Chat Hub Official',
+      authorHandle: '@chathub_official',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 3.99,
+      license: 'Commercial Story & Shorts Free License',
+      description: 'Ornate thorny crimson-gold Relic Cards (DEVOUR style) with sunburst rays, starburst emblem boxes, and 4 exclusive glowing SVG relic icons.',
+      tags: ['System UI', 'Relic', 'DEVOUR', 'Fantasy'],
+      coverImage: makeSysPackCoverSvg('THORN FRAME • 4 RELIC CARDS + ICONS', 'DEVOUR & CURSED RELICS', '#fde047', '#2d0407',
+        `<circle cx="60" cy="54" r="36" fill="#450a0a" stroke="#fde047" stroke-width="3"/><path d="M60 28C72 40 74 54 60 80C46 54 48 40 60 28Z" fill="#fde047" stroke="#ef4444" stroke-width="2.5"/><ellipse cx="60" cy="54" rx="5" ry="13" fill="#7f1d1d"/>`
+      ),
+      baseInstalls: 2890,
+      items: {
+        sysIcons: [
+          {
+            id: 'mkt_ico_devour_abyss',
+            label: 'Abyssal Maw',
+            svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="60" cy="60" r="44" fill="rgba(220,38,38,0.28)" stroke="#fde047" stroke-width="3"/><path d="M26 42L42 54L52 34L60 52L68 34L78 54L94 42M26 78L42 66L52 86L60 68L68 86L78 66L94 78" stroke="#fca5a5" stroke-width="2.8" stroke-linecap="round"/><ellipse cx="60" cy="60" rx="14" ry="8" fill="#fef08a" stroke="#ef4444" stroke-width="2.2"/><circle cx="60" cy="60" r="4" fill="#7f1d1d"/></svg>`
+          },
+          {
+            id: 'mkt_ico_crimson_spear',
+            label: 'Spear of Life',
+            svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60 8L76 42L66 48V108L60 114L54 108V48L44 42Z" fill="rgba(239,68,68,0.34)" stroke="#fde047" stroke-width="2.8"/><path d="M32 54C42 36 78 36 88 54" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="40" r="6" fill="#fef08a"/></svg>`
+          },
+          {
+            id: 'mkt_ico_cursed_mask',
+            label: 'Oni Mask Seal',
+            svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M34 32L24 14L48 26H72L96 14L86 32L96 68L60 102L24 68Z" fill="rgba(127,29,29,0.45)" stroke="#fde047" stroke-width="2.6"/><path d="M40 52L52 58M80 52L68 58M44 76L60 70L76 76" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/></svg>`
+          }
+        ],
+        sysPresets: [
+          {
+            sourceId: 'sp_devour_main',
+            name: 'DEVOUR (Thorn Card)',
+            config: {
+              presetId: 'relic', cardStyle: 'relic', hideHeader: true, starburst: true, sparkles: true,
+              frameStyle: 'demonic_thorn', fontStyle: 'serif', accentColor: '#fde047', secondaryColor: '#ef4444', bgColor: '#2d0407',
+              svgIcon: 'demonic_eye', headerTitle: 'DEVOUR', subtitle: 'UNIQUE ABILITY OF THE SPEAR OF LIFE',
+              bodyText: 'WHEN ALL VITALITY IS LOST, IT INDISCRIMINATELY ABSORBS ALL SURROUNDING AURA.', buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_spear_aura',
+            name: 'SPEAR OF LIFE (Cursed)',
+            config: {
+              presetId: 'relic', cardStyle: 'relic', hideHeader: true, starburst: true, sparkles: true,
+              frameStyle: 'demonic_thorn', fontStyle: 'serif', accentColor: '#fde047', secondaryColor: '#dc2626', bgColor: '#280508',
+              svgIcon: 'mkt_ico_crimson_spear', headerTitle: 'SPEAR OF LIFE', subtitle: 'MYTHIC SOUL-BOUND RELIC',
+              bodyText: 'PIERCES IMMORTAL BARRIERS AND CONVERTS ENEMY VITALITY INTO PURE CRIMSON MANA.', buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_chained_seal',
+            name: 'BLOOD SEAL PRISON',
+            config: {
+              presetId: 'relic', cardStyle: 'relic', hideHeader: true, starburst: true, sparkles: false,
+              frameStyle: 'cursed_chains', fontStyle: 'serif', accentColor: '#ef4444', secondaryColor: '#facc15', bgColor: '#1b0306',
+              svgIcon: 'mkt_ico_cursed_mask', headerTitle: 'FORBIDDEN SEAL', subtitle: 'PASSIVE CURSED AUTHORITY',
+              bodyText: 'SEALS 70% OF TARGET MANA CIRCUITS ON EYE CONTACT FOR 30 SECONDS.', buttons: []
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'mkt_sys_interverse_codex',
+      title: 'Interverse Blueprint Codex Pack',
+      category: 'syspacks',
+      author: 'Chat Hub Official',
+      authorHandle: '@chathub_official',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 3.49,
+      license: 'Commercial Story & Shorts Free License',
+      description: 'Clean dark-navy Twin-Line Blueprint Codex cards ([INTERVERSE MONEY EXCHANGE], [ZOMBIES], [DEATH PENALTY]) with glowing neon line-art diagrams.',
+      tags: ['System UI', 'Codex', 'Blueprint', 'World Rules'],
+      coverImage: makeSysPackCoverSvg('BLUEPRINT DOUBLE • 4 CODEX CARDS', '[INTERVERSE CODEX]', '#38bdf8', '#06122c',
+        `<rect x="18" y="14" width="84" height="58" fill="#071535" stroke="#38bdf8" stroke-width="2.4"/><circle cx="44" cy="43" r="14" stroke="#4ade80" stroke-width="2.5"/><path d="M64 43H88M80 37L88 43L80 49" stroke="#facc15" stroke-width="2.5"/>`
+      ),
+      baseInstalls: 2450,
+      items: {
+        sysIcons: [
+          {
+            id: 'mkt_ico_dungeon_map',
+            label: 'Gate Radar',
+            svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="80" cy="50" r="36" stroke="#38bdf8" stroke-width="2.2" fill="rgba(56,189,248,0.1)"/><circle cx="80" cy="50" r="20" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="4 4"/><path d="M80 14V86M44 50H116" stroke="#7dd3fc" stroke-width="1.5"/><circle cx="96" cy="36" r="5" fill="#ef4444"/><circle cx="66" cy="64" r="4" fill="#4ade80"/></svg>`
+          },
+          {
+            id: 'mkt_ico_tax_coin',
+            label: 'Guild Ledger',
+            svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="34" y="16" width="92" height="68" rx="4" stroke="#38bdf8" stroke-width="2.4" fill="rgba(56,189,248,0.08)"/><circle cx="62" cy="46" r="14" stroke="#fb923c" stroke-width="2.4"/><text x="62" y="52" fill="#fdba74" font-weight="900" font-size="16" text-anchor="middle">G</text><path d="M86 38H114M86 50H114M86 62H106" stroke="#4ade80" stroke-width="2.6" stroke-linecap="round"/></svg>`
+          }
+        ],
+        sysPresets: [
+          {
+            sourceId: 'sp_codex_money',
+            name: '[INTERVERSE MONEY EXCHANGE]',
+            config: {
+              presetId: 'codex', cardStyle: 'codex', hideHeader: true, gridPattern: false,
+              frameStyle: 'blueprint_double', fontStyle: 'hud', accentColor: '#38bdf8', secondaryColor: '#4ade80', bgColor: '#06122c',
+              svgIcon: 'gold_exchange', headerTitle: '[INTERVERSE MONEY EXCHANGE]',
+              bodyText: "- ALL THE WORLDS IN INTERVERSE USE A CURRENCY CALLED 'GOLD'.\n- ONE CAN EXCHANGE THE GOLD INTO CASH BY PAYING A CERTAIN FEE.\n- ONLY AFTER CONFIRMING ONE'S AGE MAY SOMEONE USE THE EXCHANGE SYSTEM.", buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_codex_zombies',
+            name: '[ZOMBIES] Worker Codex',
+            config: {
+              presetId: 'codex', cardStyle: 'codex', hideHeader: true, gridPattern: false,
+              frameStyle: 'blueprint_double', fontStyle: 'hud', accentColor: '#38bdf8', secondaryColor: '#bae6fd', bgColor: '#06122c',
+              svgIcon: 'neon_miners', headerTitle: '[ZOMBIES]',
+              bodyText: '- EMPLOYEES WHO WORK INSIDE THE VIRTUAL WORLD FOR A CERTAIN AMOUNT OF TIME PER DAY TO OBTAIN GOLD AND ITEMS.\n- THE MAJORITY OF ZOMBIES ARE PEOPLE IN DEBT OR IMPRISONED CRIMINALS.', buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_codex_death',
+            name: '[DEATH PENALTY] Codex',
+            config: {
+              presetId: 'codex', cardStyle: 'codex', hideHeader: true, gridPattern: false,
+              frameStyle: 'blueprint_double', fontStyle: 'hud', accentColor: '#60a5fa', secondaryColor: '#ef4444', bgColor: '#06122c',
+              svgIcon: 'death_skull', headerTitle: '[DEATH PENALTY]',
+              bodyText: '- IF HP REACHES ZERO INSIDE AN UNREGISTERED ZONE, SOUL SYNCHRONIZATION TERMINATES PERMANENTLY.\n- NO REVIVE OR RETURN STONES FUNCTION HERE.', buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_codex_gate_radar',
+            name: '[GATE BREAK PROTOCOL]',
+            config: {
+              presetId: 'codex', cardStyle: 'codex', hideHeader: true, gridPattern: false,
+              frameStyle: 'blueprint_double', fontStyle: 'hud', accentColor: '#38bdf8', secondaryColor: '#ef4444', bgColor: '#06122c',
+              svgIcon: 'mkt_ico_dungeon_map', headerTitle: '[GATE BREAK PROTOCOL]',
+              bodyText: '- EVERY UNCLEARED GATE OPENS FULLY AFTER 7 DAYS.\n- NEARBY HUNTERS RECEIVE MANDATORY EMERGENCY SUMMONS.', buttons: []
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'mkt_sys_monarch_hud',
+      title: 'Monarch Shadow Awakening HUD Pack',
+      category: 'syspacks',
+      author: 'Chat Hub Official',
+      authorHandle: '@chathub_official',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 4.49,
+      license: 'Commercial Story & Shorts Free License',
+      description: 'Violet Cyber Circuit & Monarch Awakening UI cards + Arise Necromancer icon + Solo Leveling Level-Up/Shop combo script.',
+      tags: ['System UI', 'Monarch', 'Level-Up', 'Shop'],
+      coverImage: makeSysPackCoverSvg('CIRCUIT FRAME • MONARCH HUD PACK', 'SHADOW MONARCH SYSTEM', '#a855f7', '#0f0624',
+        `<circle cx="60" cy="40" r="18" fill="rgba(168,85,247,0.35)" stroke="#d8b4fe" stroke-width="2.5"/><path d="M40 94V68L34 48M52 94V64L50 42M60 94V62L60 40M68 94V64L70 42M80 94V68L86 48" stroke="#c084fc" stroke-width="3" stroke-linecap="round"/>`
+      ),
+      baseInstalls: 2670,
+      items: {
+        sysIcons: [
+          {
+            id: 'mkt_ico_monarch_heart',
+            label: 'Black Heart',
+            svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60 100C60 100 18 74 18 42C18 24 32 16 44 16C52 16 57 22 60 28C63 22 68 16 76 16C88 16 102 24 102 42C102 74 60 100 60 100Z" fill="rgba(88,28,135,0.55)" stroke="#d8b4fe" stroke-width="3"/><circle cx="60" cy="54" r="14" stroke="#a855f7" stroke-width="2.4"/><path d="M60 40V68M46 54H74" stroke="#fef08a" stroke-width="2.2"/></svg>`
+          }
+        ],
+        sysPresets: [
+          {
+            sourceId: 'sp_monarch_arise',
+            name: 'SHADOW MONARCH: ARISE',
+            config: {
+              presetId: 'relic', cardStyle: 'relic', hideHeader: true, starburst: true, sparkles: true,
+              frameStyle: 'cyber_circuit', fontStyle: 'hud', accentColor: '#c084fc', secondaryColor: '#00f0ff', bgColor: '#0f0624',
+              svgIcon: 'necromancer_hand', headerTitle: 'ARISE', subtitle: 'JOB CHANGE: NECROMANCER ➔ SHADOW MONARCH',
+              bodyText: 'EXTRACT FALLEN BOSSES INTO YOUR PERMANENT SHADOW ARMY WITH ZERO MANA DRAIN.', buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_black_heart',
+            name: 'BLACK HEART OVERDRIVE',
+            config: {
+              presetId: 'levelup', cardStyle: 'standard', hideHeader: false, frameStyle: 'cyber_circuit',
+              fontStyle: 'hud', accentColor: '#a855f7', secondaryColor: '#38bdf8', bgColor: '#0f0624',
+              headerIcon: '👑', headerTitle: 'SYSTEM AWAKENING SURGE', headerBadge: 'MONARCH',
+              levelTransition: 'LV. 50 ➔ LV. 99', unlockedAbility: '⚡ BLACK HEART REACTOR (+100,000 MP)',
+              statBoosts: [{ label: 'MAX MANA', delta: '+100,000' }, { label: 'SHADOW CAP', delta: '+500%' }, { label: 'ALL STATS', delta: '+45' }],
+              buttons: []
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'mkt_sys_celestial_murim',
+      title: 'Celestial Archangel & Murim Imperial Pack',
+      category: 'syspacks',
+      author: 'Chat Hub Official',
+      authorHandle: '@chathub_official',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 3.49,
+      license: 'Commercial Story & Shorts Free License',
+      description: 'Golden Archangel Halo & Murim Dragon Seal ornate frames for Constellation sponsors, heavenly tribulations & martial arts sects.',
+      tags: ['System UI', 'Constellation', 'Murim', 'Celestial'],
+      coverImage: makeSysPackCoverSvg('CELESTIAL + MURIM • GOLD FRAMES', 'CELESTIAL & MURIM UI', '#facc15', '#1a1204',
+        `<circle cx="60" cy="54" r="34" stroke="#fde047" stroke-width="2" stroke-dasharray="5 5"/><path d="M60 16L68 48L98 54L68 60L60 92L52 60L22 54L52 48Z" fill="rgba(250,204,21,0.28)" stroke="#fde047" stroke-width="2.4"/>`
+      ),
+      baseInstalls: 1940,
+      items: {
+        sysPresets: [
+          {
+            sourceId: 'sp_archangel_blessing',
+            name: 'ARCHANGEL BLESSING',
+            config: {
+              presetId: 'relic', cardStyle: 'relic', hideHeader: true, starburst: true, sparkles: true,
+              frameStyle: 'celestial_arcane', fontStyle: 'serif', accentColor: '#fde047', secondaryColor: '#38bdf8', bgColor: '#1a1406',
+              svgIcon: 'level_wings', headerTitle: 'DIVINE JUDGMENT', subtitle: 'SPONSORED BY ARCHANGEL URIEL',
+              bodyText: 'PURGES ALL CURSES AND GRANTS HOLY FLAME AFFINITY (+80% BOSS DMG) FOR 3 MINUTES.', buttons: []
+            }
+          },
+          {
+            sourceId: 'sp_murim_seal_skill',
+            name: 'HEAVENLY DEMON PALM',
+            config: {
+              presetId: 'relic', cardStyle: 'relic', hideHeader: true, starburst: true, sparkles: true,
+              frameStyle: 'dragon_scroll', fontStyle: 'serif', accentColor: '#facc15', secondaryColor: '#10b981', bgColor: '#051911',
+              svgIcon: 'dragon_fang', headerTitle: 'HEAVENLY DEMON ART', subtitle: 'MOUNT HUA SECT — 1ST FORM',
+              bodyText: 'CONCENTRATES 10 YEARS OF QI INTO A SINGLE SHATTERING STRIKE.', buttons: []
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: 'mkt_sys_neon_traps',
+      title: '10s Crisis Timer & Trap Codex Pack',
+      category: 'syspacks',
+      author: 'Chat Hub Official',
+      authorHandle: '@chathub_official',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 2.99,
+      license: 'Commercial Story & Shorts Free License',
+      description: 'Built for YouTube Shorts retention spikes! Includes glowing Penalty Heart Monitor & Glitch Siren SVG icons + 10s Survival Trap Cards.',
+      tags: ['System UI', 'Shorts', 'Penalty', 'Timer'],
+      coverImage: makeSysPackCoverSvg('10S CLIMAX • PENALTY TRAP PACK', 'CRISIS & TRAP ICONS', '#ef4444', '#1f060c',
+        `<path d="M60 16L96 84H24Z" fill="rgba(239,68,68,0.28)" stroke="#ef4444" stroke-width="3"/><text x="60" y="72" fill="#fde047" font-weight="900" font-size="34" text-anchor="middle">!</text>`
+      ),
+      baseInstalls: 2180,
+      items: {
+        sysIcons: [
+          {
+            id: 'mkt_ico_heart_ecg',
+            label: 'Panic Heartbeat',
+            svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 52H44L56 20L72 82L86 38L98 62L110 52H148" stroke="#ef4444" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="148" cy="52" r="5" fill="#fde047"/></svg>`
+          },
+          {
+            id: 'mkt_ico_trap_chest',
+            label: 'Mimic Trap',
+            svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="34" width="80" height="48" rx="6" stroke="#facc15" stroke-width="2.6" fill="rgba(239,68,68,0.18)"/><path d="M30 46H110M48 46V38M70 46V38M92 46V38" stroke="#fca5a5" stroke-width="2.6"/><circle cx="70" cy="64" r="7" fill="#ef4444"/></svg>`
+          }
+        ],
+        sysPresets: [
+          {
+            sourceId: 'sp_trap_codex',
+            name: '[RED GATE TRAP WARNING]',
+            config: {
+              presetId: 'codex', cardStyle: 'codex', hideHeader: true,
+              frameStyle: 'cursed_chains', fontStyle: 'mono', accentColor: '#ef4444', secondaryColor: '#fde047', bgColor: '#1f060c',
+              svgIcon: 'mkt_ico_heart_ecg', headerTitle: '[HEARTBEAT PENALTY ACTIVE]',
+              bodyText: '- HEART RATE EXCEEDS 170 BPM: AUTOMATIC PENALTY ZONE LOCKS ALL EXITS.\n- SURVIVE 10 SECONDS TO REGAIN CONTROL.', buttons: []
+            }
+          }
+        ]
+      }
+    }
+  ];
+
   const CUSTOM_CHAR_PACKS = CHAR_SPECS.map(makeCharPack);
 
-  window.CHAT_HUB_MARKETPLACE_CATALOG = [...CORE_QUALITY_PACKS, ...CUSTOM_CHAR_PACKS];
+  window.CHAT_HUB_MARKETPLACE_CATALOG = [...CORE_QUALITY_PACKS, ...CORE_SYSTEM_PACKS, ...CUSTOM_CHAR_PACKS];
   window.ChatHubMarketplaceArt = {
     makeManhwaPortraitSvg,
+    makeSystemPackCoverSvg: makeSysPackCoverSvg,
     makeCharPack
   };
 })();

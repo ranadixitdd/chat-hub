@@ -6,6 +6,7 @@
   'use strict';
 
   const PRESETS_STORAGE_KEY = 'chathub_sys_presets_v1';
+  const CUSTOM_ICONS_STORAGE_KEY = 'chathub_sys_custom_icons_v1';
 
   function esc(str) {
     return String(str ?? '')
@@ -75,6 +76,7 @@
      -------------------------------------------------------------------------- */
   const NEON_SVG_ICONS = {
     demonic_eye: {
+      cat: 'relic',
       label: 'Devour Eye',
       svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -93,6 +95,7 @@
       </svg>`
     },
     gold_exchange: {
+      cat: 'codex',
       label: 'Coin Exchange',
       svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M24 30L46 30L41 20L29 20Z" stroke="#fb923c" stroke-width="2.6" stroke-linejoin="round"/>
@@ -109,6 +112,7 @@
       </svg>`
     },
     neon_miners: {
+      cat: 'codex',
       label: 'Guild Miners',
       svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g stroke="#bae6fd" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -126,6 +130,7 @@
       </svg>`
     },
     death_skull: {
+      cat: 'codex',
       label: 'Death Penalty',
       svg: `<svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M80 12C65 12 56 21 56 34C56 42 60 47 64 51V58H96V51C100 47 104 42 104 34C104 21 95 12 80 12Z" fill="#ef4444" stroke="#fca5a5" stroke-width="2"/>
@@ -197,6 +202,7 @@
       </svg>`
     },
     hourglass_doom: {
+      cat: 'codex',
       label: 'Doom Timer',
       svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M30 18H90M30 102H90M38 18C38 44 56 54 60 60C64 54 82 44 82 18M38 102C38 76 56 66 60 60C64 66 82 76 82 102" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
@@ -204,12 +210,14 @@
       </svg>`
     },
     guild_crest: {
+      cat: 'relic',
       label: 'Guild Crest',
       svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M60 14V104M46 82H74M20 34C28 54 42 62 56 64M100 34C92 54 78 62 64 64M28 56C36 72 46 78 56 80M92 56C84 72 74 78 64 80" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>
       </svg>`
     },
     heart_lock: {
+      cat: 'relic',
       label: 'Soul Pact',
       svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M60 98C60 98 20 74 20 44C20 28 32 20 44 20C52 20 57 25 60 30C63 25 68 20 76 20C88 20 100 28 100 44C100 74 60 98 60 98Z" fill="rgba(236,72,153,0.22)" stroke="#f472b6" stroke-width="3"/>
@@ -218,28 +226,336 @@
       </svg>`
     },
     level_wings: {
+      cat: 'relic',
       label: 'Ascension',
       svg: `<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M60 76V18M48 30L60 16L72 30M14 26C24 44 40 52 54 54M106 26C96 44 80 52 66 54M22 48C32 62 44 68 54 70M98 48C88 62 76 68 66 70" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`
+    },
+    quest_scroll: {
+      cat: 'codex',
+      label: 'Quest Scroll',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="28" y="16" width="84" height="68" rx="6" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="2.5"/>
+        <path d="M44 38L51 45L64 31M72 38H98M44 56L51 63L64 49M72 56H98M44 72H94" stroke="#bae6fd" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    debt_ledger: {
+      cat: 'codex',
+      label: 'Debt Penalty',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="48" cy="52" r="24" stroke="#facc15" stroke-width="2.6" fill="rgba(250,204,21,0.14)"/>
+        <text x="48" y="60" fill="#fde047" font-size="24" font-weight="900" text-anchor="middle">$</text>
+        <path d="M98 24L122 72H74Z" stroke="#ef4444" stroke-width="2.8" fill="rgba(239,68,68,0.22)" stroke-linejoin="round"/>
+        <path d="M98 40V54M98 62V64" stroke="#fef2f2" stroke-width="3" stroke-linecap="round"/>
+      </svg>`
+    },
+    portal_rank: {
+      cat: 'codex',
+      label: 'S-Rank Gate',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M36 88V44C36 22 104 22 104 44V88" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="70" cy="56" rx="22" ry="28" fill="rgba(56,189,248,0.2)" stroke="#a855f7" stroke-width="2.4"/>
+        <text x="70" y="65" fill="#fde047" font-size="26" font-weight="900" text-anchor="middle">S</text>
+      </svg>`
+    },
+    level_tower: {
+      cat: 'codex',
+      label: 'Trial Tower',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M52 86L58 24L70 12L82 24L88 86Z" stroke="#38bdf8" stroke-width="2.5" fill="rgba(56,189,248,0.12)"/>
+        <path d="M56 42H84M55 58H85M53 74H87M22 66L36 52M118 66L104 52" stroke="#bae6fd" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="70" cy="27" r="4" fill="#fde047"/>
+      </svg>`
+    },
+    guild_contract: {
+      cat: 'codex',
+      label: 'Guild Pact',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="42" cy="30" r="10" stroke="#38bdf8" stroke-width="2.4"/>
+        <path d="M26 78C26 54 58 54 58 78" stroke="#38bdf8" stroke-width="2.4" fill="rgba(56,189,248,0.14)"/>
+        <circle cx="98" cy="30" r="10" stroke="#4ade80" stroke-width="2.4"/>
+        <path d="M82 78C82 54 114 54 114 78" stroke="#4ade80" stroke-width="2.4" fill="rgba(74,222,128,0.14)"/>
+        <path d="M58 48H82M64 42L58 48L64 54M76 42L82 48L76 54" stroke="#facc15" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    warning_siren: {
+      cat: 'codex',
+      label: 'Critical Alert',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 76V46C50 32 90 32 90 46V76Z" fill="rgba(239,68,68,0.3)" stroke="#ef4444" stroke-width="2.8"/>
+        <rect x="42" y="76" width="56" height="10" rx="3" stroke="#fca5a5" stroke-width="2.4"/>
+        <path d="M70 12V24M36 24L44 34M104 24L96 34M22 48H34M118 48H106" stroke="#fde047" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>`
+    },
+    brain_sync: {
+      cat: 'codex',
+      label: 'System Sync',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="70" cy="50" r="28" stroke="#00f0ff" stroke-width="2.4" fill="rgba(0,240,255,0.1)"/>
+        <circle cx="70" cy="50" r="10" stroke="#a855f7" stroke-width="2.4"/>
+        <path d="M70 22V38M70 62V78M42 50H58M82 50H98M50 30L60 40M90 70L80 60M90 30L80 40M50 70L60 60" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round"/>
+      </svg>`
+    },
+    key_artifact: {
+      cat: 'codex',
+      label: 'Dungeon Key',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="42" cy="50" r="18" stroke="#facc15" stroke-width="3" fill="rgba(250,204,21,0.16)"/>
+        <circle cx="42" cy="50" r="7" stroke="#fef08a" stroke-width="2"/>
+        <path d="M60 50H116M96 50V66M110 50V62" stroke="#facc15" stroke-width="3.2" stroke-linecap="round"/>
+      </svg>`
+    },
+    trade_scale: {
+      cat: 'codex',
+      label: 'Market Balance',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M70 18V84M46 84H94M34 34L70 26L106 34" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M22 60C22 68 46 68 46 60L34 34Z" stroke="#facc15" stroke-width="2.2" fill="rgba(250,204,21,0.16)"/>
+        <path d="M94 60C94 68 118 68 118 60L106 34Z" stroke="#4ade80" stroke-width="2.2" fill="rgba(74,222,128,0.16)"/>
+      </svg>`
+    },
+    prison_bars: {
+      cat: 'codex',
+      label: 'Penalty Zone',
+      svg: `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="26" y="16" width="88" height="68" rx="4" stroke="#93c5fd" stroke-width="2.6" fill="rgba(15,23,42,0.7)"/>
+        <path d="M48 16V84M70 16V84M92 16V84M26 50H114" stroke="#ef4444" stroke-width="3"/>
+      </svg>`
+    },
+    abyss_reaper: {
+      cat: 'relic',
+      label: 'Abyss Scythe',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M26 98L84 22C94 34 102 52 96 72C90 50 76 38 62 36" stroke="#ef4444" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M84 22C58 14 34 26 24 44C44 34 62 36 74 44Z" fill="rgba(239,68,68,0.32)" stroke="#fde047" stroke-width="2.4"/>
+      </svg>`
+    },
+    dragon_fang: {
+      cat: 'relic',
+      label: 'Dragon Maw',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 42L44 26L60 40L76 26L102 42L84 62L100 84L60 104L20 84L36 62Z" fill="rgba(239,68,68,0.22)" stroke="#facc15" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M40 56L50 76L60 58L70 76L80 56" stroke="#fef08a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    phoenix_crest: {
+      cat: 'relic',
+      label: 'Phoenix Aura',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 18L70 46L106 32L82 64L102 92L60 76L18 92L38 64L14 32L50 46Z" fill="rgba(251,146,60,0.26)" stroke="#fde047" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="60" cy="56" r="10" fill="#ef4444" stroke="#fef08a" stroke-width="2"/>
+      </svg>`
+    },
+    lightning_bolt: {
+      cat: 'relic',
+      label: 'Storm Rune',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="60,10 102,34 102,86 60,110 18,86 18,34" stroke="#38bdf8" stroke-width="2.5" fill="rgba(56,189,248,0.12)"/>
+        <path d="M68 20L40 62H58L50 100L82 54H62Z" fill="#fde047" stroke="#00f0ff" stroke-width="2" stroke-linejoin="round"/>
+      </svg>`
+    },
+    venom_serpent: {
+      cat: 'relic',
+      label: 'Venom Viper',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 98C34 94 24 72 34 52C44 34 78 34 86 52C94 70 80 86 60 80C46 76 46 58 60 54" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+        <path d="M52 46L44 20L60 34L76 20L68 46" fill="rgba(16,185,129,0.35)" stroke="#4ade80" stroke-width="2.4"/>
+        <circle cx="52" cy="40" r="2.5" fill="#fef08a"/><circle cx="68" cy="40" r="2.5" fill="#fef08a"/>
+      </svg>`
+    },
+    necromancer_hand: {
+      cat: 'relic',
+      label: 'Arise Grasp',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="36" r="18" fill="rgba(168,85,247,0.32)" stroke="#d8b4fe" stroke-width="2.4"/>
+        <path d="M40 102V72L32 48M50 102V66L48 40M60 102V64L60 38M70 102V66L72 40M80 102V72L88 50" stroke="#c084fc" stroke-width="3.2" stroke-linecap="round"/>
+      </svg>`
+    },
+    magic_circle: {
+      cat: 'relic',
+      label: 'Arcane Seal',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="46" stroke="#fde047" stroke-width="2.4"/>
+        <circle cx="60" cy="60" r="34" stroke="currentColor" stroke-width="1.8" stroke-dasharray="6 4"/>
+        <polygon points="60,16 98,82 22,82" stroke="#fde047" stroke-width="2.2" fill="none"/>
+        <polygon points="60,104 98,38 22,38" stroke="currentColor" stroke-width="2.2" fill="none"/>
+        <circle cx="60" cy="60" r="8" fill="#fde047"/>
+      </svg>`
+    },
+    blood_moon: {
+      cat: 'relic',
+      label: 'Blood Eclipse',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="56" cy="60" r="36" fill="rgba(220,38,38,0.36)" stroke="#ef4444" stroke-width="2.8"/>
+        <circle cx="72" cy="54" r="28" fill="#180408"/>
+        <path d="M78 30L83 42L95 47L83 52L78 64L73 52L61 47L73 42Z" fill="#fde047"/>
+      </svg>`
+    },
+    crystal_core: {
+      cat: 'relic',
+      label: 'Mana Core',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="60,12 94,48 76,106 44,106 26,48" fill="rgba(56,189,248,0.22)" stroke="#00f0ff" stroke-width="2.8"/>
+        <path d="M60 12V106M26 48H94M44 106L60 48L76 106" stroke="#bae6fd" stroke-width="1.8"/>
+      </svg>`
+    },
+    cursed_grimoire: {
+      cat: 'relic',
+      label: 'Forbidden Tome',
+      svg: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 32C34 26 50 28 60 38C70 28 86 26 102 32V94C86 88 70 90 60 100C50 90 34 88 18 94Z" fill="rgba(168,85,247,0.2)" stroke="#fde047" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M60 38V100M30 48H48M30 62H48M72 48H90M72 62H90" stroke="#e9d5ff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>`
     }
   };
+
+  function sanitizeCustomSvg(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+    let s = raw.trim();
+    if (!/^<svg[\s>]/i.test(s) || !/<\/svg>$/i.test(s)) return '';
+    s = s.replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
+      .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/javascript\s*:/gi, '');
+    return s.length <= 24000 ? s : '';
+  }
+
+  function generateNeonBadgeSvg(glyph = '⚡', shape = 'hex', glow = '#00f0ff') {
+    const cleanGlyph = esc(String(glyph || '⚡').trim().slice(0, 4) || '⚡');
+    const c = /^#[0-9a-f]{3,8}$/i.test(String(glow || '')) ? glow : '#00f0ff';
+    let bgShape = '';
+    if (shape === 'circle') {
+      bgShape = `<circle cx="60" cy="60" r="44" fill="rgba(7,16,41,0.75)" stroke="${c}" stroke-width="3.2"/><circle cx="60" cy="60" r="35" stroke="${c}" stroke-width="1.4" stroke-dasharray="5 4" stroke-opacity="0.7"/>`;
+    } else if (shape === 'diamond') {
+      bgShape = `<polygon points="60,10 110,60 60,110 10,60" fill="rgba(7,16,41,0.75)" stroke="${c}" stroke-width="3.2" stroke-linejoin="round"/><polygon points="60,22 98,60 60,98 22,60" stroke="${c}" stroke-width="1.5" stroke-opacity="0.7"/>`;
+    } else if (shape === 'shield') {
+      bgShape = `<path d="M60 12L100 28V58C100 84 80 101 60 110C40 101 20 84 20 58V28Z" fill="rgba(7,16,41,0.75)" stroke="${c}" stroke-width="3.2" stroke-linejoin="round"/>`;
+    } else {
+      bgShape = `<polygon points="60,10 104,35 104,85 60,110 16,85 16,35" fill="rgba(7,16,41,0.75)" stroke="${c}" stroke-width="3.2" stroke-linejoin="round"/><polygon points="60,20 95,40 95,80 60,100 25,80 25,40" stroke="${c}" stroke-width="1.4" stroke-opacity="0.65"/>`;
+    }
+    const fontSize = cleanGlyph.length >= 3 ? 28 : 40;
+    return `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">${bgShape}<text x="60" y="72" fill="#f8fafc" font-family="sans-serif" font-weight="900" font-size="${fontSize}" text-anchor="middle">${cleanGlyph}</text></svg>`;
+  }
+
+  function loadCustomIcons() {
+    try {
+      let raw = null;
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.get === 'function') {
+        raw = window.ChatHubStorage.get(CUSTOM_ICONS_STORAGE_KEY);
+      } else {
+        raw = localStorage.getItem(CUSTOM_ICONS_STORAGE_KEY);
+      }
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustomIcons(list) {
+    try {
+      const json = JSON.stringify(list || []);
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.set === 'function') {
+        window.ChatHubStorage.set(CUSTOM_ICONS_STORAGE_KEY, json);
+      } else {
+        localStorage.setItem(CUSTOM_ICONS_STORAGE_KEY, json);
+      }
+    } catch (e) {}
+  }
+
+  function getAllSvgIcons() {
+    const map = { ...NEON_SVG_ICONS };
+    loadCustomIcons().forEach(ci => {
+      if (!ci || !ci.id) return;
+      const cleanSvg = ci.svg ? sanitizeCustomSvg(ci.svg) : '';
+      const cleanImg = (!cleanSvg && isSafeUrl(ci.imageUrl)) ? ci.imageUrl : '';
+      if (!cleanSvg && !cleanImg) return;
+      map[ci.id] = {
+        cat: 'custom',
+        isCustom: true,
+        marketplacePackId: ci.marketplacePackId || null,
+        label: String(ci.label || 'Custom').slice(0, 18),
+        svg: cleanSvg || `<img src="${esc(cleanImg)}" alt="${esc(ci.label || 'Icon')}">`,
+        imageUrl: cleanImg,
+        rawSvg: cleanSvg
+      };
+    });
+    return map;
+  }
+
+  function getSvgIconEntry(key, fallbackCustomData = '') {
+    const all = getAllSvgIcons();
+    if (key && all[key]) return all[key];
+    if (fallbackCustomData) {
+      const s = sanitizeCustomSvg(fallbackCustomData);
+      if (s) return { label: 'Custom', svg: s, rawSvg: s };
+      if (isSafeUrl(fallbackCustomData)) return { label: 'Custom', svg: `<img src="${esc(fallbackCustomData)}" alt="Icon">`, imageUrl: fallbackCustomData };
+    }
+    return null;
+  }
 
   function getThornFrameSvg() {
     return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="mswThornGold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#fef08a"/>
+          <stop offset="0%" stop-color="#fef9c3"/>
           <stop offset="50%" stop-color="#facc15"/>
-          <stop offset="100%" stop-color="#fb923c"/>
+          <stop offset="100%" stop-color="#ea580c"/>
         </linearGradient>
       </defs>
-      <path d="M10 14 L28 3 L44 13 L64 2 L84 12 L106 2 L128 12 L150 2 L170 12 L194 2 L216 12 L238 2 L258 13 L278 3 L310 14 L318 40 L306 62 L318 88 L307 116 L318 148 L307 180 L318 214 L307 248 L318 282 L307 316 L318 350 L310 386 L282 397 L258 386 L234 397 L208 387 L182 397 L158 387 L132 397 L106 387 L80 397 L56 386 L34 397 L10 386 L2 350 L13 316 L2 282 L13 248 L2 214 L13 180 L2 148 L13 116 L2 88 L13 62 L2 40 Z"
-        fill="none" stroke="url(#mswThornGold)" stroke-width="3.4" stroke-linejoin="round"/>
-      <path d="M16 18 L34 26 L22 44 M304 18 L286 26 L298 44 M16 382 L34 374 L22 356 M304 382 L286 374 L298 356"
-        fill="none" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="9" y="9" width="302" height="382" rx="14" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="10 4"/>
+      <path d="M8 14 L22 2 L36 13 L50 2 L66 13 L82 2 L98 13 L114 2 L130 13 L146 2 L160 12 L176 2 L192 13 L208 2 L224 13 L240 2 L256 13 L272 2 L288 13 L302 2 L314 16 L305 32 L318 48 L305 64 L318 82 L305 100 L318 118 L305 138 L318 158 L305 178 L318 198 L305 220 L318 242 L305 264 L318 286 L305 308 L318 332 L305 354 L316 382 L298 397 L280 386 L262 398 L242 387 L222 398 L202 387 L182 398 L160 387 L138 398 L118 387 L98 398 L78 387 L58 398 L40 386 L22 397 L6 382 L15 354 L2 332 L15 308 L2 286 L15 264 L2 242 L15 220 L2 198 L15 178 L2 158 L15 138 L2 118 L15 100 L2 82 L15 64 L2 48 L15 32 Z"
+        fill="none" stroke="url(#mswThornGold)" stroke-width="3.6" stroke-linejoin="round"/>
+      <path d="M12 18 Q42 8 68 17 M252 17 Q278 8 308 18 M12 382 Q42 392 68 383 M252 383 Q278 392 308 382 M14 20 L36 30 L20 50 M306 20 L284 30 L300 50 M14 380 L36 370 L20 350 M306 380 L284 370 L300 350"
+        fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="11" y="11" width="298" height="378" rx="16" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="12 4"/>
     </svg>`;
+  }
+
+  function getEmblemFrameSvg() {
+    return `<svg class="msw-emblem-frame-svg" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M8 10 L20 3 L32 10 L46 3 L60 10 L74 3 L88 10 L100 3 L112 10 L117 22 L110 36 L117 50 L110 64 L117 78 L110 92 L117 108 L110 112 L98 117 L86 110 L72 117 L60 110 L48 117 L34 110 L22 117 L8 110 L3 94 L10 80 L3 66 L10 52 L3 38 L10 24 Z"
+        fill="none" stroke="#fde047" stroke-width="2.8" stroke-linejoin="round"/>
+      <rect x="6" y="6" width="108" height="108" rx="10" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6 3"/>
+    </svg>`;
+  }
+
+  function getFrameSvgOverlay(frameStyle) {
+    if (frameStyle === 'demonic_thorn') return getThornFrameSvg();
+    if (frameStyle === 'celestial_arcane') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="8" y="8" width="304" height="384" rx="14" fill="none" stroke="#fde047" stroke-width="2"/>
+        <rect x="14" y="14" width="292" height="372" rx="10" fill="none" stroke="#fef08a" stroke-width="1" stroke-dasharray="6 4"/>
+        <path d="M10 48 C18 22 36 16 64 10 M310 48 C302 22 284 16 256 10 M10 352 C18 378 36 384 64 390 M310 352 C302 378 284 384 256 390" fill="none" stroke="#fde047" stroke-width="2.8" stroke-linecap="round"/>
+        <polygon points="160,3 166,11 160,19 154,11" fill="#fef08a"/>
+        <polygon points="160,381 166,389 160,397 154,389" fill="#fef08a"/>
+      </svg>`;
+    }
+    if (frameStyle === 'cursed_chains') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="9" y="9" width="302" height="382" rx="8" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-dasharray="14 6"/>
+        <path d="M4 34 L34 4 M286 4 L316 34 M4 366 L34 396 M286 396 L316 366" stroke="#fca5a5" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="16" cy="16" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
+        <circle cx="304" cy="16" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
+        <circle cx="16" cy="384" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
+        <circle cx="304" cy="384" r="5" fill="none" stroke="#facc15" stroke-width="2"/>
+      </svg>`;
+    }
+    if (frameStyle === 'cyber_circuit') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M12 40 V12 H66 L80 20 H130 M308 40 V12 H254 L240 20 H190 M12 360 V388 H66 L80 380 H130 M308 360 V388 H254 L240 380 H190" fill="none" stroke="#00f0ff" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="130" cy="20" r="3" fill="#00f0ff"/><circle cx="190" cy="20" r="3" fill="#00f0ff"/>
+        <circle cx="130" cy="380" r="3" fill="#00f0ff"/><circle cx="190" cy="380" r="3" fill="#00f0ff"/>
+      </svg>`;
+    }
+    if (frameStyle === 'dragon_scroll') {
+      return `<svg class="msw-thorn-svg-frame" viewBox="0 0 320 400" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M10 38 H28 V16 H52 M310 38 H292 V16 H268 M10 362 H28 V384 H52 M310 362 H292 V384 H268" fill="none" stroke="#fde047" stroke-width="2.8" stroke-linejoin="round"/>
+        <rect x="14" y="14" width="292" height="372" rx="4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.6"/>
+      </svg>`;
+    }
+    return '';
   }
 
   /* --------------------------------------------------------------------------
@@ -1229,6 +1545,46 @@
     return cloneObj(PRESETS[0].config);
   }
 
+  function getEmptyBaseConfig() {
+    return {
+      presetId: 'notification',
+      ...themeProps('hunter_blue'),
+      cardStyle: 'standard',
+      hideHeader: false,
+      starburst: false,
+      transparentBg: false,
+      svgIcon: '',
+      customIconData: '',
+      animation: 'hologram',
+      sfx: 'scifi',
+      headerIcon: '',
+      headerTitle: 'SYSTEM WINDOW',
+      headerBadge: '',
+      currencyText: '',
+      subtitle: '',
+      mediaUrl: '',
+      mediaLayout: 'none',
+      mediaCaption: '',
+      bodyText: '',
+      levelTransition: '',
+      unlockedAbility: '',
+      statBoosts: [],
+      inventoryItems: [],
+      shopItems: [],
+      bars: [],
+      statsCols: 2,
+      stats: [],
+      pills: [],
+      timerEnabled: false,
+      timerSeconds: 0,
+      timerLabel: 'TIME LEFT',
+      buttons: [],
+      stampText: '',
+      stampColor: '#facc15',
+      footerText: ''
+    };
+  }
+
   function normalizeRarity(r) {
     const k = String(r || 'common').trim().toLowerCase();
     if (['mythic', 'sss', 'ur', 'red'].includes(k)) return 'mythic';
@@ -1240,7 +1596,7 @@
 
   function normalizeConfig(msgOrCfg) {
     const raw = (msgOrCfg && msgOrCfg.systemConfig) ? msgOrCfg.systemConfig : (msgOrCfg || {});
-    const base = getDefaultConfig();
+    const base = getEmptyBaseConfig();
     const merged = { ...base, ...raw };
     delete merged.id;
     delete merged.label;
@@ -1250,11 +1606,16 @@
       merged.bodyText = msgOrCfg.text;
     }
     merged.cardStyle = ['relic', 'codex'].includes(merged.cardStyle) ? merged.cardStyle : 'standard';
-    merged.svgIcon = (merged.svgIcon && NEON_SVG_ICONS[merged.svgIcon]) ? merged.svgIcon : '';
-    merged.customFrameUrl = isSafeUrl(merged.customFrameUrl) ? String(merged.customFrameUrl).trim() : '';
+    const allSvg = getAllSvgIcons();
+    merged.customIconData = merged.customIconData ? (sanitizeCustomSvg(merged.customIconData) || (isSafeUrl(merged.customIconData) ? String(merged.customIconData).trim() : '')) : '';
+    merged.svgIcon = (merged.svgIcon && (allSvg[merged.svgIcon] || merged.customIconData)) ? merged.svgIcon : '';
+    if (merged.svgIcon && allSvg[merged.svgIcon] && allSvg[merged.svgIcon].isCustom && !merged.customIconData) {
+      merged.customIconData = allSvg[merged.svgIcon].rawSvg || allSvg[merged.svgIcon].imageUrl || '';
+    }
+    delete merged.customFrameUrl;
+    merged.transparentBg = false;
     merged.hideHeader = Boolean(merged.hideHeader);
     merged.starburst = Boolean(merged.starburst);
-    merged.transparentBg = Boolean(merged.transparentBg);
     merged.bars = Array.isArray(merged.bars) ? merged.bars.map(b => ({
       label: String(b.label || 'STAT'),
       value: clampPct(b.value, 100),
@@ -1392,7 +1753,6 @@
     if (cfg.gridPattern) classes.push('has-grid');
     if (cfg.starburst) classes.push('has-starburst');
     if (cfg.sparkles) classes.push('has-sparkles');
-    if (cfg.transparentBg) classes.push('is-transparent-bg');
     if (cfg.timerEnabled && Number(cfg.timerSeconds) > 0 && Number(cfg.timerSeconds) <= 10) {
       classes.push('is-timer-urgent');
     }
@@ -1403,7 +1763,7 @@
     el.style.setProperty('--sys-bg', hexToRgba(cfg.bgColor || '#041226', cfg.bgOpacity ?? 0.94));
     el.title = previewMode ? 'Live System Window Preview' : 'Click to customize System Window';
 
-    const svgObj = cfg.svgIcon && NEON_SVG_ICONS[cfg.svgIcon] ? NEON_SVG_ICONS[cfg.svgIcon] : null;
+    const svgObj = getSvgIconEntry(cfg.svgIcon, cfg.customIconData);
     const hasImgMedia = isSafeUrl(cfg.mediaUrl);
     const hasMedia = (cfg.mediaLayout && cfg.mediaLayout !== 'none' && hasImgMedia) || (cfg.cardStyle === 'standard' && svgObj && !hasImgMedia && cfg.mediaLayout !== 'none');
     const artworkHtml = hasImgMedia
@@ -1537,8 +1897,14 @@
 
     const topBannerMedia = (hasMedia && cfg.mediaLayout === 'banner_top') ? mediaHtml : '';
     const sideMedia = (hasMedia && cfg.mediaLayout !== 'banner_top') ? mediaHtml : '';
-    const thornSvgHtml = cfg.frameStyle === 'demonic_thorn' ? getThornFrameSvg() : '';
-    const customFrameHtml = isSafeUrl(cfg.customFrameUrl) ? `<img class="msw-custom-frame-img" src="${esc(cfg.customFrameUrl)}" alt="">` : '';
+    const frameSvgHtml = getFrameSvgOverlay(cfg.frameStyle);
+    const relicSparklesHtml = (cfg.sparkles && cfg.cardStyle === 'relic') ? `
+      <div class="msw-sparkles-layer" aria-hidden="true">
+        <span style="top:16%; left:14%;">✦</span>
+        <span style="top:20%; right:15%; font-size:11px;">✧</span>
+        <span style="bottom:32%; left:11%;">✦</span>
+        <span style="bottom:28%; right:12%;">✦</span>
+      </div>` : '';
 
     let mainInnerBodyHtml = '';
     if (cfg.cardStyle === 'relic') {
@@ -1548,6 +1914,7 @@
       mainInnerBodyHtml = `
         <div class="msw-relic-stage">
           <div class="msw-emblem-box ${cfg.frameStyle === 'demonic_thorn' ? 'is-thorn-emblem' : ''}">
+            ${cfg.frameStyle === 'demonic_thorn' ? getEmblemFrameSvg() : ''}
             ${emblemVisual}
           </div>
           ${cfg.headerTitle ? `<div class="msw-relic-title">${esc(cfg.headerTitle)}</div>` : ''}
@@ -1603,8 +1970,8 @@
       <div class="msw-fx-overlay scanlines"></div>
       <div class="msw-fx-overlay grid"></div>
       <div class="msw-fx-overlay starburst"></div>
-      ${thornSvgHtml}
-      ${customFrameHtml}
+      ${relicSparklesHtml}
+      ${frameSvgHtml}
       ${stampHtml}
       <div class="msw-inner">
         <div class="msw-header">
@@ -1751,7 +2118,7 @@
         } else if (key === 'badge') {
           cfg.headerBadge = val;
         } else if (key === 'icon') {
-          if (NEON_SVG_ICONS[val]) {
+          if (getAllSvgIcons()[val]) {
             cfg.svgIcon = val;
           } else {
             cfg.headerIcon = val;
@@ -2197,10 +2564,10 @@
       const statSeg = c.stats.map(s => `${s.label}:${s.value}`).join(', ');
       return `[SYS_ITEM: ${[c.headerTitle, c.headerBadge, statSeg, (c.bodyText || '').replace(/\n/g, ' ')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
-    if ((c.cardStyle === 'relic' || c.presetId === 'relic') && !c.mediaUrl?.startsWith('data:') && !c.customFrameUrl?.startsWith('data:')) {
+    if ((c.cardStyle === 'relic' || c.presetId === 'relic') && !c.mediaUrl?.startsWith('data:')) {
       return `[SYS_RELIC: ${[c.headerTitle, c.subtitle, (c.bodyText || '').replace(/\n/g, '\\n')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
-    if ((c.cardStyle === 'codex' || c.presetId === 'codex') && !c.mediaUrl?.startsWith('data:') && !c.customFrameUrl?.startsWith('data:')) {
+    if ((c.cardStyle === 'codex' || c.presetId === 'codex') && !c.mediaUrl?.startsWith('data:')) {
       return `[SYS_CODEX: ${[c.headerTitle, (c.bodyText || '').replace(/\n/g, '\\n')].filter(Boolean).join(' | ')}${modSuffix}]`;
     }
 
@@ -2214,6 +2581,7 @@
   let builderEditingMsgId = null;
   let builderActiveTab = 'presets';
   let builderHoldMs = 1900;
+  let builderSvgFilter = 'all';
 
   function ensureBuilderModalDom() {
     if (document.getElementById('systemWindowBuilderModal')) return;
@@ -2327,24 +2695,46 @@
               <div class="syswin-media-picker-strip" id="sysWinMediaPickerStrip"></div>
             </div>
 
-            <div style="background:#0f172a; border:1px solid #1e3a5f; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+            <div style="background:#0f172a; border:1px solid #1e3a5f; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:7px;">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                <span style="font-size:12px; font-weight:800; color:#facc15;">✨ Built-In Neon Vector & Relic Icons (16 Icons)</span>
-                <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.selectSvgIcon('')">✕ No Vector Icon</button>
-              </div>
-              <div class="syswin-svg-picker-grid" id="sysWinSvgPickerGrid"></div>
-            </div>
-
-            <div style="background:#131c31; border:1px solid #293548; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                <span style="font-size:12px; font-weight:800; color:#f472b6;">🪧 Custom PNG Frame Border Overlay</span>
-                <div style="display:flex; gap:5px;">
-                  <input type="file" id="sysWinCustomFrameInput" accept="image/*" style="display:none;">
-                  <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysWinCustomFrameInput').click()">📁 Upload Frame PNG</button>
-                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.clearCustomFrame()">✕ Clear</button>
+                <span style="font-size:12px; font-weight:800; color:#facc15;">✨ Neon Vector & Relic Icons (36+ Built-In & Custom)</span>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                  <button type="button" class="syswin-chip-btn" style="border-color:#4ade80; color:#4ade80;" onclick="window.ChatHubSystemWindows.toggleCustomIconDrawer()">+ Add Own Icon</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.selectSvgIcon('')">✕ None</button>
                 </div>
               </div>
-              <input type="text" class="syswin-input" id="sysInpCustomFrameUrl" placeholder="Paste transparent PNG frame URL or upload above...">
+              <div class="syswin-chip-row" id="sysWinSvgFilterRow">
+                <button type="button" class="syswin-chip-btn active" data-svg-filter="all" onclick="window.ChatHubSystemWindows.setSvgFilter('all')">All</button>
+                <button type="button" class="syswin-chip-btn" data-svg-filter="relic" onclick="window.ChatHubSystemWindows.setSvgFilter('relic')">🔮 Relic & Skills</button>
+                <button type="button" class="syswin-chip-btn" data-svg-filter="codex" onclick="window.ChatHubSystemWindows.setSvgFilter('codex')">📘 Codex & Diagrams</button>
+                <button type="button" class="syswin-chip-btn" data-svg-filter="custom" onclick="window.ChatHubSystemWindows.setSvgFilter('custom')">⭐ My Custom</button>
+              </div>
+              <div class="syswin-custom-icon-maker" id="sysCustomIconDrawer">
+                <div style="font-size:11px; font-weight:800; color:#38bdf8;">⚡ Create Neon Badge Icon OR Upload SVG / Transparent Icon</div>
+                <div class="syswin-field-row">
+                  <input type="text" class="syswin-input" id="sysNewIconLabel" placeholder="Name (e.g. Poison Fang)">
+                  <div style="display:grid; grid-template-columns:1fr 1fr 44px; gap:5px;">
+                    <input type="text" class="syswin-input" id="sysNewIconGlyph" placeholder="Emoji/Text (☠️, SSS)" maxlength="4">
+                    <select class="syswin-select" id="sysNewIconShape">
+                      <option value="hex">Hexagon</option>
+                      <option value="circle">Circle</option>
+                      <option value="diamond">Diamond</option>
+                      <option value="shield">Shield</option>
+                    </select>
+                    <input type="color" id="sysNewIconColor" value="#00f0ff" style="width:44px; height:32px; border:none; background:none; cursor:pointer;">
+                  </div>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                  <button type="button" class="syswin-chip-btn" style="border-color:#00f0ff; color:#00f0ff;" onclick="window.ChatHubSystemWindows.createCustomBadgeIcon()">✨ Save Neon Badge</button>
+                  <input type="file" id="sysNewIconFileInput" accept=".svg,image/svg+xml,image/png,image/webp,image/gif" style="display:none;">
+                  <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysNewIconFileInput').click()">📁 Upload .SVG / Icon PNG</button>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <input type="text" class="syswin-input" id="sysNewIconSvgInput" placeholder="Or paste <svg>...</svg> code here...">
+                  <button type="button" class="syswin-chip-btn" style="white-space:nowrap;" onclick="window.ChatHubSystemWindows.createCustomRawSvgIcon()">+ Save SVG</button>
+                </div>
+              </div>
+              <div class="syswin-svg-picker-grid" id="sysWinSvgPickerGrid"></div>
             </div>
           </div>
 
@@ -2438,13 +2828,17 @@
             </div>
             <div class="syswin-field-row">
               <div>
-                <label class="syswin-label">Frame Geometry</label>
+                <label class="syswin-label">Frame Geometry (12 Built-In Vector Frames)</label>
                 <select class="syswin-select" id="sysSelFrameStyle">
                   <option value="tech_brackets">Tech L-Brackets (Solo Hunter)</option>
                   <option value="cyber_bevel">Cut-Corner Cyber Plate</option>
                   <option value="imperial_ornate">Ornate Imperial / Murim</option>
-                  <option value="demonic_thorn">🔥 Demonic Thorn Relic (SVG Frame)</option>
+                  <option value="demonic_thorn">🔥 DEVOUR Thorn & Bone (SVG Frame)</option>
                   <option value="blueprint_double">📐 Twin-Line Blueprint Codex</option>
+                  <option value="celestial_arcane">⚜️ Celestial Archangel Halo (SVG)</option>
+                  <option value="cursed_chains">⛓️ Cursed Blood Chains (SVG)</option>
+                  <option value="cyber_circuit">🧬 Holo Circuit Trace (SVG)</option>
+                  <option value="dragon_scroll">🐉 Murim Imperial Dragon (SVG)</option>
                   <option value="glitch_corrupted">Corrupted Glitch Frame</option>
                   <option value="glass_hud">Glassmorphic Minimal HUD</option>
                   <option value="comic_ink">Bold Comic Ink Box</option>
@@ -2489,10 +2883,9 @@
             <div class="syswin-chip-row" style="padding:6px 0;">
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkScanlines"> Scanlines</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkGrid"> Tactical Grid</label>
-              <label class="syswin-chip-btn"><input type="checkbox" id="sysChkSparkles"> Corner Sparkles</label>
+              <label class="syswin-chip-btn"><input type="checkbox" id="sysChkSparkles"> Sparkles</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkStarburst"> Starburst Rays</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkHideHeader"> Hide Header Bar</label>
-              <label class="syswin-chip-btn"><input type="checkbox" id="sysChkTransparentBg"> Transparent Card Bg</label>
             </div>
             <div class="syswin-field-row">
               <div>
@@ -2574,7 +2967,6 @@
     setVal('sysSelMediaLayout', builderDraft.mediaLayout || 'none');
     setVal('sysInpMediaCaption', builderDraft.mediaCaption || '');
     setVal('sysInpMediaUrl', builderDraft.mediaUrl || '');
-    setVal('sysInpCustomFrameUrl', builderDraft.customFrameUrl || '');
 
     setVal('sysSelStatsCols', String(builderDraft.statsCols || 2));
     setVal('sysInpPills', (builderDraft.pills || []).join(', '));
@@ -2597,7 +2989,6 @@
     setChk('sysChkSparkles', builderDraft.sparkles);
     setChk('sysChkStarburst', builderDraft.starburst);
     setChk('sysChkHideHeader', builderDraft.hideHeader);
-    setChk('sysChkTransparentBg', builderDraft.transparentBg);
     setVal('sysSelAnimation', builderDraft.animation || 'hologram');
     setVal('sysSelSfx', builderDraft.sfx !== undefined ? builderDraft.sfx : 'scifi');
     setVal('sysSelGlow', builderDraft.glowIntensity || 'high');
@@ -2701,10 +3092,29 @@
   }
 
   function renderSvgIconPicker() {
+    const filterRow = document.getElementById('sysWinSvgFilterRow');
+    if (filterRow) {
+      filterRow.querySelectorAll('[data-svg-filter]').forEach(b => {
+        b.classList.toggle('active', b.dataset.svgFilter === builderSvgFilter);
+      });
+    }
     const grid = document.getElementById('sysWinSvgPickerGrid');
     if (!grid) return;
-    grid.innerHTML = Object.entries(NEON_SVG_ICONS).map(([key, item]) => `
+    const all = getAllSvgIcons();
+    const entries = Object.entries(all).filter(([, item]) => {
+      if (builderSvgFilter === 'all') return true;
+      if (builderSvgFilter === 'custom') return Boolean(item.isCustom);
+      return (item.cat || 'relic') === builderSvgFilter;
+    });
+    // Put custom user icons at the front when viewing 'all' or 'custom'
+    entries.sort(([, a], [, b]) => (b.isCustom ? 1 : 0) - (a.isCustom ? 1 : 0));
+    if (entries.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1; font-size:11px; color:#64748b; padding:10px; text-align:center;">No custom icons yet — click "+ Add Own Icon" above or get free packs from Marketplace!</div>`;
+      return;
+    }
+    grid.innerHTML = entries.map(([key, item]) => `
       <button type="button" class="syswin-svg-icon-btn ${builderDraft.svgIcon === key ? 'active' : ''}" data-svg-key="${esc(key)}" title="${esc(item.label)}" onclick="window.ChatHubSystemWindows.selectSvgIcon('${esc(key)}')">
+        ${item.isCustom ? `<span class="syswin-svg-del" title="Delete custom icon" onclick="event.stopPropagation(); window.ChatHubSystemWindows.deleteCustomIcon('${esc(key)}')">✕</span>` : ''}
         ${item.svg}
         <span>${esc(item.label)}</span>
       </button>
@@ -2893,7 +3303,6 @@
     bindInput('sysInpUnlockedAbility', 'unlockedAbility');
     bindInput('sysInpMediaCaption', 'mediaCaption');
     bindInput('sysInpMediaUrl', 'mediaUrl');
-    bindInput('sysInpCustomFrameUrl', 'customFrameUrl');
     bindChange('sysSelMediaLayout', 'mediaLayout');
     bindChange('sysSelCardStyle', 'cardStyle');
 
@@ -2917,7 +3326,6 @@
     bindChange('sysChkSparkles', 'sparkles');
     bindChange('sysChkStarburst', 'starburst');
     bindChange('sysChkHideHeader', 'hideHeader');
-    bindChange('sysChkTransparentBg', 'transparentBg');
     bindChange('sysSelAnimation', 'animation');
     bindChange('sysSelSfx', 'sfx');
     bindChange('sysSelGlow', 'glowIntensity');
@@ -2952,19 +3360,44 @@
       });
     }
 
-    const frameFileInp = document.getElementById('sysWinCustomFrameInput');
-    if (frameFileInp) {
-      frameFileInp.addEventListener('change', (e) => {
+    const customIconInp = document.getElementById('sysNewIconFileInput');
+    if (customIconInp) {
+      customIconInp.addEventListener('change', (e) => {
         const f = e.target.files && e.target.files[0];
         if (!f) return;
+        const labelInp = document.getElementById('sysNewIconLabel');
+        const label = (labelInp && labelInp.value.trim()) || f.name.replace(/\.[^/.]+$/, '').slice(0, 16) || 'My Icon';
         const reader = new FileReader();
-        reader.onload = (ev) => {
-          builderDraft.customFrameUrl = ev.target.result;
-          const urlInp = document.getElementById('sysInpCustomFrameUrl');
-          if (urlInp) urlInp.value = '(Uploaded Custom Frame Attached)';
-          refreshPreviewOnly();
-        };
-        reader.readAsDataURL(f);
+        if (/svg/i.test(f.type) || /\.svg$/i.test(f.name)) {
+          reader.onload = (ev) => {
+            const cleanSvg = sanitizeCustomSvg(ev.target.result);
+            if (!cleanSvg) {
+              if (api() && typeof api().showToast === 'function') api().showToast('⚠️ Invalid or unsafe SVG file.');
+              return;
+            }
+            const id = 'custom_' + Date.now().toString(36);
+            const list = loadCustomIcons();
+            list.unshift({ id, label, svg: cleanSvg, createdAt: Date.now() });
+            saveCustomIcons(list);
+            if (labelInp) labelInp.value = '';
+            window.ChatHubSystemWindows.selectSvgIcon(id);
+            if (api() && typeof api().showToast === 'function') api().showToast(`✨ Added SVG icon "${label}"!`);
+          };
+          reader.readAsText(f);
+        } else {
+          reader.onload = (ev) => {
+            const url = ev.target.result;
+            if (!isSafeUrl(url)) return;
+            const id = 'custom_' + Date.now().toString(36);
+            const list = loadCustomIcons();
+            list.unshift({ id, label, imageUrl: url, createdAt: Date.now() });
+            saveCustomIcons(list);
+            if (labelInp) labelInp.value = '';
+            window.ChatHubSystemWindows.selectSvgIcon(id);
+            if (api() && typeof api().showToast === 'function') api().showToast(`✨ Added icon "${label}"!`);
+          };
+          reader.readAsDataURL(f);
+        }
         e.target.value = '';
       });
     }
@@ -3054,6 +3487,7 @@
     THEMES,
     PRESETS,
     NEON_SVG_ICONS,
+    getAllSvgIcons,
     normalizeConfig,
     renderSystemWindowElement,
     animateBarsInElement,
@@ -3075,8 +3509,68 @@
       builderDraft = applyThemeToConfig(builderDraft, themeId);
       syncInputsFromDraft();
     },
+    setSvgFilter(cat) {
+      builderSvgFilter = cat || 'all';
+      renderSvgIconPicker();
+    },
+    toggleCustomIconDrawer() {
+      const drw = document.getElementById('sysCustomIconDrawer');
+      if (drw) drw.classList.toggle('open');
+    },
+    createCustomBadgeIcon() {
+      const labelInp = document.getElementById('sysNewIconLabel');
+      const glyphInp = document.getElementById('sysNewIconGlyph');
+      const shapeInp = document.getElementById('sysNewIconShape');
+      const colorInp = document.getElementById('sysNewIconColor');
+      const label = (labelInp && labelInp.value.trim()) || 'Custom Badge';
+      const glyph = (glyphInp && glyphInp.value.trim()) || '⚡';
+      const shape = (shapeInp && shapeInp.value) || 'hex';
+      const color = (colorInp && colorInp.value) || '#00f0ff';
+      const svg = generateNeonBadgeSvg(glyph, shape, color);
+      const id = 'custom_' + Date.now().toString(36);
+      const list = loadCustomIcons();
+      list.unshift({ id, label: label.slice(0, 18), svg, createdAt: Date.now() });
+      saveCustomIcons(list);
+      if (labelInp) labelInp.value = '';
+      if (glyphInp) glyphInp.value = '';
+      builderSvgFilter = 'all';
+      this.selectSvgIcon(id);
+      if (api() && typeof api().showToast === 'function') api().showToast(`✨ Created Neon Icon "${label}"!`);
+    },
+    createCustomRawSvgIcon() {
+      const labelInp = document.getElementById('sysNewIconLabel');
+      const svgInp = document.getElementById('sysNewIconSvgInput');
+      const cleanSvg = sanitizeCustomSvg(svgInp ? svgInp.value : '');
+      if (!cleanSvg) {
+        if (api() && typeof api().showToast === 'function') api().showToast('⚠️ Paste valid <svg>...</svg> markup first.');
+        return;
+      }
+      const label = (labelInp && labelInp.value.trim()) || 'Custom SVG';
+      const id = 'custom_' + Date.now().toString(36);
+      const list = loadCustomIcons();
+      list.unshift({ id, label: label.slice(0, 18), svg: cleanSvg, createdAt: Date.now() });
+      saveCustomIcons(list);
+      if (labelInp) labelInp.value = '';
+      if (svgInp) svgInp.value = '';
+      builderSvgFilter = 'all';
+      this.selectSvgIcon(id);
+      if (api() && typeof api().showToast === 'function') api().showToast(`✨ Saved Custom SVG "${label}"!`);
+    },
+    deleteCustomIcon(iconKey) {
+      const list = loadCustomIcons().filter(ci => ci.id !== iconKey);
+      saveCustomIcons(list);
+      if (builderDraft.svgIcon === iconKey) {
+        builderDraft.svgIcon = '';
+        builderDraft.customIconData = '';
+      }
+      renderSvgIconPicker();
+      refreshPreviewOnly();
+    },
     selectSvgIcon(iconKey) {
-      builderDraft.svgIcon = (iconKey && NEON_SVG_ICONS[iconKey]) ? iconKey : '';
+      const all = getAllSvgIcons();
+      const chosen = iconKey ? all[iconKey] : null;
+      builderDraft.svgIcon = chosen ? iconKey : '';
+      builderDraft.customIconData = (chosen && chosen.isCustom) ? (chosen.rawSvg || chosen.imageUrl || '') : '';
       if (builderDraft.svgIcon) {
         builderDraft.mediaUrl = '';
         const urlInp = document.getElementById('sysInpMediaUrl');
@@ -3091,11 +3585,65 @@
       renderMediaPickerStrip();
       refreshPreviewOnly();
     },
-    clearCustomFrame() {
-      builderDraft.customFrameUrl = '';
-      const inp = document.getElementById('sysInpCustomFrameUrl');
-      if (inp) inp.value = '';
-      refreshPreviewOnly();
+    getPersonalPresets() {
+      return loadPersonalPresets();
+    },
+    getCustomIcons() {
+      return loadCustomIcons();
+    },
+    installMarketplacePresets(packId, presetDefs = []) {
+      const list = loadPersonalPresets();
+      let count = 0;
+      presetDefs.forEach((def, idx) => {
+        if (!def || !def.config) return;
+        const srcKey = String(def.sourceId || def.name || idx).trim();
+        const existingIdx = list.findIndex(p => p.marketplacePackId === packId && p.marketplaceSourceId === srcKey);
+        const entry = {
+          name: String(def.name || def.config.headerTitle || 'System Style').slice(0, 32),
+          savedAt: Date.now(),
+          config: cloneObj(def.config),
+          marketplacePackId: packId,
+          marketplaceSourceId: srcKey
+        };
+        if (existingIdx >= 0) list[existingIdx] = entry;
+        else list.unshift(entry);
+        count++;
+      });
+      savePersonalPresets(list.slice(0, 60));
+      renderSavedPresetsList();
+      return count;
+    },
+    installMarketplaceIcons(packId, iconDefs = []) {
+      const list = loadCustomIcons();
+      let count = 0;
+      iconDefs.forEach((def, idx) => {
+        if (!def || !def.id) return;
+        const cleanSvg = def.svg ? sanitizeCustomSvg(def.svg) : '';
+        const cleanImg = (!cleanSvg && isSafeUrl(def.imageUrl)) ? def.imageUrl : '';
+        if (!cleanSvg && !cleanImg) return;
+        const existingIdx = list.findIndex(ci => ci.id === def.id);
+        const rec = {
+          id: String(def.id),
+          label: String(def.label || 'System Icon').slice(0, 18),
+          svg: cleanSvg || undefined,
+          imageUrl: cleanImg || undefined,
+          marketplacePackId: packId,
+          createdAt: Date.now()
+        };
+        if (existingIdx >= 0) list[existingIdx] = rec;
+        else list.unshift(rec);
+        count++;
+      });
+      saveCustomIcons(list.slice(0, 80));
+      renderSvgIconPicker();
+      return count;
+    },
+    uninstallMarketplacePack(packId) {
+      if (!packId) return;
+      savePersonalPresets(loadPersonalPresets().filter(p => p.marketplacePackId !== packId));
+      saveCustomIcons(loadCustomIcons().filter(ci => ci.marketplacePackId !== packId));
+      renderSavedPresetsList();
+      renderSvgIconPicker();
     },
     clearImage() {
       builderDraft.mediaUrl = '';

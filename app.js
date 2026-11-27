@@ -11350,6 +11350,9 @@ if (msg.type === 'quest') {
       } catch (e) {}
 
       saveStudioState();
+      if (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.uninstallMarketplacePack === 'function') {
+        window.ChatHubSystemWindows.uninstallMarketplacePack(packId);
+      }
       if (typeof renderCastModalList === 'function') renderCastModalList();
       if (typeof renderHubCastList === 'function') renderHubCastList();
       if (typeof renderGroupHeader === 'function') renderGroupHeader();
@@ -11358,6 +11361,23 @@ if (msg.type === 'quest') {
       if (typeof renderAssetCategory === 'function') renderAssetCategory();
       if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
       if (typeof renderScriptLibrary === 'function') renderScriptLibrary();
+    },
+
+    getSystemPresets() {
+      return (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.getPersonalPresets === 'function')
+        ? window.ChatHubSystemWindows.getPersonalPresets() : [];
+    },
+    getSystemIcons() {
+      return (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.getCustomIcons === 'function')
+        ? window.ChatHubSystemWindows.getCustomIcons() : [];
+    },
+    installSystemPresets(packId, presetDefs = []) {
+      return (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.installMarketplacePresets === 'function')
+        ? window.ChatHubSystemWindows.installMarketplacePresets(packId, presetDefs) : 0;
+    },
+    installSystemIcons(packId, iconDefs = []) {
+      return (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.installMarketplaceIcons === 'function')
+        ? window.ChatHubSystemWindows.installMarketplaceIcons(packId, iconDefs) : 0;
     },
 
     loadAndPlayScript(scriptText, title, autoPlay) {
