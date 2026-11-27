@@ -1775,15 +1775,18 @@ function playSciFiChimeSound() {
     const targetBubble = bubbleEl || getLastChatBubbleEl('.speech-bubble, .sticker-card');
 
     if (targetBubble) {
-      if (expr === 'angry') {
+      if (expr === 'angry' || expr === 'rage' || expr === 'combat') {
         targetBubble.classList.remove('in-box-angry');
         requestAnimationFrame(() => targetBubble.classList.add('in-box-angry'));
-      } else if (expr === 'shock') {
+      } else if (expr === 'shock' || expr === 'panic' || expr === 'surprise') {
         targetBubble.classList.remove('in-box-shock');
         requestAnimationFrame(() => targetBubble.classList.add('in-box-shock'));
-      } else if (expr === 'love') {
+      } else if (expr === 'love' || expr === 'blush' || expr === 'flustered') {
         targetBubble.classList.remove('in-box-pulse');
         requestAnimationFrame(() => targetBubble.classList.add('in-box-pulse'));
+      } else if (expr === 'shadow' || expr === 'creepy' || expr === 'scheming') {
+        targetBubble.classList.remove('in-box-shock');
+        requestAnimationFrame(() => targetBubble.classList.add('in-box-shock'));
       }
     }
 
@@ -1806,18 +1809,22 @@ function playSciFiChimeSound() {
     const nowMs = performance.now();
     if (nowMs - lastExprAudioAt < 65) return;
     lastExprAudioAt = nowMs;
-    if (expr === 'cry') {
+    if (expr === 'cry' || expr === 'sad') {
       playSadSlideSound();
-    } else if (expr === 'laugh') {
+    } else if (expr === 'laugh' || expr === 'happy' || expr === 'pout') {
       playBoingSound();
-    } else if (expr === 'angry') {
+    } else if (expr === 'angry' || expr === 'rage' || expr === 'combat') {
       playBoomSound();
       triggerScreenShake();
-    } else if (expr === 'shock') {
+    } else if (expr === 'shock' || expr === 'panic' || expr === 'surprise') {
       playShockSound();
       triggerScreenShake();
-    } else if (expr === 'love') {
+    } else if (expr === 'love' || expr === 'blush' || expr === 'flustered') {
       playSparkleSound();
+    } else if (expr === 'shadow' || expr === 'creepy') {
+      playScifiSound();
+    } else if (expr === 'smirk' || expr === 'scheming' || expr === 'proud') {
+      playPopSound(charPitch * 1.15);
     } else {
       playPopSound(charPitch);
     }
@@ -9723,11 +9730,17 @@ if (msg.type === 'quest') {
 
     // 4. Auto-split packed scripts: insert newlines before directives if multiple tags are on one line
     cleaned = cleaned.replace(/\s+(\/(?:\s*delay|pause))/gi, '\n$1');
-    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED|[A-Za-z0-9_\-\s]+:[^\]]+)\])/gi, '\n$1');
+    cleaned = cleaned.replace(/\s+(\[(?:SYSTEM|QUEST|CHOICE|PAUSE|SCENE|APP|CHAT|IMAGE|VIDEO|AUDIO|SPEED)(?:\s*:[^\]]+)?\])/gi, '\n$1');
+    cleaned = cleaned.replace(/([.!?\"\'\)])\s+(\[[^\]]+\]\s*:)/gi, '$1\n$2');
 
     const lines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
     const parsedMsgs = [];
-    const validExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
+    const validExprs = [
+      'normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper',
+      'smirk', 'shadow', 'combat', 'rage', 'panic', 'blush', 'wink',
+      'scheming', 'creepy', 'proud', 'tea', 'disdain', 'pout', 'confused',
+      'flustered', 'evil', 'scared', 'serious', 'sigh', 'bored', 'happy', 'sad', 'surprise'
+    ];
     let pendingDelayMs = 0;
 
     // Filters for AI chatter & formatting artifacts
@@ -9931,16 +9944,37 @@ if (msg.type === 'quest') {
       let msgBody = '';
 
       const bracketMatch = line.match(/^\[([^\]]+)\]:\s*(.+)$/);
+      const nameTagPrefixMatch = line.match(/^([^:\[\(]+)\s*[\(\[]([^\)\]]+)[\)\]]\s*:\s*(.+)$/);
       if (bracketMatch) {
         const tagParts = bracketMatch[1].split(':').map(p => p.trim()).filter(Boolean);
         charName = tagParts[0] || '';
         subTags = tagParts.slice(1);
         msgBody = bracketMatch[2].trim();
+      } else if (nameTagPrefixMatch) {
+        charName = nameTagPrefixMatch[1].trim();
+        subTags = nameTagPrefixMatch[2].split(/[:,\s]+/).map(t => t.trim()).filter(Boolean);
+        msgBody = nameTagPrefixMatch[3].trim();
       } else {
         const colonIdx = line.indexOf(':');
         if (colonIdx === -1) return;
-        const candidateName = line.slice(0, colonIdx).trim();
-        const candidateBody = line.slice(colonIdx + 1).trim();
+        let candidateName = line.slice(0, colonIdx).trim();
+        let candidateBody = line.slice(colonIdx + 1).trim();
+
+        // Check if candidateName has inline tags: Kaito (smirk) or Kaito [shadow] or Kaito (combat:sword)
+        const nameTagMatch = candidateName.match(/^([^\(\[\]\)]+?)\s*[\(\[]\s*([^\)\]]+)\s*[\)\]]$/);
+        if (nameTagMatch) {
+          candidateName = nameTagMatch[1].trim();
+          const extraTags = nameTagMatch[2].split(/[:,\s]+/).map(t => t.trim()).filter(Boolean);
+          subTags.push(...extraTags);
+        }
+
+        // Check if candidateBody starts with an inline expression tag: (smirk) Message or [shadow] Message
+        const bodyTagMatch = candidateBody.match(/^[\(\[]\s*([a-zA-Z0-9_\-]+(?:\s*[:,\-]\s*[a-zA-Z0-9_\-]+)*)\s*[\)\]]\s*(.+)$/);
+        if (bodyTagMatch) {
+          const bodyTags = bodyTagMatch[1].split(/[:,\s]+/).map(t => t.trim()).filter(Boolean);
+          subTags.push(...bodyTags);
+          candidateBody = bodyTagMatch[2].trim();
+        }
 
         // Reject if candidateName is clearly not a character name (too long, contains sentence punctuation, etc.)
         if (!candidateName || candidateName.length > 25 || /[\?\!\,\[\]\{\}\<\>]/.test(candidateName) || candidateName.split(/\s+/).length > 3) {
@@ -9999,7 +10033,12 @@ if (msg.type === 'quest') {
       let isSlow = false;
       let explicitSide = null;
 
-      const knownExprs = ['normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper'];
+      const knownExprs = [
+        'normal', 'cry', 'laugh', 'angry', 'shock', 'love', 'whisper',
+        'smirk', 'shadow', 'combat', 'rage', 'panic', 'blush', 'wink',
+        'scheming', 'creepy', 'proud', 'tea', 'disdain', 'pout', 'confused',
+        'flustered', 'evil', 'scared', 'serious', 'sigh', 'bored', 'happy', 'sad', 'surprise'
+      ];
       const knownSounds = ['punch', 'sword', 'boom', 'vineboom', 'sting', 'scifi', 'sad', 'boing', 'hit', 'slash', 'cut', 'pop', 'sparkle'];
 
       subTags.forEach(t => {
@@ -10029,7 +10068,9 @@ if (msg.type === 'quest') {
           explicitSide = tl;
         } else if (isStickerType && !stickerKey) {
           stickerKey = t;
-        } else if (!explicitExpr && char.expressions && char.expressions[tl]) {
+        } else if (!explicitExpr && /^[a-z0-9_\-]+$/i.test(tl) && (char.expressions && char.expressions[tl])) {
+          explicitExpr = tl;
+        } else if (!explicitExpr && !explicitSfx && /^[a-z0-9_\-]{2,20}$/i.test(tl) && !/^(left|right|sfx|burst|sticker|gif|image|photo|video|vid|audio|voice|fast|slow)$/i.test(tl)) {
           explicitExpr = tl;
         }
       });
@@ -10168,7 +10209,8 @@ if (msg.type === 'quest') {
       // Emotion & Auto-Timing
       let expr = explicitExpr;
       const hasCustomExpr = Boolean(char && char.expressions && char.expressions[expr]);
-      if (!expr || (!validExprs.includes(expr) && !hasCustomExpr)) {
+      const isValidExpr = Boolean(expr && (validExprs.includes(expr) || hasCustomExpr));
+      if (!expr || !isValidExpr) {
         let autoExpr = 'normal';
         if (msgBody.includes('😭') || msgBody.includes('😢')) autoExpr = 'cry';
         else if (msgBody.includes('😂') || msgBody.includes('🤣')) autoExpr = 'laugh';

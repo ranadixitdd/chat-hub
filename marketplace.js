@@ -399,7 +399,9 @@
 
   function setPreviewCharExpr(exprKey, pitch) {
     previewExpr = exprKey;
-    if (api() && typeof api().playPopSound === 'function') {
+    if (api() && typeof api().triggerExpressionEffects === 'function') {
+      api().triggerExpressionEffects(exprKey, pitch || 1.05);
+    } else if (api() && typeof api().playPopSound === 'function') {
       api().playPopSound(pitch || 1.05);
     }
     renderMarketplacePreview();

@@ -9,7 +9,7 @@
   const ORIGINAL_QUALITY_PACKS = [
     {
       id: 'mkt_shadow_hunter_kaito',
-      title: 'Shadow Hunter Kaito (5 Expressions)',
+      title: 'Shadow Hunter Kaito (8 Expressions)',
       category: 'characters',
       author: 'ChatHub Originals',
       authorHandle: '@chathub_studio',
@@ -18,8 +18,8 @@
       priceUsd: 0,
       plannedPriceUsd: 3.99,
       license: 'Free for Personal & Shorts/Reels Videos',
-      description: 'Original anime protagonist with 5 transparent expression sprites: normal, happy, angry, surprise & shadow aura.',
-      tags: ['Anime', 'Protagonist', '5 Faces', 'Action'],
+      description: 'Original anime hunter protagonist with 8 transparent expression sprites: normal, smirk, shadow aura, combat, rage, surprise, laugh & panic.',
+      tags: ['Hunter', 'Solo Action', '8 Faces', 'Protagonist'],
       coverImage: 'assets/characters/anime_boy_body.png',
       baseInstalls: 1420,
       items: {
@@ -33,18 +33,20 @@
           avatar: 'assets/characters/anime_boy_body.png',
           expressions: {
             normal: 'assets/characters/anime_boy_body.png',
-            laugh: 'assets/characters/anime_boy_happy.png',
+            smirk: 'assets/characters/anime_boy_face_02.png',
+            shadow: 'assets/characters/anime_boy_shadow.png',
+            combat: 'assets/characters/anime_boy_face_04.png',
             angry: 'assets/characters/anime_boy_angry.png',
             shock: 'assets/characters/anime_boy_surprise.png',
-            cry: 'assets/characters/anime_boy_shadow.png',
-            love: 'assets/characters/anime_boy_happy.png'
+            laugh: 'assets/characters/anime_boy_happy.png',
+            panic: 'assets/characters/anime_boy_face_06.png'
           }
         }]
       }
     },
     {
       id: 'mkt_tsundere_hana',
-      title: 'Tsundere Heroine Hana (5 Expressions)',
+      title: 'Tsundere Heroine Hana (6 Expressions)',
       category: 'characters',
       author: 'ChatHub Originals',
       authorHandle: '@chathub_studio',
@@ -53,8 +55,8 @@
       priceUsd: 0,
       plannedPriceUsd: 3.99,
       license: 'Free for Personal & Shorts/Reels Videos',
-      description: 'Expressive anime heroine ready for rom-coms and squad banter with happy, pout, shock & full-body sprites.',
-      tags: ['Rom-Com', 'Heroine', '5 Faces', 'Tsundere'],
+      description: 'Expressive anime heroine ready for rom-coms and squad banter with happy, pout, shock, blush, laugh & full-body sprites.',
+      tags: ['Rom-Com', 'Heroine', '6 Faces', 'Tsundere'],
       coverImage: 'assets/characters/anime_girl_body.png',
       baseInstalls: 1680,
       items: {
@@ -68,11 +70,161 @@
           avatar: 'assets/characters/anime_girl_body.png',
           expressions: {
             normal: 'assets/characters/anime_girl_body.png',
-            love: 'assets/characters/anime_girl_happy.png',
-            laugh: 'assets/characters/anime_girl_happy.png',
-            angry: 'assets/characters/anime_girl_pout.png',
+            pout: 'assets/characters/anime_girl_pout.png',
             shock: 'assets/characters/anime_girl_shock.png',
-            cry: 'assets/characters/anime_girl_transparent.png'
+            love: 'assets/characters/anime_girl_face_03.png',
+            laugh: 'assets/characters/anime_girl_happy.png',
+            transparent: 'assets/characters/anime_girl_transparent.png'
+          }
+        }]
+      }
+    },
+    {
+      id: 'mkt_street_fighter_ren',
+      title: 'Street Fighter Ren (9 Full-Body Action Poses)',
+      category: 'characters',
+      author: 'ChatHub Originals',
+      authorHandle: '@chathub_studio',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 4.99,
+      license: 'Free for Personal & Shorts/Reels Videos',
+      description: 'High-energy streetwear fighter with 9 full-body dynamic action sprites: combat, smirk, rage, shadow aura, shock, laugh & sad.',
+      tags: ['Street Fighter', 'Cyberpunk', '9 Poses', 'Action'],
+      coverImage: 'assets/characters/ren_street_body.png',
+      baseInstalls: 1120,
+      items: {
+        characters: [{
+          sourceId: 'ren_street_fighter',
+          name: 'Ren',
+          side: 'right',
+          color: '#f59e0b',
+          pitch: 0.98,
+          role: 'Street Brawler',
+          avatar: 'assets/characters/ren_street_body.png',
+          expressions: {
+            normal: 'assets/characters/ren_normal.png',
+            smirk: 'assets/characters/ren_smirk.png',
+            combat: 'assets/characters/ren_combat.png',
+            laugh: 'assets/characters/ren_laugh.png',
+            shock: 'assets/characters/ren_shock.png',
+            angry: 'assets/characters/ren_angry.png',
+            love: 'assets/characters/ren_love.png',
+            sad: 'assets/characters/ren_sad.png',
+            shadow: 'assets/characters/ren_shadow.png'
+          }
+        }]
+      }
+    },
+    {
+      id: 'mkt_anime_chibi_kenji',
+      title: 'Anime Chibi Kenji (12 Full-Body Expressions)',
+      category: 'characters',
+      author: 'ChatHub Originals',
+      authorHandle: '@chathub_studio',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 4.99,
+      license: 'Free for Personal & Shorts/Reels Videos',
+      description: 'Ultra-expressive anime schoolboy with 12 complete full-body reaction sprites for comedy skits, romance, panic, and study chaos.',
+      tags: ['Chibi', 'School Anime', '12 Faces', 'Comedy'],
+      coverImage: 'assets/characters/kenji_chibi_body.png',
+      baseInstalls: 1540,
+      items: {
+        characters: [{
+          sourceId: 'kenji_chibi_student',
+          name: 'Kenji',
+          side: 'left',
+          color: '#10b981',
+          pitch: 1.15,
+          role: 'Classmate',
+          avatar: 'assets/characters/kenji_chibi_body.png',
+          expressions: {
+            normal: 'assets/characters/kenji_normal.png',
+            happy: 'assets/characters/kenji_happy.png',
+            love: 'assets/characters/kenji_love.png',
+            laugh: 'assets/characters/kenji_laugh.png',
+            shock: 'assets/characters/kenji_shock.png',
+            angry: 'assets/characters/kenji_angry.png',
+            cry: 'assets/characters/kenji_cry.png',
+            smirk: 'assets/characters/kenji_smirk.png',
+            combat: 'assets/characters/kenji_combat.png',
+            panic: 'assets/characters/kenji_panic.png',
+            confused: 'assets/characters/kenji_confused.png',
+            sleepy: 'assets/characters/kenji_sleepy.png'
+          }
+        }]
+      }
+    },
+    {
+      id: 'mkt_otome_duke_cassian',
+      title: 'Cold Northern Duke Cassian (Otome Isekai)',
+      category: 'characters',
+      author: 'ChatHub Originals',
+      authorHandle: '@chathub_studio',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 4.99,
+      license: 'Free for Personal & Shorts/Reels Videos',
+      description: 'The legendary Cold Duke of the North in imperial fur-trimmed coat with stoic glare, rare gentle smile, combat stance & shock.',
+      tags: ['Otome Isekai', 'Cold Duke', 'Royalty', 'Romance'],
+      coverImage: 'assets/characters/cassian_duke_body.png',
+      baseInstalls: 1890,
+      items: {
+        characters: [{
+          sourceId: 'duke_cassian_otome',
+          name: 'Cassian',
+          side: 'right',
+          color: '#38bdf8',
+          pitch: 0.88,
+          role: 'Northern Duke',
+          avatar: 'assets/characters/cassian_duke_body.png',
+          expressions: {
+            normal: 'assets/characters/cassian_normal.png',
+            cold: 'assets/characters/cassian_cold.png',
+            combat: 'assets/characters/cassian_combat.png',
+            rare_smile: 'assets/characters/cassian_rare_smile.png',
+            shock: 'assets/characters/cassian_shock.png',
+            glare: 'assets/characters/cassian_cold.png'
+          }
+        }]
+      }
+    },
+    {
+      id: 'mkt_otome_lady_valerie',
+      title: 'Imperial Noble Lady Valerie (Otome Villainess)',
+      category: 'characters',
+      author: 'ChatHub Originals',
+      authorHandle: '@chathub_studio',
+      verified: true,
+      isOfficial: true,
+      priceUsd: 0,
+      plannedPriceUsd: 4.99,
+      license: 'Free for Personal & Shorts/Reels Videos',
+      description: 'Dramatic imperial villainess with aristocratic fan, sparkling schemes, dramatic tea insults, tears, and emotional tantrums.',
+      tags: ['Otome Isekai', 'Villainess', 'Drama', 'Royalty'],
+      coverImage: 'assets/characters/valerie_noble_body.png',
+      baseInstalls: 2140,
+      items: {
+        characters: [{
+          sourceId: 'lady_valerie_villainess',
+          name: 'Valerie',
+          side: 'left',
+          color: '#a855f7',
+          pitch: 1.28,
+          role: 'Imperial Aristocrat',
+          avatar: 'assets/characters/valerie_noble_body.png',
+          expressions: {
+            normal: 'assets/characters/valerie_normal.png',
+            smirk: 'assets/characters/valerie_smirk.png',
+            tantrum: 'assets/characters/valerie_tantrum.png',
+            sparkle: 'assets/characters/valerie_sparkle.png',
+            cry: 'assets/characters/valerie_cry.png',
+            tea: 'assets/characters/valerie_tea.png',
+            disdain: 'assets/characters/valerie_disdain.png'
           }
         }]
       }
