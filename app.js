@@ -513,6 +513,8 @@
         previousModalId = 'charExpressionModal';
       } else if (currentModalId === 'stickerSoundPairModal') {
         previousModalId = 'assetManagerModal';
+      } else if (currentModalId === 'marketplacePreviewModal') {
+        previousModalId = 'marketplaceModal';
       } else if (currentModalId === 'cropperModal' || currentModalId === 'vaultPickModal') {
         if (typeof currentCharWardrobeId !== 'undefined' && currentCharWardrobeId) {
           previousModalId = 'charExpressionModal';
@@ -541,6 +543,9 @@
         if (previousModalId === 'storiesModal' && typeof renderStoriesList === 'function') renderStoriesList();
         if (previousModalId === 'globalSettingsModal' && typeof updateGlobalSettingsModalUI === 'function') updateGlobalSettingsModalUI();
         if (previousModalId === 'assetManagerModal' && typeof renderAssetCategory === 'function') renderAssetCategory();
+        if (previousModalId === 'marketplaceModal' && window.ChatHubMarketplace && typeof window.ChatHubMarketplace.refresh === 'function') {
+          window.ChatHubMarketplace.refresh();
+        }
       }
     } else {
       // Returned to base studio view: clear stack cleanly
@@ -10987,4 +10992,262 @@ if (msg.type === 'quest') {
   window.playStickerOrImageSound = playStickerOrImageSound;
   window.openFullscreenImage = openFullscreenImage;
   window.closeFullscreenImage = closeFullscreenImage;
+
+  // Creator Marketplace Bridge API (keeps Studio state encapsulated while allowing safe pack install/export)
+  window.ChatHubStudioApi = {
+    escapeHtml,
+    showToast,
+    playPopSound: (pitch) => playPopSound(pitch),
+    triggerSfxByName: (sfxKey, pitch) => triggerSfxByName(sfxKey, pitch),
+    playCustomAudio: (dataUrl) => playCustomAudio(dataUrl),
+    getCharacters: () => characters,
+    getStickers: () => customStickers,
+    getAudioClips: () => customAudioClips,
+    getGroupProfile: () => groupProfile,
+    getMessages: () => messages,
+    getCurrentStoryTitle: () => currentStoryTitle,
+    getVfxSkin: () => (window.ChatHubVfx && typeof window.ChatHubVfx.getSkin === 'function' ? window.ChatHubVfx.getSkin() : 'sakuga'),
+    getChatStyle: () => chatThemeStyle,
+    exportCurrentChatAsScript: () => convertChatMessagesToScriptText(messages),
+
+    installCharacters(packId, charDefs = []) {
+      let count = 0;
+      const palette = ['#38bdf8', '#f472b6', '#eab308', '#10b981', '#a855f7', '#f97316'];
+      charDefs.forEach((def, idx) => {
+        if (!def || !def.name) return;
+        const srcKey = String(def.sourceId || def.id || def.name).trim();
+        let existing = characters.find(
+          c => c.marketplacePackId === packId && (c.marketplaceSourceId === srcKey || c.name.toLowerCase() === def.name.toLowerCase())
+        );
+
+        const nextExprs = { ...(def.expressions || {}) };
+        if (existing) {
+          existing.name = def.name;
+          existing.side = def.side === 'right' ? 'right' : 'left';
+          existing.color = def.color || existing.color;
+          existing.pitch = Number(def.pitch) || existing.pitch || 1.05;
+          if (def.role !== undefined) existing.role = def.role;
+          if (def.avatar) existing.avatar = def.avatar;
+          existing.expressions = { ...(existing.expressions || {}), ...nextExprs };
+          existing.marketplaceSourceId = srcKey;
+          ensureCharacterExpressions(existing);
+          if (Array.isArray(deletedCastIds)) {
+            deletedCastIds = deletedCastIds.filter(id => id !== existing.id);
+          }
+        } else {
+          const safeSlug = String(packId || 'pack').replace(/[^a-z0-9]/gi, '').slice(-8);
+          const newId = 'c_mkt_' + safeSlug + '_' + idx + '_' + Date.now().toString(36).slice(-4);
+          const color = def.color || palette[characters.length % palette.length];
+          const newChar = {
+            id: newId,
+            name: def.name,
+            side: def.side === 'right' ? 'right' : 'left',
+            color,
+            pitch: Number(def.pitch) || 1.05,
+            role: def.role || '',
+            avatar: def.avatar || Object.values(nextExprs)[0] || makeComicAvatarDataUri(def.name, color, '✨'),
+            expressions: nextExprs,
+            marketplacePackId: packId,
+            marketplaceSourceId: srcKey
+          };
+          ensureCharacterExpressions(newChar);
+          characters.push(newChar);
+        }
+        count++;
+      });
+
+      saveStudioState();
+      if (typeof renderCastModalList === 'function') renderCastModalList();
+      if (typeof renderHubCastList === 'function') renderHubCastList();
+      if (typeof renderGroupHeader === 'function') renderGroupHeader();
+      if (typeof renderDirectorStrip === 'function') renderDirectorStrip();
+      if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
+      return count;
+    },
+
+    installStickers(packId, stickerDefs = []) {
+      let count = 0;
+      stickerDefs.forEach((def, idx) => {
+        const img = def && (def.imageUrl || def.data || def.url);
+        if (!img) return;
+        const srcKey = String(def.sourceId || def.id || def.label || idx).trim();
+        const existing = customStickers.find(
+          s => s.marketplacePackId === packId && s.marketplaceSourceId === srcKey
+        );
+
+        if (existing) {
+          existing.imageUrl = img;
+          existing.label = def.label || existing.label || 'STICKER';
+          existing.expr = def.expr || existing.expr || 'normal';
+          existing.sfx = def.sfx || existing.sfx || 'pop';
+          existing.isSticker = true;
+          existing.mediaType = 'sticker';
+        } else {
+          const safeSlug = String(packId || 'pack').replace(/[^a-z0-9]/gi, '').slice(-8);
+          customStickers.unshift({
+            id: 'stk_mkt_' + safeSlug + '_' + idx + '_' + Date.now().toString(36).slice(-4),
+            imageUrl: img,
+            videoUrl: null,
+            label: def.label || 'STICKER',
+            isVideo: false,
+            isSticker: true,
+            mediaType: 'sticker',
+            expr: def.expr || 'normal',
+            sfx: def.sfx || 'pop',
+            isCustom: true,
+            marketplacePackId: packId,
+            marketplaceSourceId: srcKey
+          });
+        }
+        count++;
+      });
+
+      saveStudioState();
+      if (typeof renderDrawerContent === 'function') renderDrawerContent();
+      if (typeof renderAssetCategory === 'function') renderAssetCategory();
+      if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
+      return count;
+    },
+
+    installAudioClips(packId, audioDefs = []) {
+      let count = 0;
+      audioDefs.forEach((def, idx) => {
+        if (!def || !def.data) return;
+        const srcKey = String(def.sourceId || def.id || def.label || idx).trim();
+        const existing = customAudioClips.find(
+          a => a.marketplacePackId === packId && a.marketplaceSourceId === srcKey
+        );
+        if (existing) {
+          existing.label = def.label || existing.label || 'Audio';
+          existing.data = def.data;
+        } else {
+          const safeSlug = String(packId || 'pack').replace(/[^a-z0-9]/gi, '').slice(-8);
+          customAudioClips.unshift({
+            id: 'aud_mkt_' + safeSlug + '_' + idx + '_' + Date.now().toString(36).slice(-4),
+            label: def.label || 'Audio',
+            data: def.data,
+            name: def.label || 'Marketplace Audio',
+            marketplacePackId: packId,
+            marketplaceSourceId: srcKey
+          });
+        }
+        count++;
+      });
+
+      saveStudioState();
+      if (typeof renderDrawerContent === 'function') renderDrawerContent();
+      if (typeof renderAssetCategory === 'function') renderAssetCategory();
+      if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
+      return count;
+    },
+
+    applyThemePack(theme = {}) {
+      if (!theme || typeof theme !== 'object') return;
+      groupProfile.wallpaper = theme.wallpaper || 'wall-doodle';
+      groupProfile.customWallpaperData = theme.customWallpaperData || null;
+      if (theme.chatStyle) {
+        applyChatStyle(theme.chatStyle === 'realistic' ? 'realistic' : 'comic');
+        safeSetStorage('wh_chat_theme_style', chatThemeStyle);
+      }
+      if (theme.vfxSkin && window.ChatHubVfx && typeof window.ChatHubVfx.setSkin === 'function') {
+        window.ChatHubVfx.setSkin(theme.vfxSkin, true);
+      }
+      saveStudioState();
+      if (typeof renderGroupHeader === 'function') renderGroupHeader();
+      if (typeof updateGlobalSettingsModalUI === 'function') updateGlobalSettingsModalUI();
+    },
+
+    installTemplates(packId, templateDefs = []) {
+      let customPresets = [];
+      try {
+        const raw = safeGetStorage('manhwa_script_library_custom');
+        if (raw) customPresets = JSON.parse(raw);
+        if (!Array.isArray(customPresets)) customPresets = [];
+      } catch (e) {
+        customPresets = [];
+      }
+
+      let count = 0;
+      templateDefs.forEach((tpl, idx) => {
+        if (!tpl || !tpl.script) return;
+        const srcKey = String(tpl.sourceId || tpl.id || tpl.title || idx).trim();
+        const existingIdx = customPresets.findIndex(
+          p => p.marketplacePackId === packId && p.marketplaceSourceId === srcKey
+        );
+        const record = {
+          id: existingIdx >= 0 ? customPresets[existingIdx].id : ('custom_mkt_' + Date.now() + '_' + idx),
+          title: tpl.title || 'Marketplace Script',
+          desc: tpl.desc || 'Installed from Creator Marketplace',
+          cast: Array.isArray(tpl.cast) ? tpl.cast : [],
+          script: tpl.script,
+          marketplacePackId: packId,
+          marketplaceSourceId: srcKey
+        };
+        if (existingIdx >= 0) {
+          customPresets[existingIdx] = record;
+        } else {
+          customPresets.unshift(record);
+        }
+        count++;
+      });
+
+      safeSetStorage('manhwa_script_library_custom', JSON.stringify(customPresets));
+      if (typeof renderScriptLibrary === 'function') renderScriptLibrary();
+      return count;
+    },
+
+    uninstallPack(packId) {
+      if (!packId) return;
+
+      // Preserve at least 1 character so active chat remains functional
+      const keptChars = characters.filter(c => c.marketplacePackId !== packId);
+      if (keptChars.length > 0) {
+        characters = keptChars;
+      } else if (characters.length > 1) {
+        const fallback = characters[0];
+        characters = [fallback];
+      }
+      if (!characters.some(c => c.id === currentCharId) && characters[0]) {
+        currentCharId = characters[0].id;
+      }
+
+      customStickers = customStickers.filter(s => s.marketplacePackId !== packId);
+      customAudioClips = customAudioClips.filter(a => a.marketplacePackId !== packId);
+
+      try {
+        const raw = safeGetStorage('manhwa_script_library_custom');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter(p => p.marketplacePackId !== packId);
+            safeSetStorage('manhwa_script_library_custom', JSON.stringify(filtered));
+          }
+        }
+      } catch (e) {}
+
+      saveStudioState();
+      if (typeof renderCastModalList === 'function') renderCastModalList();
+      if (typeof renderHubCastList === 'function') renderHubCastList();
+      if (typeof renderGroupHeader === 'function') renderGroupHeader();
+      if (typeof renderDirectorStrip === 'function') renderDirectorStrip();
+      if (typeof renderDrawerContent === 'function') renderDrawerContent();
+      if (typeof renderAssetCategory === 'function') renderAssetCategory();
+      if (typeof updateAssetStatsBadge === 'function') updateAssetStatsBadge();
+      if (typeof renderScriptLibrary === 'function') renderScriptLibrary();
+    },
+
+    loadAndPlayScript(scriptText, title, autoPlay) {
+      if (typeof switchScriptStudioTab === 'function') {
+        switchScriptStudioTab('text');
+      }
+      const box = document.getElementById('scriptInputBox');
+      if (box) box.value = scriptText || '';
+      if (title) {
+        currentStoryTitle = title;
+        safeSetStorage('wh_current_story_title', currentStoryTitle);
+      }
+      handleScriptStudioImport(true, !!autoPlay);
+    }
+  };
+
 
