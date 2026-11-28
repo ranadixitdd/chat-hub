@@ -181,7 +181,8 @@
         'chathub_marketplace_v1',
         'chathub_sys_presets_v1',
         'chathub_sys_custom_icons_v1',
-        'chathub_sys_custom_frames_v1'
+        'chathub_sys_custom_frames_v1',
+        'chathub_sys_custom_fonts_v1'
       ];
 
       for (const k of keysToCheck) {

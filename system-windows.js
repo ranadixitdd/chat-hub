@@ -8,6 +8,100 @@
   const PRESETS_STORAGE_KEY = 'chathub_sys_presets_v1';
   const CUSTOM_ICONS_STORAGE_KEY = 'chathub_sys_custom_icons_v1';
   const CUSTOM_FRAMES_STORAGE_KEY = 'chathub_sys_custom_frames_v1';
+  const CUSTOM_FONTS_STORAGE_KEY = 'chathub_sys_custom_fonts_v1';
+
+  const PRESET_FONT_STACKS = {
+    hud: "'Segoe UI', 'Rajdhani', system-ui, -apple-system, sans-serif",
+    manhwa: "system-ui, -apple-system, 'Nunito', sans-serif",
+    serif: "Georgia, 'Times New Roman', serif",
+    mono: "ui-monospace, 'Cascadia Code', Consolas, monospace",
+    cinzel: "'Cinzel', 'Palatino Linotype', 'Book Antiqua', Georgia, serif",
+    impact: "'Impact', 'Arial Black', 'Segoe UI', sans-serif",
+    gothic: "'Trebuchet MS', 'Segoe UI Black', sans-serif",
+    runic: "'Copperplate', 'Papyrus', Georgia, serif"
+  };
+
+  function loadCustomFonts() {
+    try {
+      let raw = null;
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.get === 'function') {
+        raw = window.ChatHubStorage.get(CUSTOM_FONTS_STORAGE_KEY);
+      } else {
+        raw = localStorage.getItem(CUSTOM_FONTS_STORAGE_KEY);
+      }
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustomFonts(list) {
+    try {
+      const json = JSON.stringify(list || []);
+      if (window.ChatHubStorage && typeof window.ChatHubStorage.set === 'function') {
+        window.ChatHubStorage.set(CUSTOM_FONTS_STORAGE_KEY, json);
+      } else {
+        localStorage.setItem(CUSTOM_FONTS_STORAGE_KEY, json);
+      }
+    } catch (e) {}
+  }
+
+  function isSafeFontDataUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    return /^data:(?:font\/[a-z0-9.+-]+|application\/[a-z0-9.+-]+|octet-stream)(?:;[a-z0-9.=+-]+)*;base64,[A-Za-z0-9+/=]+$/i.test(url.trim());
+  }
+
+  function sanitizeCssColor(val) {
+    if (!val || typeof val !== 'string') return '';
+    const s = val.trim();
+    if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return s;
+    if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(s)) return s;
+    return '';
+  }
+
+  function toHex6(color, fallback = '#00f0ff') {
+    const s = String(color || '').trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+    if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+      return ('#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3]).toLowerCase();
+    }
+    if (/^#[0-9a-fA-F]{8}$/.test(s)) return s.slice(0, 7).toLowerCase();
+    return fallback;
+  }
+
+  function injectCustomFontFaces() {
+    try {
+      if (typeof document === 'undefined' || !document.head) return;
+      const fonts = loadCustomFonts();
+      let styleEl = document.getElementById('mswCustomFontsStyle');
+      if (!fonts.length) {
+        if (styleEl) styleEl.textContent = '';
+        return;
+      }
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'mswCustomFontsStyle';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = fonts.map(f => {
+        if (!f || !f.id || !isSafeFontDataUrl(f.dataUrl)) return '';
+        const fam = String(f.id).replace(/[^a-zA-Z0-9_-]/g, '');
+        if (!fam) return '';
+        return `@font-face { font-family: 'MswFont_${fam}'; src: url('${f.dataUrl.trim()}'); font-display: swap; }`;
+      }).filter(Boolean).join('\n');
+    } catch (e) {}
+  }
+
+  function resolveFontFamilyCss(fontKey) {
+    if (!fontKey) return '';
+    if (PRESET_FONT_STACKS[fontKey]) return PRESET_FONT_STACKS[fontKey];
+    if (String(fontKey).startsWith('custom:')) {
+      const fam = String(fontKey).slice(7).replace(/[^a-zA-Z0-9_-]/g, '');
+      if (fam) return `'MswFont_${fam}', system-ui, sans-serif`;
+    }
+    return '';
+  }
 
   function esc(str) {
     return String(str ?? '')
@@ -33,7 +127,7 @@
     }
   }
 
-  function hexToRgba(hex, alpha = 0.94) {
+  function hexToRgba(hex, alpha = 0.94, minAlpha = 0.2) {
     const clean = String(hex || '#041226').replace('#', '').trim();
     let r = 4, g = 18, b = 38;
     if (clean.length === 3) {
@@ -45,7 +139,8 @@
       g = parseInt(clean.slice(2, 4), 16) || 0;
       b = parseInt(clean.slice(4, 6), 16) || 0;
     }
-    const a = Math.max(0.2, Math.min(1, Number(alpha) || 0.94));
+    const numAlpha = Number(alpha);
+    const a = Math.max(minAlpha, Math.min(1, Number.isFinite(numAlpha) ? numAlpha : 0.94));
     return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
 
@@ -674,6 +769,7 @@
   }
 
   const BUILT_IN_FRAMES = [
+    { id: 'none', label: 'None (No Border)', icon: '⬜', isOrnate: false },
     { id: 'tech_brackets', label: 'Tech Brackets', icon: '⌜⌟', isOrnate: false },
     { id: 'cyber_bevel', label: 'Cyber Bevel', icon: '▱', isOrnate: false },
     { id: 'imperial_ornate', label: 'Ornate Murim', icon: '❖', isOrnate: true },
@@ -2084,6 +2180,96 @@
     return cloneObj(PRESETS[0].config);
   }
 
+  function getEmptyElementStyle() {
+    return {
+      color: '',
+      glowColor: '',
+      glowBlur: 0,
+      strokeColor: '',
+      strokeWidth: 0,
+      fontSize: 0,
+      fontFamily: ''
+    };
+  }
+
+  function normalizeElementStyles(rawStyles) {
+    const out = {};
+    const src = (rawStyles && typeof rawStyles === 'object') ? rawStyles : {};
+    ['title', 'subtitle', 'body', 'icons'].forEach(k => {
+      const s = (src[k] && typeof src[k] === 'object') ? src[k] : {};
+      out[k] = {
+        color: sanitizeCssColor(s.color),
+        glowColor: sanitizeCssColor(s.glowColor),
+        glowBlur: Math.max(0, Math.min(32, Number(s.glowBlur) || 0)),
+        strokeColor: sanitizeCssColor(s.strokeColor),
+        strokeWidth: Math.max(0, Math.min(4, Number(s.strokeWidth) || 0)),
+        fontSize: Math.max(0, Math.min(64, Number(s.fontSize) || 0)),
+        fontFamily: s.fontFamily ? String(s.fontFamily).trim() : ''
+      };
+    });
+    return out;
+  }
+
+  function buildTextElementStyle(st, accentFallback) {
+    if (!st) return '';
+    const parts = [];
+    if (st.color) parts.push(`color:${esc(st.color)}`);
+    if (st.fontSize > 0) parts.push(`font-size:${st.fontSize}px`);
+    const ff = resolveFontFamilyCss(st.fontFamily);
+    if (ff) parts.push(`font-family:${ff}`);
+    if (st.glowBlur > 0 || st.glowColor) {
+      const gc = st.glowColor || sanitizeCssColor(accentFallback) || '#00f0ff';
+      const gb = st.glowBlur > 0 ? st.glowBlur : 10;
+      parts.push(`text-shadow:0 0 ${gb}px ${esc(gc)}, 0 0 ${Math.round(gb * 1.8)}px ${esc(gc)}`);
+    }
+    if (st.strokeWidth > 0) {
+      const sc = st.strokeColor || '#020617';
+      parts.push(`-webkit-text-stroke:${st.strokeWidth}px ${esc(sc)}`);
+      parts.push(`paint-order:stroke fill`);
+    }
+    return parts.join('; ');
+  }
+
+  function buildIconElementStyle(st, accentFallback, mode = 'text') {
+    if (!st) return '';
+    const parts = [];
+    if (st.color) {
+      parts.push(`color:${esc(st.color)}`);
+      parts.push(`--sys-accent:${esc(st.color)}`);
+    }
+    const filters = [];
+    if (st.strokeWidth > 0 && mode !== 'text') {
+      const sc = st.strokeColor || '#020617';
+      filters.push(`drop-shadow(0 0 ${Math.max(1, st.strokeWidth)}px ${esc(sc)})`);
+    }
+    if (st.glowBlur > 0 || st.glowColor) {
+      const gc = st.glowColor || sanitizeCssColor(accentFallback) || '#00f0ff';
+      const gb = st.glowBlur > 0 ? st.glowBlur : 8;
+      filters.push(`drop-shadow(0 0 ${gb}px ${esc(gc)})`);
+    }
+    if (filters.length) parts.push(`filter:${filters.join(' ')}`);
+    if (mode === 'text' && st.strokeWidth > 0) {
+      const sc = st.strokeColor || '#020617';
+      parts.push(`-webkit-text-stroke:${st.strokeWidth}px ${esc(sc)}`);
+      parts.push(`paint-order:stroke fill`);
+    }
+    if (st.fontSize > 0) {
+      if (mode === 'relic') {
+        const boxPx = Math.max(44, Math.min(180, Math.round(st.fontSize * 3.2)));
+        parts.push(`width:${boxPx}px; height:${boxPx}px`);
+      } else if (mode === 'slot') {
+        const slotPx = Math.max(24, Math.min(128, Math.round(st.fontSize * 1.8)));
+        parts.push(`width:${slotPx}px; height:${slotPx}px`);
+      } else if (mode === 'codex') {
+        const codexPx = Math.max(72, Math.min(240, Math.round(st.fontSize * 4.2)));
+        parts.push(`min-height:${codexPx}px; max-height:${codexPx + 24}px`);
+      } else {
+        parts.push(`font-size:${st.fontSize}px`);
+      }
+    }
+    return parts.join('; ');
+  }
+
   function getEmptyBaseConfig() {
     return {
       presetId: 'notification',
@@ -2097,6 +2283,13 @@
       svgIcon: '',
       customIconData: '',
       customFrameSvg: '',
+      cardBgImage: '',
+      cardBgOpacity: 1,
+      cardBgBlur: 0,
+      cardBgBrightness: 1,
+      cardBgTint: '#041226',
+      cardBgTintOpacity: 0.35,
+      elementStyles: normalizeElementStyles(null),
       animation: 'hologram',
       sfx: 'scifi',
       headerIcon: '',
@@ -2165,6 +2358,13 @@
     merged.iconBlendDark = Boolean(merged.iconBlendDark);
     merged.hideHeader = Boolean(merged.hideHeader);
     merged.starburst = Boolean(merged.starburst);
+    merged.cardBgImage = isSafeUrl(merged.cardBgImage) ? String(merged.cardBgImage).trim() : '';
+    merged.cardBgOpacity = Math.max(0.1, Math.min(1, Number.isFinite(Number(merged.cardBgOpacity)) ? Number(merged.cardBgOpacity) : 1));
+    merged.cardBgBlur = Math.max(0, Math.min(24, Number(merged.cardBgBlur) || 0));
+    merged.cardBgBrightness = Math.max(0.2, Math.min(1.6, Number.isFinite(Number(merged.cardBgBrightness)) ? Number(merged.cardBgBrightness) : 1));
+    merged.cardBgTint = sanitizeCssColor(merged.cardBgTint) || '#041226';
+    merged.cardBgTintOpacity = Math.max(0, Math.min(0.95, Number.isFinite(Number(merged.cardBgTintOpacity)) ? Number(merged.cardBgTintOpacity) : 0.35));
+    merged.elementStyles = normalizeElementStyles(merged.elementStyles);
     merged.bars = Array.isArray(merged.bars) ? merged.bars.map(b => ({
       label: String(b.label || 'STAT'),
       value: clampPct(b.value, 100),
@@ -2284,6 +2484,7 @@
   }
 
   function renderSystemWindowElement(msg, opts = {}) {
+    injectCustomFontFaces();
     const cfg = normalizeConfig(msg);
     const previewMode = !!opts.previewMode;
     const el = document.createElement('div');
@@ -2298,6 +2499,7 @@
     ];
     if (cfg.cardStyle && cfg.cardStyle !== 'standard') classes.push('is-card-centered', 'card-' + cfg.cardStyle);
     if (cfg.customFrameSvg || String(cfg.frameStyle || '').startsWith('cframe_')) classes.push('has-custom-vector-frame');
+    if (cfg.cardBgImage) classes.push('has-card-bg-image');
     if (cfg.iconSeamless) classes.push('is-icon-seamless');
     if (cfg.iconBlendDark) classes.push('is-icon-blend-dark');
     if (cfg.hideHeader) classes.push('has-hidden-header');
@@ -2315,6 +2517,29 @@
     el.style.setProperty('--sys-bg', hexToRgba(cfg.bgColor || '#041226', cfg.bgOpacity ?? 0.94));
     el.title = previewMode ? 'Live System Window Preview' : 'Click to customize System Window';
 
+    const elStyles = cfg.elementStyles || {};
+    const titleCss = buildTextElementStyle(elStyles.title, cfg.accentColor);
+    const subtitleCss = buildTextElementStyle(elStyles.subtitle, cfg.accentColor);
+    const bodyCss = buildTextElementStyle(elStyles.body, cfg.accentColor);
+    const iconCss = buildIconElementStyle(elStyles.icons, cfg.accentColor, 'text');
+    const iconSlotCss = buildIconElementStyle(elStyles.icons, cfg.accentColor, 'slot');
+    const iconBoxCss = buildIconElementStyle(elStyles.icons, cfg.accentColor, 'relic');
+    const iconCodexCss = buildIconElementStyle(elStyles.icons, cfg.accentColor, 'codex');
+    const titleStyleAttr = titleCss ? ` style="${titleCss}"` : '';
+    const subtitleStyleAttr = subtitleCss ? ` style="${subtitleCss}"` : '';
+    const bodyStyleAttr = bodyCss ? ` style="${bodyCss}"` : '';
+    const iconStyleAttr = iconCss ? ` style="${iconCss}"` : '';
+    const iconSlotStyleAttr = iconSlotCss ? ` style="${iconSlotCss}"` : '';
+    const iconBoxStyleAttr = iconBoxCss ? ` style="${iconBoxCss}"` : '';
+    const iconCodexStyleAttr = iconCodexCss ? ` style="${iconCodexCss}"` : '';
+
+    const cardBgHtml = cfg.cardBgImage ? `
+      <div class="msw-card-bg-layer" aria-hidden="true">
+        <img class="msw-card-bg-img" src="${esc(cfg.cardBgImage)}" alt="" style="opacity:${cfg.cardBgOpacity}; filter:blur(${cfg.cardBgBlur}px) brightness(${cfg.cardBgBrightness});">
+        <div class="msw-card-bg-tint" style="background:${hexToRgba(cfg.cardBgTint || '#041226', cfg.cardBgTintOpacity, 0)};"></div>
+      </div>
+    ` : '';
+
     const svgObj = getSvgIconEntry(cfg.svgIcon, cfg.customIconData);
     const hasImgMedia = isSafeUrl(cfg.mediaUrl);
     const hasMedia = (cfg.mediaLayout && cfg.mediaLayout !== 'none' && hasImgMedia) || (cfg.cardStyle === 'standard' && svgObj && !hasImgMedia && cfg.mediaLayout !== 'none');
@@ -2323,7 +2548,7 @@
       : (svgObj ? svgObj.svg : '');
     const mediaHtml = hasMedia ? `
       <div class="msw-media-wrap layout-${esc(cfg.mediaLayout || 'icon_title')}">
-        ${hasImgMedia ? `<img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">` : `<div class="msw-svg-icon-slot">${svgObj ? svgObj.svg : ''}</div>`}
+        ${hasImgMedia ? `<img class="msw-media-img" src="${esc(cfg.mediaUrl)}" alt="System Visual">` : `<div class="msw-svg-icon-slot"${iconSlotStyleAttr}>${svgObj ? svgObj.svg : ''}</div>`}
         ${cfg.mediaCaption ? `<div class="msw-media-caption">${esc(cfg.mediaCaption)}</div>` : ''}
       </div>
     ` : '';
@@ -2462,21 +2687,23 @@
         <span style="bottom:12%; right:20%; font-size:14px;">✦</span>
       </div>` : '';
 
+    const iconSizePx = (elStyles.icons && elStyles.icons.fontSize > 0) ? elStyles.icons.fontSize : 0;
     let mainInnerBodyHtml = '';
     if (cfg.cardStyle === 'relic') {
+      const fallbackEmojiPx = iconSizePx > 0 ? Math.max(24, Math.round(iconSizePx * 1.45)) : 52;
       const emblemVisual = hasImgMedia
         ? `<img src="${esc(cfg.mediaUrl)}" alt="${esc(cfg.headerTitle)}">`
-        : (svgObj ? svgObj.svg : `<span style="font-size:52px;">${esc(cfg.headerIcon || '👁️')}</span>`);
+        : (svgObj ? svgObj.svg : `<span style="font-size:${fallbackEmojiPx}px;">${esc(cfg.headerIcon || '👁️')}</span>`);
       const emblemFrameHtml = getEmblemFrameSvg(cfg.frameStyle, cfg);
       mainInnerBodyHtml = `
         <div class="msw-relic-stage">
-          <div class="msw-emblem-box ${cfg.frameStyle === 'demonic_thorn' ? 'is-thorn-emblem' : ''}">
+          <div class="msw-emblem-box ${cfg.frameStyle === 'demonic_thorn' ? 'is-thorn-emblem' : ''}"${iconBoxStyleAttr}>
             ${emblemFrameHtml}
             ${emblemVisual}
           </div>
-          ${cfg.headerTitle ? `<div class="msw-relic-title">${esc(cfg.headerTitle)}</div>` : ''}
-          ${cfg.subtitle ? `<div class="msw-relic-subtitle">${esc(cfg.subtitle)}</div>` : ''}
-          ${cfg.bodyText ? `<div class="msw-relic-desc">${esc(cfg.bodyText)}</div>` : ''}
+          ${cfg.headerTitle ? `<div class="msw-relic-title"${titleStyleAttr}>${esc(cfg.headerTitle)}</div>` : ''}
+          ${cfg.subtitle ? `<div class="msw-relic-subtitle"${subtitleStyleAttr}>${esc(cfg.subtitle)}</div>` : ''}
+          ${cfg.bodyText ? `<div class="msw-relic-desc"${bodyStyleAttr}>${esc(cfg.bodyText)}</div>` : ''}
         </div>
         ${levelUpHtml}
         ${inventoryHtml}
@@ -2485,15 +2712,16 @@
         ${statsHtml}
       `;
     } else if (cfg.cardStyle === 'codex') {
+      const fallbackCodexPx = iconSizePx > 0 ? Math.max(24, Math.round(iconSizePx * 1.45)) : 48;
       const diagramVisual = hasImgMedia
         ? `<img src="${esc(cfg.mediaUrl)}" alt="${esc(cfg.headerTitle)}">`
-        : (svgObj ? svgObj.svg : `<span style="font-size:48px;">${esc(cfg.headerIcon || '📘')}</span>`);
+        : (svgObj ? svgObj.svg : `<span style="font-size:${fallbackCodexPx}px;">${esc(cfg.headerIcon || '📘')}</span>`);
       mainInnerBodyHtml = `
         <div class="msw-codex-stage">
-          <div class="msw-codex-diagram">${diagramVisual}</div>
-          ${cfg.headerTitle ? `<div class="msw-codex-title">${esc(cfg.headerTitle)}</div>` : ''}
-          ${cfg.subtitle ? `<div class="msw-subtitle" style="text-align:center;">${esc(cfg.subtitle)}</div>` : ''}
-          ${cfg.bodyText ? `<div class="msw-codex-rules">${esc(cfg.bodyText)}</div>` : ''}
+          <div class="msw-codex-diagram"${iconCodexStyleAttr}>${diagramVisual}</div>
+          ${cfg.headerTitle ? `<div class="msw-codex-title"${titleStyleAttr}>${esc(cfg.headerTitle)}</div>` : ''}
+          ${cfg.subtitle ? `<div class="msw-subtitle"${subtitleStyleAttr ? ` style="text-align:center; ${subtitleCss}"` : ' style="text-align:center;"'}>${esc(cfg.subtitle)}</div>` : ''}
+          ${cfg.bodyText ? `<div class="msw-codex-rules"${bodyStyleAttr}>${esc(cfg.bodyText)}</div>` : ''}
         </div>
         ${levelUpHtml}
         ${inventoryHtml}
@@ -2503,12 +2731,12 @@
       `;
     } else {
       mainInnerBodyHtml = `
-        ${cfg.subtitle ? `<div class="msw-subtitle">${esc(cfg.subtitle)}</div>` : ''}
+        ${cfg.subtitle ? `<div class="msw-subtitle"${subtitleStyleAttr}>${esc(cfg.subtitle)}</div>` : ''}
         ${topBannerMedia}
         <div class="msw-main-split ${splitClass}">
           ${sideMedia}
           <div class="msw-content-col">
-            ${cfg.bodyText ? `<div class="msw-body-text">${esc(cfg.bodyText)}</div>` : ''}
+            ${cfg.bodyText ? `<div class="msw-body-text"${bodyStyleAttr}>${esc(cfg.bodyText)}</div>` : ''}
             ${levelUpHtml}
             ${inventoryHtml}
             ${shopHtml}
@@ -2520,6 +2748,7 @@
     }
 
     el.innerHTML = `
+      ${cardBgHtml}
       <div class="msw-corner tl"></div>
       <div class="msw-corner tr"></div>
       <div class="msw-corner bl"></div>
@@ -2533,8 +2762,8 @@
       <div class="msw-inner">
         <div class="msw-header">
           <div class="msw-header-left">
-            ${cfg.headerIcon ? `<span class="msw-header-icon">${esc(cfg.headerIcon)}</span>` : ''}
-            <span class="msw-header-title">${esc(cfg.headerTitle || 'SYSTEM WINDOW')}</span>
+            ${cfg.headerIcon ? `<span class="msw-header-icon"${iconStyleAttr}>${esc(cfg.headerIcon)}</span>` : ''}
+            <span class="msw-header-title"${titleStyleAttr}>${esc(cfg.headerTitle || 'SYSTEM WINDOW')}</span>
           </div>
           <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
             ${cfg.currencyText ? `<span class="msw-currency-pill">${esc(cfg.currencyText)}</span>` : ''}
@@ -3454,6 +3683,7 @@
               <div>
                 <label class="syswin-label">Frame Geometry Selector</label>
                 <select class="syswin-select" id="sysSelFrameStyle">
+                  <option value="none">⬜ None (Borderless)</option>
                   <option value="tech_brackets">Tech L-Brackets (Solo Hunter)</option>
                   <option value="cyber_bevel">Cut-Corner Cyber Plate</option>
                   <option value="imperial_ornate">Ornate Imperial / Murim</option>
@@ -3480,6 +3710,10 @@
                   <option value="manhwa">Clean Modern Manhwa</option>
                   <option value="serif">Royal Serif (Otome / Murim)</option>
                   <option value="mono">Hacker Terminal Monospace</option>
+                  <option value="cinzel">Imperial Fantasy (Cinzel)</option>
+                  <option value="impact">Action Manhwa Bold</option>
+                  <option value="gothic">Dark Abyssal Gothic</option>
+                  <option value="runic">Arcane Runic Serif</option>
                 </select>
               </div>
             </div>
@@ -3518,6 +3752,96 @@
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkSparkles"> Sparkles</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkStarburst"> Starburst Rays</label>
               <label class="syswin-chip-btn"><input type="checkbox" id="sysChkHideHeader"> Hide Header Bar</label>
+            </div>
+
+            <div style="background:#0f172a; border:1px solid #1e3a5f; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:7px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:12px; font-weight:800; color:#38bdf8;">🖼️ Full Card Background Image</span>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                  <input type="file" id="sysWinCardBgFileInput" accept="image/*" style="display:none;">
+                  <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysWinCardBgFileInput').click()">📁 Upload BG</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.clearCardBgImage()">✕ Clear BG</button>
+                </div>
+              </div>
+              <input type="text" class="syswin-input" id="sysInpCardBgImage" placeholder="Background image URL (assets/... or https://...)">
+              <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;">
+                <div>
+                  <label class="syswin-label">BG Opacity <span id="sysLblCardBgOpacity" style="color:#38bdf8;">100%</span></label>
+                  <input type="range" id="sysInpCardBgOpacity" min="0.1" max="1" step="0.05" value="1" style="width:100%;">
+                </div>
+                <div>
+                  <label class="syswin-label">BG Blur <span id="sysLblCardBgBlur" style="color:#38bdf8;">0px</span></label>
+                  <input type="range" id="sysInpCardBgBlur" min="0" max="20" step="1" value="0" style="width:100%;">
+                </div>
+                <div>
+                  <label class="syswin-label">Brightness <span id="sysLblCardBgBrightness" style="color:#38bdf8;">100%</span></label>
+                  <input type="range" id="sysInpCardBgBrightness" min="0.2" max="1.6" step="0.05" value="1" style="width:100%;">
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:80px 1fr; gap:8px; align-items:center;">
+                <div>
+                  <label class="syswin-label">Tint Color</label>
+                  <input type="color" id="sysInpCardBgTint" value="#041226" style="width:100%; height:30px; border:none; border-radius:6px; background:#1e293b; cursor:pointer;">
+                </div>
+                <div>
+                  <label class="syswin-label">Tint Opacity <span id="sysLblCardBgTintOpacity" style="color:#38bdf8;">35%</span></label>
+                  <input type="range" id="sysInpCardBgTintOpacity" min="0" max="0.95" step="0.05" value="0.35" style="width:100%;">
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#131c31; border:1px solid #293548; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:12px; font-weight:800; color:#facc15;">✏️ Per-Element Typography, Glow & Stroke</span>
+                <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.resetElementStyle()">↺ Reset Element</button>
+              </div>
+              <div class="syswin-chip-row" id="sysElTargetTabs">
+                <button type="button" class="syswin-chip-btn active" data-el-target="title" onclick="window.ChatHubSystemWindows.selectElementStyleTarget('title')">Title</button>
+                <button type="button" class="syswin-chip-btn" data-el-target="subtitle" onclick="window.ChatHubSystemWindows.selectElementStyleTarget('subtitle')">Subtitle</button>
+                <button type="button" class="syswin-chip-btn" data-el-target="body" onclick="window.ChatHubSystemWindows.selectElementStyleTarget('body')">Body</button>
+                <button type="button" class="syswin-chip-btn" data-el-target="icons" onclick="window.ChatHubSystemWindows.selectElementStyleTarget('icons')">Icons</button>
+              </div>
+              <div class="syswin-field-row">
+                <div>
+                  <label class="syswin-label">Font Family (Preset / Uploaded)</label>
+                  <select class="syswin-select" id="sysSelElFontFamily"></select>
+                </div>
+                <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                    <input type="file" id="sysWinCustomFontInput" accept=".ttf,.otf,.woff2,font/ttf,font/otf,font/woff2" style="display:none;">
+                    <button type="button" class="syswin-chip-btn" style="border-color:#4ade80; color:#4ade80;" onclick="document.getElementById('sysWinCustomFontInput').click()">+ Upload Font (.ttf/.otf/.woff2)</button>
+                    <button type="button" class="syswin-chip-btn" id="sysBtnDelCustomFont" style="display:none; border-color:#f87171; color:#fca5a5;" onclick="window.ChatHubSystemWindows.deleteSelectedCustomFont()">🗑️</button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;">
+                <div>
+                  <label class="syswin-label">Size <span id="sysLblElFontSize" style="color:#facc15;">auto</span></label>
+                  <input type="range" id="sysInpElFontSize" min="0" max="42" step="1" value="0" style="width:100%;">
+                </div>
+                <div>
+                  <label class="syswin-label">Glow <span id="sysLblElGlowBlur" style="color:#facc15;">auto</span></label>
+                  <input type="range" id="sysInpElGlowBlur" min="0" max="30" step="1" value="0" style="width:100%;">
+                </div>
+                <div>
+                  <label class="syswin-label">Stroke <span id="sysLblElStrokeWidth" style="color:#facc15;">0px</span></label>
+                  <input type="range" id="sysInpElStrokeWidth" min="0" max="3" step="0.5" value="0" style="width:100%;">
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;">
+                <div>
+                  <label class="syswin-label">Text/Icon Color <a href="#" style="color:#94a3b8; font-weight:600;" onclick="event.preventDefault(); window.ChatHubSystemWindows.clearElementColor('color')">auto</a></label>
+                  <input type="color" id="sysInpElColor" value="#ffffff" style="width:100%; height:30px; border:none; border-radius:6px; background:#0f172a; cursor:pointer;">
+                </div>
+                <div>
+                  <label class="syswin-label">Glow Color <a href="#" style="color:#94a3b8; font-weight:600;" onclick="event.preventDefault(); window.ChatHubSystemWindows.clearElementColor('glowColor')">auto</a></label>
+                  <input type="color" id="sysInpElGlowColor" value="#00f0ff" style="width:100%; height:30px; border:none; border-radius:6px; background:#0f172a; cursor:pointer;">
+                </div>
+                <div>
+                  <label class="syswin-label">Stroke Color</label>
+                  <input type="color" id="sysInpElStrokeColor" value="#020617" style="width:100%; height:30px; border:none; border-radius:6px; background:#0f172a; cursor:pointer;">
+                </div>
+              </div>
             </div>
             <div class="syswin-field-row">
               <div>
@@ -3627,11 +3951,23 @@
     setVal('sysSelSfx', builderDraft.sfx !== undefined ? builderDraft.sfx : 'scifi');
     setVal('sysSelGlow', builderDraft.glowIntensity || 'high');
     setVal('sysInpHoldSec', (builderHoldMs / 1000).toFixed(1));
+    setVal('sysInpCardBgImage', builderDraft.cardBgImage && String(builderDraft.cardBgImage).startsWith('data:') ? '(Uploaded Background Attached)' : (builderDraft.cardBgImage || ''));
+    setVal('sysInpCardBgOpacity', builderDraft.cardBgOpacity ?? 1);
+    setVal('sysInpCardBgBlur', builderDraft.cardBgBlur ?? 0);
+    setVal('sysInpCardBgBrightness', builderDraft.cardBgBrightness ?? 1);
+    setVal('sysInpCardBgTint', toHex6(builderDraft.cardBgTint, '#041226'));
+    setVal('sysInpCardBgTintOpacity', builderDraft.cardBgTintOpacity ?? 0.35);
+    const setTxt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+    setTxt('sysLblCardBgOpacity', Math.round((builderDraft.cardBgOpacity ?? 1) * 100) + '%');
+    setTxt('sysLblCardBgBlur', (builderDraft.cardBgBlur ?? 0) + 'px');
+    setTxt('sysLblCardBgBrightness', Math.round((builderDraft.cardBgBrightness ?? 1) * 100) + '%');
+    setTxt('sysLblCardBgTintOpacity', Math.round((builderDraft.cardBgTintOpacity ?? 0.35) * 100) + '%');
 
     renderPresetGrid();
     renderSavedPresetsList();
     renderThemeChips();
     renderFramePickerGrid();
+    renderElementStyleEditor();
     renderMediaPickerStrip();
     renderSvgIconPicker();
     renderBoostsEditor();
@@ -3701,7 +4037,7 @@
       sel.value = builderDraft.frameStyle || 'tech_brackets';
     }
     if (!grid) return;
-    const sorted = [...allFrames].sort((a, b) => (b.isCustom ? 1 : 0) - (a.isCustom ? 1 : 0) || (b.isOrnate ? 1 : 0) - (a.isOrnate ? 1 : 0));
+    const sorted = [...allFrames].sort((a, b) => (b.isCustom ? 1 : 0) - (a.isCustom ? 1 : 0) || (b.id === 'none' ? 1 : 0) - (a.id === 'none' ? 1 : 0) || (b.isOrnate ? 1 : 0) - (a.isOrnate ? 1 : 0));
     grid.innerHTML = sorted.map(fr => {
       const thumbSvg = fr.isCustom ? fr.svg : getFrameSvgOverlay(fr.id);
       const isActive = builderDraft.frameStyle === fr.id;
@@ -3727,6 +4063,54 @@
         window.ChatHubSystemWindows.deleteCustomFrame(delBtn.dataset.delFrameKey);
       });
     });
+  }
+
+  let activeElementStyleTarget = 'title';
+
+  function renderElementStyleEditor() {
+    if (!builderDraft) return;
+    if (!builderDraft.elementStyles) builderDraft.elementStyles = normalizeElementStyles(null);
+    const st = builderDraft.elementStyles[activeElementStyleTarget] || getEmptyElementStyle();
+
+    const tabsEl = document.getElementById('sysElTargetTabs');
+    if (tabsEl) {
+      tabsEl.querySelectorAll('[data-el-target]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.elTarget === activeElementStyleTarget);
+      });
+    }
+
+    const fontSel = document.getElementById('sysSelElFontFamily');
+    if (fontSel) {
+      const customFonts = loadCustomFonts();
+      const presetOpts = [
+        { val: '', label: 'Inherit Card Mood' },
+        { val: 'hud', label: 'Sci-Fi HUD Geometric' },
+        { val: 'manhwa', label: 'Clean Modern Manhwa' },
+        { val: 'serif', label: 'Royal Serif (Otome / Murim)' },
+        { val: 'mono', label: 'Hacker Terminal Mono' },
+        { val: 'cinzel', label: 'Imperial Fantasy (Cinzel)' },
+        { val: 'impact', label: 'Action Manhwa Bold' },
+        { val: 'gothic', label: 'Dark Abyssal Gothic' },
+        { val: 'runic', label: 'Arcane Runic Serif' }
+      ];
+      fontSel.innerHTML = presetOpts.map(o => `<option value="${esc(o.val)}">${esc(o.label)}</option>`).join('') +
+        customFonts.map(cf => `<option value="custom:${esc(cf.id)}">⭐ ${esc(cf.name)}</option>`).join('');
+      fontSel.value = st.fontFamily || '';
+      const delBtn = document.getElementById('sysBtnDelCustomFont');
+      if (delBtn) delBtn.style.display = String(st.fontFamily || '').startsWith('custom:') ? '' : 'none';
+    }
+
+    const setElVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    const setElTxt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+    setElVal('sysInpElFontSize', st.fontSize || 0);
+    setElVal('sysInpElGlowBlur', st.glowBlur || 0);
+    setElVal('sysInpElStrokeWidth', st.strokeWidth || 0);
+    setElVal('sysInpElColor', toHex6(st.color, '#ffffff'));
+    setElVal('sysInpElGlowColor', toHex6(st.glowColor || builderDraft.accentColor, '#00f0ff'));
+    setElVal('sysInpElStrokeColor', toHex6(st.strokeColor, '#020617'));
+    setElTxt('sysLblElFontSize', st.fontSize > 0 ? `${st.fontSize}px` : 'auto');
+    setElTxt('sysLblElGlowBlur', st.glowBlur > 0 ? `${st.glowBlur}px` : (st.glowColor ? '10px' : 'auto'));
+    setElTxt('sysLblElStrokeWidth', `${st.strokeWidth || 0}px`);
   }
 
   function renderMediaPickerStrip() {
@@ -4066,6 +4450,93 @@
     bindChange('sysSelSfx', 'sfx');
     bindChange('sysSelGlow', 'glowIntensity');
 
+    const cardBgInp = document.getElementById('sysInpCardBgImage');
+    if (cardBgInp) {
+      cardBgInp.addEventListener('input', () => {
+        if (!builderDraft) return;
+        const v = String(cardBgInp.value || '').trim();
+        if (v === '(Uploaded Background Attached)') return;
+        builderDraft.cardBgImage = v;
+        refreshPreviewOnly();
+      });
+    }
+    const updateCardBgLbl = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    bindInput('sysInpCardBgOpacity', 'cardBgOpacity', v => { const n = parseFloat(v) || 1; updateCardBgLbl('sysLblCardBgOpacity', Math.round(n * 100) + '%'); return n; });
+    bindInput('sysInpCardBgBlur', 'cardBgBlur', v => { const n = parseFloat(v) || 0; updateCardBgLbl('sysLblCardBgBlur', n + 'px'); return n; });
+    bindInput('sysInpCardBgBrightness', 'cardBgBrightness', v => { const n = parseFloat(v) || 1; updateCardBgLbl('sysLblCardBgBrightness', Math.round(n * 100) + '%'); return n; });
+    bindInput('sysInpCardBgTint', 'cardBgTint');
+    bindInput('sysInpCardBgTintOpacity', 'cardBgTintOpacity', v => { const n = parseFloat(v); const out = Number.isFinite(n) ? n : 0.35; updateCardBgLbl('sysLblCardBgTintOpacity', Math.round(out * 100) + '%'); return out; });
+
+    const cardBgFileInp = document.getElementById('sysWinCardBgFileInput');
+    if (cardBgFileInp) {
+      cardBgFileInp.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          builderDraft.cardBgImage = ev.target.result;
+          const inp = document.getElementById('sysInpCardBgImage');
+          if (inp) inp.value = '(Uploaded Background Attached)';
+          refreshPreviewOnly();
+        };
+        reader.readAsDataURL(f);
+        e.target.value = '';
+      });
+    }
+
+    const bindElStyle = (id, key, evt, parser) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(evt, () => {
+        if (!builderDraft) return;
+        if (!builderDraft.elementStyles) builderDraft.elementStyles = normalizeElementStyles(null);
+        const target = builderDraft.elementStyles[activeElementStyleTarget] || getEmptyElementStyle();
+        target[key] = parser ? parser(el.value) : el.value;
+        builderDraft.elementStyles[activeElementStyleTarget] = target;
+        if (key === 'fontFamily') {
+          const delBtn = document.getElementById('sysBtnDelCustomFont');
+          if (delBtn) delBtn.style.display = String(target.fontFamily || '').startsWith('custom:') ? '' : 'none';
+        }
+        if (key === 'fontSize') updateCardBgLbl('sysLblElFontSize', target.fontSize > 0 ? `${target.fontSize}px` : 'auto');
+        if (key === 'glowBlur' || key === 'glowColor') updateCardBgLbl('sysLblElGlowBlur', target.glowBlur > 0 ? `${target.glowBlur}px` : (target.glowColor ? '10px' : 'auto'));
+        if (key === 'strokeWidth') updateCardBgLbl('sysLblElStrokeWidth', `${target.strokeWidth || 0}px`);
+        refreshPreviewOnly();
+      });
+    };
+    bindElStyle('sysSelElFontFamily', 'fontFamily', 'change');
+    bindElStyle('sysInpElFontSize', 'fontSize', 'input', v => Math.max(0, parseInt(v, 10) || 0));
+    bindElStyle('sysInpElGlowBlur', 'glowBlur', 'input', v => Math.max(0, parseInt(v, 10) || 0));
+    bindElStyle('sysInpElStrokeWidth', 'strokeWidth', 'input', v => Math.max(0, parseFloat(v) || 0));
+    bindElStyle('sysInpElColor', 'color', 'input');
+    bindElStyle('sysInpElGlowColor', 'glowColor', 'input');
+    bindElStyle('sysInpElStrokeColor', 'strokeColor', 'input');
+
+    const fontFileInp = document.getElementById('sysWinCustomFontInput');
+    if (fontFileInp) {
+      fontFileInp.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const dataUrl = String(ev.target.result || '');
+          if (!dataUrl.startsWith('data:')) return;
+          const id = 'fnt_' + Date.now().toString(36);
+          const cleanName = String(f.name || 'CustomFont').replace(/\.(ttf|otf|woff2)$/i, '').slice(0, 24);
+          const list = loadCustomFonts();
+          list.unshift({ id, name: cleanName, dataUrl, createdAt: Date.now() });
+          saveCustomFonts(list.slice(0, 15));
+          injectCustomFontFaces();
+          if (!builderDraft.elementStyles) builderDraft.elementStyles = normalizeElementStyles(null);
+          builderDraft.elementStyles[activeElementStyleTarget].fontFamily = 'custom:' + id;
+          renderElementStyleEditor();
+          refreshPreviewOnly();
+          if (api() && typeof api().showToast === 'function') api().showToast(`🔤 Uploaded font "${cleanName}"!`);
+        };
+        reader.readAsDataURL(f);
+        e.target.value = '';
+      });
+    }
+
     const holdEl = document.getElementById('sysInpHoldSec');
     if (holdEl) {
       holdEl.addEventListener('input', () => {
@@ -4399,6 +4870,46 @@
     },
     getCustomFrames() {
       return loadCustomFrames();
+    },
+    clearCardBgImage() {
+      if (!builderDraft) return;
+      builderDraft.cardBgImage = '';
+      const inp = document.getElementById('sysInpCardBgImage');
+      if (inp) inp.value = '';
+      refreshPreviewOnly();
+    },
+    selectElementStyleTarget(target) {
+      if (!['title', 'subtitle', 'body', 'icons'].includes(target)) return;
+      activeElementStyleTarget = target;
+      renderElementStyleEditor();
+    },
+    clearElementColor(field) {
+      if (!builderDraft || !['color', 'glowColor'].includes(field)) return;
+      if (!builderDraft.elementStyles) builderDraft.elementStyles = normalizeElementStyles(null);
+      builderDraft.elementStyles[activeElementStyleTarget][field] = '';
+      renderElementStyleEditor();
+      refreshPreviewOnly();
+    },
+    resetElementStyle() {
+      if (!builderDraft) return;
+      if (!builderDraft.elementStyles) builderDraft.elementStyles = normalizeElementStyles(null);
+      builderDraft.elementStyles[activeElementStyleTarget] = getEmptyElementStyle();
+      renderElementStyleEditor();
+      refreshPreviewOnly();
+    },
+    deleteSelectedCustomFont() {
+      if (!builderDraft || !builderDraft.elementStyles) return;
+      const cur = String(builderDraft.elementStyles[activeElementStyleTarget]?.fontFamily || '');
+      if (!cur.startsWith('custom:')) return;
+      const id = cur.slice(7);
+      saveCustomFonts(loadCustomFonts().filter(f => String(f.id) !== String(id)));
+      ['title', 'subtitle', 'body', 'icons'].forEach(k => {
+        if (builderDraft.elementStyles[k]?.fontFamily === cur) builderDraft.elementStyles[k].fontFamily = '';
+      });
+      injectCustomFontFaces();
+      renderElementStyleEditor();
+      refreshPreviewOnly();
+      if (api() && typeof api().showToast === 'function') api().showToast('🗑️ Deleted custom font.');
     },
     selectTheme(themeId) {
       builderDraft = applyThemeToConfig(builderDraft, themeId);
