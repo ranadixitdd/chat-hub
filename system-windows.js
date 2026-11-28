@@ -2270,11 +2270,312 @@
     return parts.join('; ');
   }
 
+  let builderSelectedLayerId = '';
+
+  function makeCanvasLayerId() {
+    return 'lay_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+  }
+
+  function clampNum(val, min, max, fallback) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function createDefaultCanvasLayer(type, overrides = {}) {
+    const t = ['background', 'sparkles', 'image', 'icon', 'text', 'border'].includes(type) ? type : 'text';
+    const base = {
+      id: overrides.id || makeCanvasLayerId(),
+      type: t,
+      name: overrides.name || (t === 'background' ? 'Background' : t === 'border' ? 'Vector Border' : t === 'sparkles' ? 'Sparkles & FX' : t === 'icon' ? 'Neon Icon' : t === 'image' ? 'Image / Sticker' : 'Text Layer'),
+      visible: overrides.visible !== false,
+      locked: Boolean(overrides.locked),
+      x: t === 'background' || t === 'border' || t === 'sparkles' ? 0 : (t === 'text' ? 10 : 30),
+      y: t === 'background' || t === 'border' || t === 'sparkles' ? 0 : (t === 'text' ? 42 : 22),
+      w: t === 'background' || t === 'border' || t === 'sparkles' ? 100 : (t === 'text' ? 80 : 40),
+      h: t === 'background' || t === 'border' || t === 'sparkles' ? 100 : (t === 'text' ? 16 : 36),
+      rotation: 0,
+      opacity: 1
+    };
+    if (t === 'background') {
+      Object.assign(base, {
+        imageUrl: '',
+        color: '#041226',
+        color2: '#0f172a',
+        blur: 0,
+        brightness: 1,
+        tintColor: '#041226',
+        tintOpacity: 0.35
+      });
+    } else if (t === 'border') {
+      Object.assign(base, {
+        frameStyle: 'demonic_thorn',
+        customFrameSvg: '',
+        color: '#00f0ff',
+        secondaryColor: '#38bdf8',
+        glowBlur: 8
+      });
+    } else if (t === 'sparkles') {
+      Object.assign(base, {
+        pattern: 'sparkles',
+        color: '#fde047',
+        secondaryColor: '#ef4444'
+      });
+    } else if (t === 'icon') {
+      Object.assign(base, {
+        svgIcon: 'soul_flame',
+        customIconData: '',
+        emoji: '',
+        color: '#00f0ff',
+        glowColor: '#38bdf8',
+        glowBlur: 10,
+        blendDark: false
+      });
+    } else if (t === 'image') {
+      Object.assign(base, {
+        imageUrl: 'assets/characters/anime_boy_body.png',
+        fit: 'contain',
+        rounded: 10,
+        blendDark: false,
+        glowColor: '#00f0ff',
+        glowBlur: 0
+      });
+    } else if (t === 'text') {
+      Object.assign(base, {
+        text: 'SYSTEM ALERT',
+        fontFamily: 'hud',
+        fontSize: 18,
+        fontWeight: '900',
+        textAlign: 'center',
+        letterSpacing: 1,
+        color: '#f8fafc',
+        glowColor: '#00f0ff',
+        glowBlur: 10,
+        strokeColor: '#020617',
+        strokeWidth: 0,
+        bgColor: '#020617',
+        bgOpacity: 0,
+        borderRadius: 6
+      });
+    }
+    return { ...base, ...overrides, type: t };
+  }
+
+  function normalizeCanvasLayer(raw, idx = 0) {
+    const src = (raw && typeof raw === 'object') ? raw : {};
+    const def = createDefaultCanvasLayer(src.type, { id: src.id ? String(src.id).replace(/[^a-zA-Z0-9_-]/g, '') : `lay_${idx}` });
+    const out = {
+      ...def,
+      name: String(src.name || def.name).slice(0, 32),
+      visible: src.visible !== false,
+      locked: Boolean(src.locked),
+      x: clampNum(src.x, -50, 100, def.x),
+      y: clampNum(src.y, -50, 100, def.y),
+      w: clampNum(src.w, 4, 150, def.w),
+      h: clampNum(src.h, 4, 150, def.h),
+      rotation: clampNum(src.rotation, -180, 180, 0),
+      opacity: clampNum(src.opacity, 0, 1, 1)
+    };
+    if (out.type === 'background') {
+      out.imageUrl = isSafeUrl(src.imageUrl) ? String(src.imageUrl).trim() : '';
+      out.color = sanitizeCssColor(src.color) || def.color;
+      out.color2 = sanitizeCssColor(src.color2) || def.color2;
+      out.blur = clampNum(src.blur, 0, 24, 0);
+      out.brightness = clampNum(src.brightness, 0.2, 1.6, 1);
+      out.tintColor = sanitizeCssColor(src.tintColor) || '#041226';
+      out.tintOpacity = clampNum(src.tintOpacity, 0, 0.95, 0.35);
+    } else if (out.type === 'border') {
+      out.frameStyle = String(src.frameStyle || def.frameStyle);
+      out.customFrameSvg = src.customFrameSvg ? sanitizeCustomSvg(src.customFrameSvg) : '';
+      if (!out.customFrameSvg && out.frameStyle) {
+        const cf = loadCustomFrames().find(f => String(f.id) === String(out.frameStyle));
+        if (cf && cf.svg) out.customFrameSvg = sanitizeCustomSvg(cf.svg);
+      }
+      out.color = sanitizeCssColor(src.color) || def.color;
+      out.secondaryColor = sanitizeCssColor(src.secondaryColor) || def.secondaryColor;
+      out.glowBlur = clampNum(src.glowBlur, 0, 28, 8);
+    } else if (out.type === 'sparkles') {
+      out.pattern = ['sparkles', 'starburst', 'scanlines', 'grid'].includes(src.pattern) ? src.pattern : 'sparkles';
+      out.color = sanitizeCssColor(src.color) || def.color;
+      out.secondaryColor = sanitizeCssColor(src.secondaryColor) || def.secondaryColor;
+    } else if (out.type === 'icon') {
+      const allSvg = getAllSvgIcons();
+      out.customIconData = src.customIconData ? (sanitizeCustomSvg(src.customIconData) || (isSafeUrl(src.customIconData) ? String(src.customIconData).trim() : '')) : '';
+      out.svgIcon = (src.svgIcon && (allSvg[src.svgIcon] || out.customIconData)) ? String(src.svgIcon) : (out.customIconData ? '' : def.svgIcon);
+      if (out.svgIcon && allSvg[out.svgIcon] && allSvg[out.svgIcon].isCustom && !out.customIconData) {
+        out.customIconData = allSvg[out.svgIcon].rawSvg || allSvg[out.svgIcon].imageUrl || '';
+      }
+      out.emoji = String(src.emoji || '').slice(0, 6);
+      out.color = sanitizeCssColor(src.color) || '';
+      out.glowColor = sanitizeCssColor(src.glowColor) || '';
+      out.glowBlur = clampNum(src.glowBlur, 0, 32, def.glowBlur);
+      out.blendDark = Boolean(src.blendDark);
+    } else if (out.type === 'image') {
+      out.imageUrl = isSafeUrl(src.imageUrl) ? String(src.imageUrl).trim() : '';
+      out.fit = src.fit === 'cover' ? 'cover' : 'contain';
+      out.rounded = clampNum(src.rounded, 0, 64, 10);
+      out.blendDark = Boolean(src.blendDark);
+      out.glowColor = sanitizeCssColor(src.glowColor) || '';
+      out.glowBlur = clampNum(src.glowBlur, 0, 32, 0);
+    } else if (out.type === 'text') {
+      out.text = String(src.text ?? def.text);
+      out.fontFamily = src.fontFamily ? String(src.fontFamily).trim() : 'hud';
+      out.fontSize = clampNum(src.fontSize, 8, 72, 18);
+      out.fontWeight = ['600', '700', '800', '900'].includes(String(src.fontWeight)) ? String(src.fontWeight) : '900';
+      out.textAlign = ['left', 'center', 'right'].includes(src.textAlign) ? src.textAlign : 'center';
+      out.letterSpacing = clampNum(src.letterSpacing, 0, 10, 0.8);
+      out.color = sanitizeCssColor(src.color) || def.color;
+      out.glowColor = sanitizeCssColor(src.glowColor) || '';
+      out.glowBlur = clampNum(src.glowBlur, 0, 32, def.glowBlur);
+      out.strokeColor = sanitizeCssColor(src.strokeColor) || '#020617';
+      out.strokeWidth = clampNum(src.strokeWidth, 0, 4, 0);
+      out.bgColor = sanitizeCssColor(src.bgColor) || '#020617';
+      out.bgOpacity = clampNum(src.bgOpacity, 0, 1, 0);
+      out.borderRadius = clampNum(src.borderRadius, 0, 32, 6);
+    }
+    return out;
+  }
+
+  function buildLayersFromCardConfig(cfg) {
+    const c = normalizeConfig({ systemConfig: cfg });
+    const layers = [];
+    const accent = c.accentColor || '#00f0ff';
+    const sec = c.secondaryColor || accent;
+    const bg = c.bgColor || '#041226';
+    const elSt = c.elementStyles || {};
+
+    layers.push(createDefaultCanvasLayer('background', {
+      name: 'Card Background',
+      locked: true,
+      imageUrl: c.cardBgImage || '',
+      color: bg,
+      color2: sec,
+      blur: c.cardBgBlur || 0,
+      brightness: c.cardBgBrightness ?? 1,
+      tintColor: c.cardBgTint || bg,
+      tintOpacity: c.cardBgImage ? (c.cardBgTintOpacity ?? 0.35) : 0
+    }));
+
+    if (c.starburst) {
+      layers.push(createDefaultCanvasLayer('sparkles', { name: 'Starburst Rays', pattern: 'starburst', color: accent, secondaryColor: sec, opacity: 0.9 }));
+    }
+    if (c.scanlines) {
+      layers.push(createDefaultCanvasLayer('sparkles', { name: 'HUD Scanlines', pattern: 'scanlines', color: accent, secondaryColor: sec, opacity: 0.85 }));
+    }
+    if (c.gridPattern) {
+      layers.push(createDefaultCanvasLayer('sparkles', { name: 'Tactical Grid', pattern: 'grid', color: accent, secondaryColor: sec, opacity: 0.8 }));
+    }
+    if (c.sparkles) {
+      layers.push(createDefaultCanvasLayer('sparkles', { name: 'Sparkles FX', pattern: 'sparkles', color: accent, secondaryColor: sec, opacity: 0.95 }));
+    }
+
+    if (isSafeUrl(c.mediaUrl)) {
+      layers.push(createDefaultCanvasLayer('image', {
+        name: c.mediaCaption || 'Card Visual',
+        x: 28, y: 12, w: 44, h: 36,
+        imageUrl: c.mediaUrl,
+        blendDark: Boolean(c.iconBlendDark),
+        glowColor: accent,
+        glowBlur: 8
+      }));
+    } else if (c.svgIcon || c.customIconData) {
+      layers.push(createDefaultCanvasLayer('icon', {
+        name: 'Emblem Icon',
+        x: 32, y: 12, w: 36, h: 32,
+        svgIcon: c.svgIcon || '',
+        customIconData: c.customIconData || '',
+        color: (elSt.icons && elSt.icons.color) || accent,
+        glowColor: (elSt.icons && elSt.icons.glowColor) || sec,
+        glowBlur: (elSt.icons && elSt.icons.glowBlur) || 10,
+        blendDark: Boolean(c.iconBlendDark)
+      }));
+    }
+
+    const hasTopVisual = isSafeUrl(c.mediaUrl) || c.svgIcon || c.customIconData;
+    if (c.headerTitle) {
+      const ts = elSt.title || {};
+      layers.push(createDefaultCanvasLayer('text', {
+        name: 'Title Text',
+        x: 8, y: hasTopVisual ? 47 : 12, w: 84, h: 14,
+        text: c.headerTitle,
+        fontFamily: ts.fontFamily || c.fontStyle || 'hud',
+        fontSize: ts.fontSize > 0 ? ts.fontSize : (c.cardStyle === 'relic' ? 22 : 17),
+        color: ts.color || accent,
+        glowColor: ts.glowColor || sec,
+        glowBlur: ts.glowBlur > 0 ? ts.glowBlur : 10,
+        strokeColor: ts.strokeColor || '#020617',
+        strokeWidth: ts.strokeWidth || 0
+      }));
+    }
+    if (c.subtitle) {
+      const ss = elSt.subtitle || {};
+      layers.push(createDefaultCanvasLayer('text', {
+        name: 'Subtitle Text',
+        x: 10, y: hasTopVisual ? 61 : 28, w: 80, h: 10,
+        text: c.subtitle,
+        fontFamily: ss.fontFamily || c.fontStyle || 'hud',
+        fontSize: ss.fontSize > 0 ? ss.fontSize : 11,
+        color: ss.color || '#cbd5e1',
+        glowColor: ss.glowColor || accent,
+        glowBlur: ss.glowBlur || 0,
+        strokeColor: ss.strokeColor || '#020617',
+        strokeWidth: ss.strokeWidth || 0
+      }));
+    }
+    if (c.bodyText) {
+      const bs = elSt.body || {};
+      layers.push(createDefaultCanvasLayer('text', {
+        name: 'Body Narrative',
+        x: 10, y: hasTopVisual ? 71 : 42, w: 80, h: 22,
+        text: c.bodyText,
+        fontFamily: bs.fontFamily || c.fontStyle || 'hud',
+        fontSize: bs.fontSize > 0 ? bs.fontSize : 12,
+        color: bs.color || '#f8fafc',
+        glowColor: bs.glowColor || accent,
+        glowBlur: bs.glowBlur || 0,
+        strokeColor: bs.strokeColor || '#020617',
+        strokeWidth: bs.strokeWidth || 0
+      }));
+    }
+
+    if (c.frameStyle && c.frameStyle !== 'none') {
+      layers.push(createDefaultCanvasLayer('border', {
+        name: 'Card Frame',
+        locked: true,
+        frameStyle: c.frameStyle,
+        customFrameSvg: c.customFrameSvg || '',
+        color: accent,
+        secondaryColor: sec,
+        glowBlur: 8
+      }));
+    }
+    return layers;
+  }
+
+  function createBlankCanvasConfig() {
+    const base = getEmptyBaseConfig();
+    base.presetId = 'custom_canvas';
+    base.cardStyle = 'canvas';
+    base.canvasHeight = 380;
+    base.headerTitle = 'CANVA LAYER CARD';
+    base.layers = [
+      createDefaultCanvasLayer('background', { name: 'Background', locked: true, color: '#041226', color2: '#0f172a' }),
+      createDefaultCanvasLayer('sparkles', { name: 'Starburst FX', pattern: 'starburst', color: '#00f0ff', secondaryColor: '#38bdf8', opacity: 0.75 }),
+      createDefaultCanvasLayer('icon', { name: 'Relic Emblem', x: 32, y: 14, w: 36, h: 32, svgIcon: 'soul_flame', color: '#00f0ff', glowColor: '#38bdf8', glowBlur: 12 }),
+      createDefaultCanvasLayer('text', { name: 'Headline', x: 10, y: 50, w: 80, h: 15, text: 'SYSTEM AWAKENED', fontFamily: 'cinzel', fontSize: 22, color: '#f8fafc', glowColor: '#00f0ff', glowBlur: 12 }),
+      createDefaultCanvasLayer('text', { name: 'Lore Body', x: 12, y: 66, w: 76, h: 18, text: 'Drag, resize, rotate & reorder any layer.', fontFamily: 'manhwa', fontSize: 12, color: '#bae6fd', glowBlur: 0 }),
+      createDefaultCanvasLayer('border', { name: 'Outer Frame', locked: true, frameStyle: 'tech_brackets', color: '#00f0ff', secondaryColor: '#38bdf8' })
+    ];
+    return base;
+  }
+
   function getEmptyBaseConfig() {
     return {
       presetId: 'notification',
       ...themeProps('hunter_blue'),
       cardStyle: 'standard',
+      canvasHeight: 380,
+      layers: [],
       hideHeader: false,
       starburst: false,
       transparentBg: false,
@@ -2340,7 +2641,9 @@
     if (!merged.bodyText && raw.bodyText === undefined && msgOrCfg && msgOrCfg.text && !msgOrCfg.systemConfig) {
       merged.bodyText = msgOrCfg.text;
     }
-    merged.cardStyle = ['relic', 'codex'].includes(merged.cardStyle) ? merged.cardStyle : 'standard';
+    merged.cardStyle = ['relic', 'codex', 'canvas'].includes(merged.cardStyle) ? merged.cardStyle : 'standard';
+    merged.canvasHeight = clampNum(merged.canvasHeight, 180, 680, 380);
+    merged.layers = Array.isArray(merged.layers) ? merged.layers.map((l, i) => normalizeCanvasLayer(l, i)) : [];
     const allSvg = getAllSvgIcons();
     merged.customIconData = merged.customIconData ? (sanitizeCustomSvg(merged.customIconData) || (isSafeUrl(merged.customIconData) ? String(merged.customIconData).trim() : '')) : '';
     merged.svgIcon = (merged.svgIcon && (allSvg[merged.svgIcon] || merged.customIconData)) ? merged.svgIcon : '';
@@ -2483,11 +2786,231 @@
     }
   }
 
+  function renderCanvasLayerInnerHtml(layer, cfg) {
+    const t = layer.type;
+    if (t === 'background') {
+      const grad = `linear-gradient(155deg, ${esc(layer.color || '#041226')} 0%, ${esc(layer.color2 || layer.color || '#0f172a')} 100%)`;
+      const imgHtml = isSafeUrl(layer.imageUrl)
+        ? `<img class="msw-card-bg-img" src="${esc(layer.imageUrl)}" alt="" style="filter:blur(${layer.blur}px) brightness(${layer.brightness});">`
+        : '';
+      const tintHtml = `<div class="msw-card-bg-tint" style="background:${hexToRgba(layer.tintColor || '#041226', layer.tintOpacity ?? 0.35, 0)};"></div>`;
+      return `<div class="msw-canvas-bg-box" style="background:${grad};">${imgHtml}${tintHtml}</div>`;
+    }
+    if (t === 'border') {
+      const acc = esc(layer.color || cfg.accentColor || '#00f0ff');
+      const sec = esc(layer.secondaryColor || layer.color || cfg.secondaryColor || '#38bdf8');
+      const svg = getFrameSvgOverlay(layer.frameStyle, layer.customFrameSvg);
+      const glow = layer.glowBlur > 0 ? `filter:drop-shadow(0 0 ${layer.glowBlur}px ${acc});` : '';
+      if (svg) {
+        return `<div class="msw-canvas-border-box" style="--sys-accent:${acc}; --sys-accent-2:${sec}; ${glow}">${svg}</div>`;
+      }
+      if (layer.frameStyle === 'none') return `<div class="msw-canvas-border-box"></div>`;
+      return `<div class="msw-canvas-border-box" style="--sys-accent:${acc}; --sys-accent-2:${sec}; ${glow}"><div class="msw-canvas-border-css style-${esc(layer.frameStyle || 'tech_brackets')}"></div></div>`;
+    }
+    if (t === 'sparkles') {
+      const acc = esc(layer.color || cfg.accentColor || '#fde047');
+      const sec = esc(layer.secondaryColor || layer.color || cfg.secondaryColor || '#ef4444');
+      if (layer.pattern === 'starburst') {
+        return `<div class="msw-canvas-fx-box" style="background:radial-gradient(circle at 50% 42%, color-mix(in srgb, ${sec} 36%, transparent) 0%, transparent 65%), repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, ${sec} 22%, transparent) 0deg 2deg, color-mix(in srgb, ${acc} 12%, transparent) 2deg 3.5deg, transparent 3.5deg 9deg);"></div>`;
+      }
+      if (layer.pattern === 'scanlines') {
+        return `<div class="msw-canvas-fx-box" style="background:repeating-linear-gradient(to bottom, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 4px);"></div>`;
+      }
+      if (layer.pattern === 'grid') {
+        return `<div class="msw-canvas-fx-box" style="background-image:linear-gradient(color-mix(in srgb, ${acc} 16%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, ${acc} 16%, transparent) 1px, transparent 1px); background-size:18px 18px;"></div>`;
+      }
+      return `<div class="msw-canvas-fx-box" style="color:${acc}; text-shadow:0 0 8px ${sec};">
+        <span style="position:absolute; top:12%; left:14%; font-size:14px;">✦</span>
+        <span style="position:absolute; top:18%; right:15%; font-size:11px;">✧</span>
+        <span style="position:absolute; top:45%; left:10%; font-size:10px;">✦</span>
+        <span style="position:absolute; top:42%; right:11%; font-size:13px;">✦</span>
+        <span style="position:absolute; bottom:18%; left:18%; font-size:14px;">✧</span>
+        <span style="position:absolute; bottom:14%; right:18%; font-size:15px;">✦</span>
+      </div>`;
+    }
+    if (t === 'icon') {
+      const svgObj = layer.emoji ? null : getSvgIconEntry(layer.svgIcon, layer.customIconData);
+      const acc = esc(layer.color || cfg.accentColor || '#00f0ff');
+      const gc = esc(layer.glowColor || acc);
+      const filt = layer.glowBlur > 0 ? `filter:drop-shadow(0 0 ${layer.glowBlur}px ${gc});` : '';
+      const blend = layer.blendDark ? 'mix-blend-mode:screen;' : '';
+      const content = layer.emoji
+        ? `<span style="font-size:48px; line-height:1;">${esc(layer.emoji)}</span>`
+        : (svgObj ? svgObj.svg : '<span style="font-size:40px;">✨</span>');
+      return `<div class="msw-canvas-icon-box" style="color:${acc}; --sys-accent:${acc}; ${filt} ${blend}">${content}</div>`;
+    }
+    if (t === 'image') {
+      if (!isSafeUrl(layer.imageUrl)) return `<div class="msw-canvas-image-box" style="border:1px dashed #334155; color:#64748b; font-size:11px;">No Image</div>`;
+      const filt = layer.glowBlur > 0 ? `filter:drop-shadow(0 0 ${layer.glowBlur}px ${esc(layer.glowColor || '#00f0ff')});` : '';
+      const blend = layer.blendDark ? 'mix-blend-mode:screen;' : '';
+      return `<div class="msw-canvas-image-box" style="border-radius:${layer.rounded || 0}px; ${filt}"><img src="${esc(layer.imageUrl)}" alt="" style="object-fit:${layer.fit === 'cover' ? 'cover' : 'contain'}; border-radius:${layer.rounded || 0}px; ${blend}"></div>`;
+    }
+    const ff = resolveFontFamilyCss(layer.fontFamily) || PRESET_FONT_STACKS.hud;
+    const justify = layer.textAlign === 'left' ? 'flex-start' : (layer.textAlign === 'right' ? 'flex-end' : 'center');
+    const shadow = (layer.glowBlur > 0 || layer.glowColor) ? `text-shadow:0 0 ${layer.glowBlur || 8}px ${esc(layer.glowColor || layer.color || '#00f0ff')};` : '';
+    const stroke = layer.strokeWidth > 0 ? `-webkit-text-stroke:${layer.strokeWidth}px ${esc(layer.strokeColor || '#020617')}; paint-order:stroke fill;` : '';
+    const bgCss = layer.bgOpacity > 0 ? `background:${hexToRgba(layer.bgColor || '#020617', layer.bgOpacity, 0)}; border-radius:${layer.borderRadius || 0}px;` : '';
+    return `<div class="msw-canvas-text-box" style="justify-content:${justify}; text-align:${esc(layer.textAlign || 'center')}; font-family:${ff}; font-size:${layer.fontSize || 18}px; font-weight:${esc(layer.fontWeight || '900')}; letter-spacing:${layer.letterSpacing || 0}px; color:${esc(layer.color || '#f8fafc')}; ${shadow} ${stroke} ${bgCss}"><span style="width:100%;">${esc(layer.text || '')}</span></div>`;
+  }
+
+  function renderCanvasModeElement(el, cfg, msg, opts) {
+    const previewMode = !!opts.previewMode;
+    el.className = [
+      'manhwa-sys-win',
+      'quest-card',
+      'card-canvas',
+      'glow-' + (cfg.glowIntensity || 'high'),
+      'anim-' + (cfg.animation || 'hologram')
+    ].join(' ');
+    el.style.setProperty('--sys-accent', cfg.accentColor || '#00f0ff');
+    el.style.setProperty('--sys-accent-2', cfg.secondaryColor || cfg.accentColor || '#38bdf8');
+    el.style.setProperty('--sys-bg', hexToRgba(cfg.bgColor || '#041226', cfg.bgOpacity ?? 0.94));
+    el.style.height = (cfg.canvasHeight || 380) + 'px';
+    el.title = previewMode ? 'Drag, resize or rotate layers directly' : 'Click to edit Free Layer Canvas';
+
+    const layers = Array.isArray(cfg.layers) ? cfg.layers : [];
+    const activeLayer = layers.find(l => l.id === builderSelectedLayerId) || layers.find(l => l.visible && !l.locked) || layers[layers.length - 1] || null;
+    if (previewMode && activeLayer && builderSelectedLayerId !== activeLayer.id) {
+      builderSelectedLayerId = activeLayer.id;
+    }
+
+    const layersHtml = layers.map((l, idx) => {
+      if (!l.visible) return '';
+      const isSel = previewMode && activeLayer && activeLayer.id === l.id;
+      const handlesHtml = (isSel && !l.locked) ? `
+        <div class="msw-canvas-rot-handle" data-handle="rot" title="Drag to rotate">↻</div>
+        <div class="msw-canvas-handle nw" data-handle="nw"></div>
+        <div class="msw-canvas-handle ne" data-handle="ne"></div>
+        <div class="msw-canvas-handle sw" data-handle="sw"></div>
+        <div class="msw-canvas-handle se" data-handle="se"></div>
+      ` : '';
+      return `
+        <div class="msw-canvas-layer type-${esc(l.type)} ${previewMode ? 'is-preview-layer' : ''} ${l.locked ? 'is-locked' : ''} ${isSel ? 'is-selected' : ''}"
+             data-layer-id="${esc(l.id)}"
+             style="left:${l.x}%; top:${l.y}%; width:${l.w}%; height:${l.h}%; z-index:${idx + 1}; opacity:${l.opacity}; transform:rotate(${l.rotation}deg);">
+          ${renderCanvasLayerInnerHtml(l, cfg)}
+          ${handlesHtml}
+        </div>
+      `;
+    }).join('');
+
+    el.innerHTML = `<div class="msw-canvas-stage">${layersHtml}</div>`;
+
+    if (previewMode && typeof el.querySelector === 'function') {
+      const stage = el.querySelector('.msw-canvas-stage');
+      if (stage && typeof stage.addEventListener === 'function') {
+        stage.addEventListener('pointerdown', (e) => {
+          const targetEl = e.target && e.target.closest ? e.target : null;
+          if (!targetEl || !builderDraft || !Array.isArray(builderDraft.layers)) return;
+          const handleEl = targetEl.closest('[data-handle]');
+          const layerEl = targetEl.closest('[data-layer-id]');
+          if (!layerEl) return;
+          const lid = layerEl.dataset.layerId;
+          const layerObj = builderDraft.layers.find(x => x.id === lid);
+          if (!layerObj) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+          const prevSel = builderSelectedLayerId;
+          builderSelectedLayerId = lid;
+
+          if (layerObj.locked) {
+            if (prevSel !== lid) {
+              renderCanvasLayersEditor();
+              refreshPreviewOnly();
+            }
+            return;
+          }
+
+          const stageRect = stage.getBoundingClientRect();
+          if (!stageRect.width || !stageRect.height) return;
+          const mode = handleEl ? handleEl.dataset.handle : 'move';
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const orig = { x: layerObj.x, y: layerObj.y, w: layerObj.w, h: layerObj.h, rot: layerObj.rotation || 0 };
+          const layerRect = layerEl.getBoundingClientRect();
+          const cx = layerRect.left + layerRect.width / 2;
+          const cy = layerRect.top + layerRect.height / 2;
+          let moved = false;
+
+          const onMove = (ev) => {
+            moved = true;
+            const dxPct = ((ev.clientX - startX) / stageRect.width) * 100;
+            const dyPct = ((ev.clientY - startY) / stageRect.height) * 100;
+            if (mode === 'move') {
+              layerObj.x = Math.round(clampNum(orig.x + dxPct, -50, 100, orig.x) * 10) / 10;
+              layerObj.y = Math.round(clampNum(orig.y + dyPct, -50, 100, orig.y) * 10) / 10;
+            } else if (mode === 'rot') {
+              const deg = Math.round((Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI + 90);
+              const normDeg = ((deg + 180) % 360 + 360) % 360 - 180;
+              layerObj.rotation = normDeg;
+            } else {
+              let nx = orig.x, ny = orig.y, nw = orig.w, nh = orig.h;
+              if (mode.includes('e')) nw = clampNum(orig.w + dxPct, 4, 150, orig.w);
+              if (mode.includes('s')) nh = clampNum(orig.h + dyPct, 4, 150, orig.h);
+              if (mode.includes('w')) {
+                const maxShift = orig.w - 4;
+                const shift = Math.min(maxShift, dxPct);
+                nx = clampNum(orig.x + shift, -50, 100, orig.x);
+                nw = clampNum(orig.w - shift, 4, 150, orig.w);
+              }
+              if (mode.includes('n')) {
+                const maxShift = orig.h - 4;
+                const shift = Math.min(maxShift, dyPct);
+                ny = clampNum(orig.y + shift, -50, 100, orig.y);
+                nh = clampNum(orig.h - shift, 4, 150, orig.h);
+              }
+              layerObj.x = Math.round(nx * 10) / 10;
+              layerObj.y = Math.round(ny * 10) / 10;
+              layerObj.w = Math.round(nw * 10) / 10;
+              layerObj.h = Math.round(nh * 10) / 10;
+            }
+            layerEl.style.left = layerObj.x + '%';
+            layerEl.style.top = layerObj.y + '%';
+            layerEl.style.width = layerObj.w + '%';
+            layerEl.style.height = layerObj.h + '%';
+            layerEl.style.transform = `rotate(${layerObj.rotation}deg)`;
+
+            const syncInp = (id, v) => { const inp = document.getElementById(id); if (inp) inp.value = v; };
+            syncInp('sysLayInpX', layerObj.x);
+            syncInp('sysLayInpY', layerObj.y);
+            syncInp('sysLayInpW', layerObj.w);
+            syncInp('sysLayInpH', layerObj.h);
+            syncInp('sysLayInpRot', layerObj.rotation);
+          };
+
+          const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            if (prevSel !== lid || moved) {
+              renderCanvasLayersEditor();
+              refreshPreviewOnly();
+            }
+          };
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+        });
+      }
+    } else if (!previewMode) {
+      el.addEventListener('click', () => {
+        if (typeof opts.onEditClick === 'function') {
+          opts.onEditClick(msg);
+        } else {
+          openSystemWindowBuilder(msg.id);
+        }
+      });
+    }
+    return el;
+  }
+
   function renderSystemWindowElement(msg, opts = {}) {
     injectCustomFontFaces();
     const cfg = normalizeConfig(msg);
     const previewMode = !!opts.previewMode;
     const el = document.createElement('div');
+    if (cfg.cardStyle === 'canvas') {
+      return renderCanvasModeElement(el, cfg, msg, opts);
+    }
 
     const classes = [
       'manhwa-sys-win',
@@ -3284,6 +3807,9 @@
   function serializeSysWindowToTag(msg) {
     if (!msg || !msg.systemConfig) return '';
     const c = normalizeConfig(msg);
+    if (c.cardStyle === 'canvas') {
+      return `[SYSWINDOW: ${JSON.stringify(c)}]`;
+    }
     const mods = [];
     const defPreset = PRESETS.find(p => p.id === c.presetId);
     if (c.themeId && (!defPreset || c.themeId !== defPreset.config.themeId) && c.themeId !== 'custom') {
@@ -3410,13 +3936,17 @@
           <button type="button" class="syswin-tab-btn" id="sysTabBtn_content" onclick="window.ChatHubSystemWindows.switchTab('content')">📝 Text & Images</button>
           <button type="button" class="syswin-tab-btn" id="sysTabBtn_blocks" onclick="window.ChatHubSystemWindows.switchTab('blocks')">🧩 Stats, Shop & Inv</button>
           <button type="button" class="syswin-tab-btn" id="sysTabBtn_style" onclick="window.ChatHubSystemWindows.switchTab('style')">🎨 Theme & FX</button>
+          <button type="button" class="syswin-tab-btn" id="sysTabBtn_layers" onclick="window.ChatHubSystemWindows.switchTab('layers')">🧱 Layers</button>
         </div>
 
         <div class="syswin-body" id="sysWinBuilderBody">
           <div class="syswin-tab-panel active" id="sysTabPanel_presets">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
               <span style="font-size:11px; color:#94a3b8; font-weight:700;">Choose any of 24 Manhwa Windows & Ornate Relic Cards (100% editable):</span>
-              <button type="button" class="syswin-chip-btn" style="border-color:#fde047; color:#fde047;" onclick="window.ChatHubSystemWindows.newCleanRelicCard()">🔮 + New Blank Relic</button>
+              <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <button type="button" class="syswin-chip-btn" style="border-color:#fde047; color:#fde047;" onclick="window.ChatHubSystemWindows.newCleanRelicCard()">🔮 + New Blank Relic</button>
+                <button type="button" class="syswin-chip-btn" style="border-color:#38bdf8; color:#38bdf8;" onclick="window.ChatHubSystemWindows.newBlankCanvasCard()">🎨 + New Blank Canvas</button>
+              </div>
             </div>
             <div class="syswin-preset-grid" id="sysWinPresetGrid"></div>
             <div style="margin-top:6px; border-top:1px solid #1e293b; padding-top:8px;">
@@ -3724,6 +4254,7 @@
                   <option value="standard">Standard Manhwa HUD Window</option>
                   <option value="relic">🔮 Centered Relic / Skill Emblem Card (DEVOUR Style)</option>
                   <option value="codex">📘 System Codex Diagram + Rule Card (Interverse Style)</option>
+                  <option value="canvas">🎨 Free Layer Canvas Mode (Canva Drag/Resize)</option>
                 </select>
                 <button type="button" class="syswin-chip-btn" style="border-color:#fde047; color:#fde047; white-space:nowrap;" onclick="window.ChatHubSystemWindows.convertToCleanRelicMode()" title="Hide header bar, remove buttons/stats & enable DEVOUR sunburst + sparkles">🧹 Pure DEVOUR Setup</button>
               </div>
@@ -3883,6 +4414,43 @@
               </div>
             </div>
           </div>
+
+          <div class="syswin-tab-panel" id="sysTabPanel_layers">
+            <div id="sysCanvasModeBanner" style="background:#0f172a; border:1px solid #1e3a5f; border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-size:12px; font-weight:900; color:#38bdf8;">🎨 Canva-Style Free Layer Canvas Mode</div>
+                <div id="sysCanvasModeSub" style="font-size:10.5px; color:#94a3b8;">Assemble modular Background, Sparkles, Icons, Images, Borders & Text layers — drag, resize & rotate right on the preview!</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" class="syswin-chip-btn" id="sysBtnConvertToCanvas" style="border-color:#00f0ff; color:#00f0ff;" onclick="window.ChatHubSystemWindows.convertToCanvasMode()">🎨 Convert Card to Layers</button>
+                <button type="button" class="syswin-chip-btn" style="border-color:#4ade80; color:#4ade80;" onclick="window.ChatHubSystemWindows.newBlankCanvasCard()">✨ Blank Canvas</button>
+              </div>
+            </div>
+
+            <div id="sysCanvasEditorWrap" style="display:flex; flex-direction:column; gap:9px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <div class="syswin-chip-row">
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addCanvasLayer('text')">+ Text</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addCanvasLayer('icon')">+ Icon</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addCanvasLayer('image')">+ Image</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addCanvasLayer('border')">+ Border</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addCanvasLayer('sparkles')">+ Sparkles</button>
+                  <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addCanvasLayer('background')">+ BG</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <label class="syswin-label" style="margin:0;">Height <span id="sysLblCanvasHeight" style="color:#38bdf8;">380px</span></label>
+                  <input type="range" id="sysCanvasHeightInp" min="180" max="640" step="10" value="380" style="width:96px;">
+                </div>
+              </div>
+
+              <div style="background:#090f20; border:1px solid #1e293b; border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+                <div style="font-size:11px; font-weight:800; color:#cbd5e1;">🧱 Layer Stack (Top = Frontmost)</div>
+                <div class="syswin-layer-stack" id="sysCanvasLayerStack"></div>
+              </div>
+
+              <div id="sysCanvasLayerInspector" style="background:#131c31; border:1px solid #293548; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+          </div>
         </div>
 
         <div class="modal-footer" style="padding:10px 14px; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -3936,6 +4504,7 @@
     setVal('sysSelFrameStyle', builderDraft.frameStyle || 'tech_brackets');
     setVal('sysSelFontStyle', builderDraft.fontStyle || 'hud');
     setVal('sysSelCardStyle', builderDraft.cardStyle || 'standard');
+    setVal('sysCanvasHeightInp', builderDraft.canvasHeight || 380);
     setVal('sysInpAccentColor', builderDraft.accentColor || '#00f0ff');
     setVal('sysInpSecondaryColor', builderDraft.secondaryColor || '#38bdf8');
     setVal('sysInpBgColor', builderDraft.bgColor || '#041226');
@@ -3962,12 +4531,14 @@
     setTxt('sysLblCardBgBlur', (builderDraft.cardBgBlur ?? 0) + 'px');
     setTxt('sysLblCardBgBrightness', Math.round((builderDraft.cardBgBrightness ?? 1) * 100) + '%');
     setTxt('sysLblCardBgTintOpacity', Math.round((builderDraft.cardBgTintOpacity ?? 0.35) * 100) + '%');
+    setTxt('sysLblCanvasHeight', (builderDraft.canvasHeight || 380) + 'px');
 
     renderPresetGrid();
     renderSavedPresetsList();
     renderThemeChips();
     renderFramePickerGrid();
     renderElementStyleEditor();
+    renderCanvasLayersEditor();
     renderMediaPickerStrip();
     renderSvgIconPicker();
     renderBoostsEditor();
@@ -4111,6 +4682,318 @@
     setElTxt('sysLblElFontSize', st.fontSize > 0 ? `${st.fontSize}px` : 'auto');
     setElTxt('sysLblElGlowBlur', st.glowBlur > 0 ? `${st.glowBlur}px` : (st.glowColor ? '10px' : 'auto'));
     setElTxt('sysLblElStrokeWidth', `${st.strokeWidth || 0}px`);
+  }
+
+  function renderCanvasLayersEditor() {
+    const wrap = document.getElementById('sysCanvasEditorWrap');
+    const convertBtn = document.getElementById('sysBtnConvertToCanvas');
+    const stackEl = document.getElementById('sysCanvasLayerStack');
+    const inspEl = document.getElementById('sysCanvasLayerInspector');
+    if (!builderDraft) return;
+    const isCanvas = builderDraft.cardStyle === 'canvas';
+    if (wrap) wrap.style.display = isCanvas ? 'flex' : 'none';
+    if (convertBtn) convertBtn.style.display = isCanvas ? 'none' : 'inline-flex';
+    if (!isCanvas || !stackEl || !inspEl) return;
+
+    const layers = Array.isArray(builderDraft.layers) ? builderDraft.layers : [];
+    if (!layers.find(l => l.id === builderSelectedLayerId)) {
+      builderSelectedLayerId = layers.length ? layers[layers.length - 1].id : '';
+    }
+
+    if (layers.length === 0) {
+      stackEl.innerHTML = '<div style="font-size:11px; color:#64748b; padding:8px; text-align:center;">No layers yet. Click + Text, + Icon, + Image, + Border, + Sparkles, or + BG above!</div>';
+      inspEl.innerHTML = '<div style="font-size:11px; color:#64748b;">Select or add a layer to style & position it.</div>';
+      return;
+    }
+
+    const typeIcon = { background: '🖼️', sparkles: '✨', image: '🧩', icon: '💠', text: '𝐓', border: '🔲' };
+    stackEl.innerHTML = [...layers].reverse().map((l) => {
+      const idx = layers.indexOf(l);
+      const isSel = l.id === builderSelectedLayerId;
+      return `
+        <div class="syswin-layer-row ${isSel ? 'active' : ''} ${!l.visible ? 'is-hidden-layer' : ''}" data-sel-layer="${esc(l.id)}">
+          <span class="syswin-layer-badge">${typeIcon[l.type] || '▪'} ${esc(l.type)}</span>
+          <span class="syswin-layer-name">${esc(l.name || l.type)}</span>
+          <div class="syswin-layer-acts">
+            <button type="button" class="syswin-layer-mini-btn" title="Bring Forward" data-layer-act="up" data-lid="${esc(l.id)}" ${idx >= layers.length - 1 ? 'disabled style="opacity:0.35;"' : ''}>▲</button>
+            <button type="button" class="syswin-layer-mini-btn" title="Send Backward" data-layer-act="down" data-lid="${esc(l.id)}" ${idx <= 0 ? 'disabled style="opacity:0.35;"' : ''}>▼</button>
+            <button type="button" class="syswin-layer-mini-btn ${l.visible ? 'active' : ''}" title="Toggle Visible" data-layer-act="vis" data-lid="${esc(l.id)}">${l.visible ? '👁️' : '🙈'}</button>
+            <button type="button" class="syswin-layer-mini-btn ${l.locked ? 'active' : ''}" title="Lock / Unlock Drag" data-layer-act="lock" data-lid="${esc(l.id)}">${l.locked ? '🔒' : '🔓'}</button>
+            <button type="button" class="syswin-layer-mini-btn" title="Duplicate Layer" data-layer-act="dup" data-lid="${esc(l.id)}">⧉</button>
+            <button type="button" class="syswin-layer-mini-btn" style="color:#fca5a5;" title="Delete Layer" data-layer-act="del" data-lid="${esc(l.id)}">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    stackEl.querySelectorAll('[data-sel-layer]').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target && e.target.closest && e.target.closest('[data-layer-act]')) return;
+        window.ChatHubSystemWindows.selectCanvasLayer(row.dataset.selLayer);
+      });
+    });
+    stackEl.querySelectorAll('[data-layer-act]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const act = btn.dataset.layerAct;
+        const lid = btn.dataset.lid;
+        if (act === 'up') window.ChatHubSystemWindows.moveCanvasLayer(lid, 1);
+        else if (act === 'down') window.ChatHubSystemWindows.moveCanvasLayer(lid, -1);
+        else if (act === 'vis') window.ChatHubSystemWindows.toggleCanvasLayerProp(lid, 'visible');
+        else if (act === 'lock') window.ChatHubSystemWindows.toggleCanvasLayerProp(lid, 'locked');
+        else if (act === 'dup') window.ChatHubSystemWindows.duplicateCanvasLayer(lid);
+        else if (act === 'del') window.ChatHubSystemWindows.deleteCanvasLayer(lid);
+      });
+    });
+
+    const layer = layers.find(l => l.id === builderSelectedLayerId);
+    if (!layer) {
+      inspEl.innerHTML = '';
+      return;
+    }
+
+    const customFonts = loadCustomFonts();
+    const fontOptsHtml = [
+      ['hud', 'Sci-Fi HUD'], ['manhwa', 'Modern Manhwa'], ['serif', 'Royal Serif'], ['mono', 'Terminal Mono'],
+      ['cinzel', 'Imperial Cinzel'], ['impact', 'Action Bold'], ['gothic', 'Dark Gothic'], ['runic', 'Arcane Runic']
+    ].map(([v, lbl]) => `<option value="${v}" ${layer.fontFamily === v ? 'selected' : ''}>${lbl}</option>`).join('') +
+      customFonts.map(cf => `<option value="custom:${esc(cf.id)}" ${layer.fontFamily === 'custom:' + cf.id ? 'selected' : ''}>⭐ ${esc(cf.name)}</option>`).join('');
+
+    let specificHtml = '';
+    if (layer.type === 'text') {
+      specificHtml = `
+        <div>
+          <label class="syswin-label">Text Content</label>
+          <textarea rows="2" class="syswin-textarea" data-lay-field="text">${esc(layer.text || '')}</textarea>
+        </div>
+        <div class="syswin-field-row">
+          <div>
+            <label class="syswin-label">Font</label>
+            <select class="syswin-select" data-lay-field="fontFamily">${fontOptsHtml}</select>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+            <div>
+              <label class="syswin-label">Align</label>
+              <select class="syswin-select" data-lay-field="textAlign">
+                <option value="left" ${layer.textAlign === 'left' ? 'selected' : ''}>Left</option>
+                <option value="center" ${layer.textAlign === 'center' ? 'selected' : ''}>Center</option>
+                <option value="right" ${layer.textAlign === 'right' ? 'selected' : ''}>Right</option>
+              </select>
+            </div>
+            <div>
+              <label class="syswin-label">Size (px)</label>
+              <input type="number" class="syswin-input" min="8" max="72" data-lay-field="fontSize" data-lay-num="1" value="${layer.fontSize || 18}">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px;">
+          <div><label class="syswin-label">Color</label><input type="color" data-lay-field="color" value="${toHex6(layer.color, '#f8fafc')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Glow Color</label><input type="color" data-lay-field="glowColor" value="${toHex6(layer.glowColor, '#00f0ff')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Glow px</label><input type="number" class="syswin-input" min="0" max="32" data-lay-field="glowBlur" data-lay-num="1" value="${layer.glowBlur || 0}"></div>
+          <div><label class="syswin-label">Stroke px</label><input type="number" class="syswin-input" min="0" max="4" step="0.5" data-lay-field="strokeWidth" data-lay-num="1" value="${layer.strokeWidth || 0}"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px;">
+          <div><label class="syswin-label">Stroke Color</label><input type="color" data-lay-field="strokeColor" value="${toHex6(layer.strokeColor, '#020617')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Box Fill</label><input type="color" data-lay-field="bgColor" value="${toHex6(layer.bgColor, '#020617')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Box Opacity</label><input type="range" min="0" max="1" step="0.05" data-lay-field="bgOpacity" data-lay-num="1" value="${layer.bgOpacity || 0}" style="width:100%; margin-top:6px;"></div>
+        </div>
+      `;
+    } else if (layer.type === 'icon') {
+      const allSvg = getAllSvgIcons();
+      const iconOpts = Object.entries(allSvg).map(([k, v]) => `<option value="${esc(k)}" ${layer.svgIcon === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
+      specificHtml = `
+        <div class="syswin-field-row">
+          <div>
+            <label class="syswin-label">Neon SVG Icon</label>
+            <select class="syswin-select" data-lay-field="svgIcon">${iconOpts}</select>
+          </div>
+          <div>
+            <label class="syswin-label">Or Emoji / Glyph Override</label>
+            <input type="text" class="syswin-input" maxlength="6" placeholder="e.g. 🔥 or ⚔️" data-lay-field="emoji" value="${esc(layer.emoji || '')}">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; align-items:end;">
+          <div><label class="syswin-label">Color</label><input type="color" data-lay-field="color" value="${toHex6(layer.color, '#00f0ff')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Glow Color</label><input type="color" data-lay-field="glowColor" value="${toHex6(layer.glowColor, '#38bdf8')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Glow px</label><input type="number" class="syswin-input" min="0" max="32" data-lay-field="glowBlur" data-lay-num="1" value="${layer.glowBlur || 0}"></div>
+          <label class="syswin-chip-btn" style="text-align:center;"><input type="checkbox" data-lay-field="blendDark" data-lay-chk="1" ${layer.blendDark ? 'checked' : ''}> Blend BG</label>
+        </div>
+      `;
+    } else if (layer.type === 'image') {
+      const urlDisp = layer.imageUrl && String(layer.imageUrl).startsWith('data:') ? '(Uploaded Sticker/Image)' : (layer.imageUrl || '');
+      specificHtml = `
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          <input type="file" id="sysLayImgUploadInp" accept="image/*" style="display:none;">
+          <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysLayImgUploadInp').click()">📁 Upload PNG/Sticker</button>
+          <button type="button" class="syswin-chip-btn" style="border-color:#c084fc; color:#e9d5ff;" id="sysLayStripBgBtn">🪄 Remove BG</button>
+          <label class="syswin-chip-btn"><input type="checkbox" data-lay-field="blendDark" data-lay-chk="1" ${layer.blendDark ? 'checked' : ''}> Dissolve Black</label>
+        </div>
+        <input type="text" class="syswin-input" placeholder="Image URL (assets/... or https://...)" data-lay-field="imageUrl" value="${esc(urlDisp)}">
+        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px;">
+          <div>
+            <label class="syswin-label">Fit</label>
+            <select class="syswin-select" data-lay-field="fit">
+              <option value="contain" ${layer.fit === 'contain' ? 'selected' : ''}>Contain</option>
+              <option value="cover" ${layer.fit === 'cover' ? 'selected' : ''}>Cover</option>
+            </select>
+          </div>
+          <div><label class="syswin-label">Radius px</label><input type="number" class="syswin-input" min="0" max="64" data-lay-field="rounded" data-lay-num="1" value="${layer.rounded || 0}"></div>
+          <div><label class="syswin-label">Glow Color</label><input type="color" data-lay-field="glowColor" value="${toHex6(layer.glowColor, '#00f0ff')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Glow px</label><input type="number" class="syswin-input" min="0" max="32" data-lay-field="glowBlur" data-lay-num="1" value="${layer.glowBlur || 0}"></div>
+        </div>
+      `;
+    } else if (layer.type === 'border') {
+      const frameOpts = getAllFrames().map(fr => `<option value="${esc(fr.id)}" ${layer.frameStyle === fr.id ? 'selected' : ''}>${esc(fr.icon || '🖼️')} ${esc(fr.label)}</option>`).join('');
+      specificHtml = `
+        <div class="syswin-field-row">
+          <div><label class="syswin-label">Frame / Border Style</label><select class="syswin-select" data-lay-field="frameStyle">${frameOpts}</select></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 64px; gap:5px;">
+            <div><label class="syswin-label">Accent</label><input type="color" data-lay-field="color" value="${toHex6(layer.color, '#00f0ff')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+            <div><label class="syswin-label">Secondary</label><input type="color" data-lay-field="secondaryColor" value="${toHex6(layer.secondaryColor, '#38bdf8')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+            <div><label class="syswin-label">Glow</label><input type="number" class="syswin-input" min="0" max="28" data-lay-field="glowBlur" data-lay-num="1" value="${layer.glowBlur || 0}"></div>
+          </div>
+        </div>
+      `;
+    } else if (layer.type === 'sparkles') {
+      specificHtml = `
+        <div style="display:grid; grid-template-columns:1fr 68px 68px; gap:6px;">
+          <div>
+            <label class="syswin-label">Effect Pattern</label>
+            <select class="syswin-select" data-lay-field="pattern">
+              <option value="sparkles" ${layer.pattern === 'sparkles' ? 'selected' : ''}>✦ Sparkles</option>
+              <option value="starburst" ${layer.pattern === 'starburst' ? 'selected' : ''}>🌟 Starburst Rays</option>
+              <option value="scanlines" ${layer.pattern === 'scanlines' ? 'selected' : ''}>📺 HUD Scanlines</option>
+              <option value="grid" ${layer.pattern === 'grid' ? 'selected' : ''}>📐 Tactical Grid</option>
+            </select>
+          </div>
+          <div><label class="syswin-label">Primary</label><input type="color" data-lay-field="color" value="${toHex6(layer.color, '#fde047')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Secondary</label><input type="color" data-lay-field="secondaryColor" value="${toHex6(layer.secondaryColor, '#ef4444')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+        </div>
+      `;
+    } else if (layer.type === 'background') {
+      const bgDisp = layer.imageUrl && String(layer.imageUrl).startsWith('data:') ? '(Uploaded Background)' : (layer.imageUrl || '');
+      specificHtml = `
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          <input type="file" id="sysLayBgUploadInp" accept="image/*" style="display:none;">
+          <button type="button" class="syswin-chip-btn" onclick="document.getElementById('sysLayBgUploadInp').click()">📁 Upload BG Image</button>
+          <button type="button" class="syswin-chip-btn" id="sysLayClearBgImgBtn">✕ Clear BG Image</button>
+        </div>
+        <input type="text" class="syswin-input" placeholder="Background image URL (optional)" data-lay-field="imageUrl" value="${esc(bgDisp)}">
+        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px;">
+          <div><label class="syswin-label">Color 1</label><input type="color" data-lay-field="color" value="${toHex6(layer.color, '#041226')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Color 2</label><input type="color" data-lay-field="color2" value="${toHex6(layer.color2, '#0f172a')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Tint</label><input type="color" data-lay-field="tintColor" value="${toHex6(layer.tintColor, '#041226')}" style="width:100%; height:28px; border:none; border-radius:5px; background:#0f172a;"></div>
+          <div><label class="syswin-label">Tint %</label><input type="range" min="0" max="0.95" step="0.05" data-lay-field="tintOpacity" data-lay-num="1" value="${layer.tintOpacity ?? 0.35}" style="width:100%; margin-top:6px;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><label class="syswin-label">Blur (px)</label><input type="range" min="0" max="20" step="1" data-lay-field="blur" data-lay-num="1" value="${layer.blur || 0}" style="width:100%;"></div>
+          <div><label class="syswin-label">Brightness</label><input type="range" min="0.2" max="1.6" step="0.05" data-lay-field="brightness" data-lay-num="1" value="${layer.brightness ?? 1}" style="width:100%;"></div>
+        </div>
+      `;
+    }
+
+    inspEl.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+        <span style="font-size:11.5px; font-weight:900; color:#facc15;">🎛️ Layer Inspector (${esc(layer.type.toUpperCase())})</span>
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+          <button type="button" class="syswin-layer-mini-btn" onclick="window.ChatHubSystemWindows.alignCanvasLayer('centerH')">↔ Center</button>
+          <button type="button" class="syswin-layer-mini-btn" onclick="window.ChatHubSystemWindows.alignCanvasLayer('centerV')">↕ Mid</button>
+          <button type="button" class="syswin-layer-mini-btn" onclick="window.ChatHubSystemWindows.alignCanvasLayer('fill')">⛶ Fill</button>
+          <button type="button" class="syswin-layer-mini-btn" onclick="window.ChatHubSystemWindows.alignCanvasLayer('front')">⬆ Front</button>
+          <button type="button" class="syswin-layer-mini-btn" onclick="window.ChatHubSystemWindows.alignCanvasLayer('back')">⬇ Back</button>
+        </div>
+      </div>
+      <div class="syswin-field-row">
+        <div><label class="syswin-label">Layer Name</label><input type="text" class="syswin-input" data-lay-field="name" value="${esc(layer.name || '')}"></div>
+        <div><label class="syswin-label">Opacity</label><input type="range" min="0" max="1" step="0.05" data-lay-field="opacity" data-lay-num="1" value="${layer.opacity ?? 1}" style="width:100%; margin-top:7px;"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:5px;">
+        <div><label class="syswin-label">X %</label><input type="number" class="syswin-input" id="sysLayInpX" step="1" data-lay-field="x" data-lay-num="1" value="${layer.x}"></div>
+        <div><label class="syswin-label">Y %</label><input type="number" class="syswin-input" id="sysLayInpY" step="1" data-lay-field="y" data-lay-num="1" value="${layer.y}"></div>
+        <div><label class="syswin-label">W %</label><input type="number" class="syswin-input" id="sysLayInpW" min="4" step="1" data-lay-field="w" data-lay-num="1" value="${layer.w}"></div>
+        <div><label class="syswin-label">H %</label><input type="number" class="syswin-input" id="sysLayInpH" min="4" step="1" data-lay-field="h" data-lay-num="1" value="${layer.h}"></div>
+        <div><label class="syswin-label">Rot °</label><input type="number" class="syswin-input" id="sysLayInpRot" min="-180" max="180" step="5" data-lay-field="rotation" data-lay-num="1" value="${layer.rotation || 0}"></div>
+      </div>
+      ${specificHtml}
+    `;
+
+    inspEl.querySelectorAll('[data-lay-field]').forEach(inp => {
+      const evt = (inp.tagName === 'SELECT' || inp.type === 'checkbox') ? 'change' : 'input';
+      inp.addEventListener(evt, () => {
+        const f = inp.dataset.layField;
+        if (inp.dataset.layChk) {
+          layer[f] = Boolean(inp.checked);
+        } else if (inp.dataset.layNum) {
+          layer[f] = parseFloat(inp.value) || 0;
+        } else {
+          const val = inp.value;
+          if (f === 'imageUrl' && (val === '(Uploaded Sticker/Image)' || val === '(Uploaded Background)')) return;
+          layer[f] = val;
+          if (f === 'svgIcon') layer.customIconData = '';
+          if (f === 'frameStyle') {
+            const cf = loadCustomFrames().find(c => String(c.id) === String(val));
+            layer.customFrameSvg = (cf && cf.svg) ? sanitizeCustomSvg(cf.svg) : '';
+          }
+        }
+        if (f === 'name') {
+          const nameSpan = stackEl.querySelector(`[data-sel-layer="${layer.id}"] .syswin-layer-name`);
+          if (nameSpan) nameSpan.textContent = layer.name || layer.type;
+        }
+        refreshPreviewOnly();
+      });
+    });
+
+    const layImgUp = document.getElementById('sysLayImgUploadInp');
+    if (layImgUp) {
+      layImgUp.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const r = new FileReader();
+        r.onload = (ev) => {
+          layer.imageUrl = ev.target.result;
+          renderCanvasLayersEditor();
+          refreshPreviewOnly();
+        };
+        r.readAsDataURL(file);
+        e.target.value = '';
+      });
+    }
+    const layStripBtn = document.getElementById('sysLayStripBgBtn');
+    if (layStripBtn) {
+      layStripBtn.addEventListener('click', async () => {
+        if (!isSafeUrl(layer.imageUrl)) return;
+        const cleaned = await stripImageBackgroundDataUrl(layer.imageUrl, { maxSize: 480, removeBg: true, forceGif: true });
+        if (cleaned && isSafeUrl(cleaned)) {
+          layer.imageUrl = cleaned;
+          renderCanvasLayersEditor();
+          refreshPreviewOnly();
+          if (api() && typeof api().showToast === 'function') api().showToast('🪄 Background removed from image layer!');
+        }
+      });
+    }
+    const layBgUp = document.getElementById('sysLayBgUploadInp');
+    if (layBgUp) {
+      layBgUp.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const r = new FileReader();
+        r.onload = (ev) => {
+          layer.imageUrl = ev.target.result;
+          renderCanvasLayersEditor();
+          refreshPreviewOnly();
+        };
+        r.readAsDataURL(file);
+        e.target.value = '';
+      });
+    }
+    const layClearBgBtn = document.getElementById('sysLayClearBgImgBtn');
+    if (layClearBgBtn) {
+      layClearBgBtn.addEventListener('click', () => {
+        layer.imageUrl = '';
+        renderCanvasLayersEditor();
+        refreshPreviewOnly();
+      });
+    }
   }
 
   function renderMediaPickerStrip() {
@@ -4398,6 +5281,10 @@
     if (cardStyleEl) {
       cardStyleEl.addEventListener('change', () => {
         const nextStyle = cardStyleEl.value || 'standard';
+        if (nextStyle === 'canvas') {
+          window.ChatHubSystemWindows.convertToCanvasMode();
+          return;
+        }
         builderDraft.cardStyle = nextStyle;
         if (nextStyle === 'relic') {
           builderDraft.hideHeader = true;
@@ -4410,8 +5297,19 @@
           if (!builderDraft.fontStyle || builderDraft.fontStyle === 'hud') builderDraft.fontStyle = 'serif';
           syncInputsFromDraft();
         } else {
+          renderCanvasLayersEditor();
           refreshPreviewOnly();
         }
+      });
+    }
+    const canvasHInp = document.getElementById('sysCanvasHeightInp');
+    if (canvasHInp) {
+      canvasHInp.addEventListener('input', () => {
+        if (!builderDraft) return;
+        builderDraft.canvasHeight = clampNum(canvasHInp.value, 180, 680, 380);
+        const lbl = document.getElementById('sysLblCanvasHeight');
+        if (lbl) lbl.textContent = builderDraft.canvasHeight + 'px';
+        refreshPreviewOnly();
       });
     }
 
@@ -4685,7 +5583,7 @@
     }
 
     syncInputsFromDraft();
-    switchTab(editMsgId ? 'content' : 'presets');
+    switchTab(editMsgId ? (builderDraft.cardStyle === 'canvas' ? 'layers' : 'content') : 'presets');
     const modal = document.getElementById('systemWindowBuilderModal');
     if (modal) modal.classList.add('open');
   }
@@ -4713,10 +5611,11 @@
     if (!api() || typeof api().upsertSystemWindowMessage !== 'function') return;
     const cleanCfg = normalizeConfig({ systemConfig: builderDraft });
     cleanCfg.selectedButtonIdx = null;
+    const firstCanvasText = cleanCfg.cardStyle === 'canvas' ? (cleanCfg.layers.find(l => l.visible && l.type === 'text' && l.text) || {}).text : '';
     api().upsertSystemWindowMessage({
       editMsgId: builderEditingMsgId,
-      title: cleanCfg.headerTitle || 'SYSTEM WINDOW',
-      text: cleanCfg.bodyText || cleanCfg.subtitle || cleanCfg.levelTransition || cleanCfg.headerTitle,
+      title: cleanCfg.headerTitle || firstCanvasText || 'SYSTEM WINDOW',
+      text: firstCanvasText || cleanCfg.bodyText || cleanCfg.subtitle || cleanCfg.levelTransition || cleanCfg.headerTitle,
       systemConfig: cleanCfg,
       delayMs: builderHoldMs
     });
@@ -4771,6 +5670,115 @@
       switchTab('content');
       playSfxForConfig(builderDraft);
       if (api() && typeof api().showToast === 'function') api().showToast('🔮 Blank Relic template ready — edit title, icon & frame!');
+    },
+    newBlankCanvasCard() {
+      builderDraft = createBlankCanvasConfig();
+      builderSelectedLayerId = builderDraft.layers.find(l => l.type === 'text')?.id || '';
+      syncInputsFromDraft();
+      switchTab('layers');
+      playSfxForConfig(builderDraft);
+      if (api() && typeof api().showToast === 'function') api().showToast('🎨 Blank Canva-Style Layer Card ready — drag, resize & rotate!');
+    },
+    convertToCanvasMode() {
+      if (!builderDraft) return;
+      if (!Array.isArray(builderDraft.layers) || builderDraft.layers.length === 0) {
+        builderDraft.layers = buildLayersFromCardConfig(builderDraft);
+      }
+      builderDraft.cardStyle = 'canvas';
+      builderDraft.canvasHeight = builderDraft.canvasHeight || 380;
+      const topMovable = [...builderDraft.layers].reverse().find(l => !l.locked);
+      builderSelectedLayerId = (topMovable && topMovable.id) || (builderDraft.layers[builderDraft.layers.length - 1]?.id || '');
+      syncInputsFromDraft();
+      switchTab('layers');
+      if (api() && typeof api().showToast === 'function') api().showToast('🧱 Converted card into Free Editable Layers!');
+    },
+    addCanvasLayer(type) {
+      if (!builderDraft) return;
+      if (builderDraft.cardStyle !== 'canvas') this.convertToCanvasMode();
+      builderDraft.layers = builderDraft.layers || [];
+      const count = builderDraft.layers.filter(l => l.type === type).length + 1;
+      const accent = builderDraft.accentColor || '#00f0ff';
+      const sec = builderDraft.secondaryColor || '#38bdf8';
+      const extra = {};
+      if (count > 1) extra.name = `${createDefaultCanvasLayer(type).name} ${count}`;
+      if (type === 'text') { extra.color = '#f8fafc'; extra.glowColor = accent; }
+      else if (type === 'icon') { extra.color = accent; extra.glowColor = sec; }
+      else if (type === 'border') { extra.color = accent; extra.secondaryColor = sec; }
+      const newLayer = createDefaultCanvasLayer(type, extra);
+      if (type === 'background') builderDraft.layers.unshift(newLayer);
+      else builderDraft.layers.push(newLayer);
+      builderSelectedLayerId = newLayer.id;
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
+    },
+    selectCanvasLayer(layerId) {
+      builderSelectedLayerId = String(layerId || '');
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
+    },
+    moveCanvasLayer(layerId, delta) {
+      if (!builderDraft || !Array.isArray(builderDraft.layers)) return;
+      const idx = builderDraft.layers.findIndex(l => l.id === layerId);
+      const next = idx + delta;
+      if (idx < 0 || next < 0 || next >= builderDraft.layers.length) return;
+      const [item] = builderDraft.layers.splice(idx, 1);
+      builderDraft.layers.splice(next, 0, item);
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
+    },
+    toggleCanvasLayerProp(layerId, prop) {
+      if (!builderDraft || !Array.isArray(builderDraft.layers) || !['visible', 'locked'].includes(prop)) return;
+      const l = builderDraft.layers.find(x => x.id === layerId);
+      if (!l) return;
+      l[prop] = !l[prop];
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
+    },
+    duplicateCanvasLayer(layerId) {
+      if (!builderDraft || !Array.isArray(builderDraft.layers)) return;
+      const idx = builderDraft.layers.findIndex(x => x.id === layerId);
+      if (idx < 0) return;
+      const copy = cloneObj(builderDraft.layers[idx]);
+      copy.id = makeCanvasLayerId();
+      copy.name = (copy.name || 'Layer').slice(0, 24) + ' Copy';
+      copy.locked = false;
+      if (copy.type !== 'background' && copy.type !== 'border') {
+        copy.x = Math.min(90, (copy.x || 0) + 4);
+        copy.y = Math.min(90, (copy.y || 0) + 4);
+      }
+      builderDraft.layers.splice(idx + 1, 0, copy);
+      builderSelectedLayerId = copy.id;
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
+    },
+    deleteCanvasLayer(layerId) {
+      if (!builderDraft || !Array.isArray(builderDraft.layers)) return;
+      const idx = builderDraft.layers.findIndex(x => x.id === layerId);
+      if (idx < 0) return;
+      builderDraft.layers.splice(idx, 1);
+      if (builderSelectedLayerId === layerId) {
+        builderSelectedLayerId = builderDraft.layers.length ? builderDraft.layers[Math.min(idx, builderDraft.layers.length - 1)].id : '';
+      }
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
+    },
+    alignCanvasLayer(action) {
+      if (!builderDraft || !Array.isArray(builderDraft.layers)) return;
+      const idx = builderDraft.layers.findIndex(l => l.id === builderSelectedLayerId);
+      if (idx < 0) return;
+      const l = builderDraft.layers[idx];
+      if (action === 'centerH') l.x = Math.round(((100 - l.w) / 2) * 10) / 10;
+      else if (action === 'centerV') l.y = Math.round(((100 - l.h) / 2) * 10) / 10;
+      else if (action === 'fill') { l.x = 0; l.y = 0; l.w = 100; l.h = 100; l.rotation = 0; }
+      else if (action === 'front') {
+        const [item] = builderDraft.layers.splice(idx, 1);
+        builderDraft.layers.push(item);
+      } else if (action === 'back') {
+        const [item] = builderDraft.layers.splice(idx, 1);
+        builderDraft.layers.unshift(item);
+      }
+      renderCanvasLayersEditor();
+      refreshPreviewOnly();
     },
     convertToCleanRelicMode() {
       builderDraft.cardStyle = 'relic';
