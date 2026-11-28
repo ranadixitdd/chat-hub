@@ -1690,3 +1690,90 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   border-color: #facc15;
   color: #fde047;
 }
+
+/* ============================================================================
+   PHASE 3: CONNECTED / TREE-BRANCHING SYSTEM RPG STATE & UNLOCK LOCKS
+   ============================================================================ */
+.msw-rpg-lock-banner {
+  background: rgba(127, 29, 29, 0.38);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.msw-rpg-unlock-banner {
+  background: rgba(6, 78, 59, 0.35);
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #bbf7d0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.msw-rpg-req-chip {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.4);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.msw-rpg-req-chip.unlocked {
+  color: #86efac;
+  background: rgba(20, 83, 45, 0.35);
+  border-color: rgba(74, 222, 128, 0.45);
+}
+.msw-inv-slot .msw-rpg-req-chip {
+  font-size: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msw-rpg-resolved-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.4px;
+}
+.msw-rpg-resolved-bar.pass {
+  background: rgba(22, 163, 74, 0.22);
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  color: #86efac;
+}
+.msw-rpg-resolved-bar.fail {
+  background: rgba(220, 38, 38, 0.24);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fca5a5;
+}
+.msw-action-btn.is-disabled-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.syswin-rpg-box {
+  background: #0f172a;
+  border: 1px solid #1e3a5f;
+  border-radius: 9px;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}

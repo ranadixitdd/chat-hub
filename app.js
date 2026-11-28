@@ -11105,6 +11105,24 @@ if (msg.type === 'quest') {
     getChatStyle: () => chatThemeStyle,
     exportCurrentChatAsScript: () => convertChatMessagesToScriptText(messages),
     saveStudioState: () => saveStudioState(),
+    getStoryRpgState: () => (storyScenes && storyScenes.rpgState) ? storyScenes.rpgState : null,
+    setStoryRpgState: (nextState, opts = {}) => {
+      if (!storyScenes || typeof storyScenes !== 'object') storyScenes = {};
+      storyScenes.rpgState = nextState;
+      saveStudioState();
+      if (opts && opts.rerender !== false && !isCinemaPlaying) {
+        const s = document.getElementById('chatStream');
+        const prevScroll = s ? s.scrollTop : 0;
+        renderChatStream();
+        if (s) s.scrollTop = prevScroll;
+      }
+    },
+    refreshChatStream: () => {
+      const s = document.getElementById('chatStream');
+      const prevScroll = s ? s.scrollTop : 0;
+      renderChatStream();
+      if (s) s.scrollTop = prevScroll;
+    },
     deleteMessageById: (msgId) => deleteMessageById(msgId, '🗑️ System Window deleted'),
     upsertSystemWindowMessage({ editMsgId, title, text, systemConfig, delayMs }) {
       if (editMsgId) {

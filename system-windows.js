@@ -2569,6 +2569,286 @@
     return base;
   }
 
+  /* --------------------------------------------------------------------------
+     PHASE 3: SHARED STORY RPG STATE & TREE-BRANCHING LOGIC
+     -------------------------------------------------------------------------- */
+  let fallbackRpgState = null;
+
+  function getDefaultRpgState() {
+    return {
+      active: false,
+      lv: 1,
+      hp: 100,
+      maxHp: 100,
+      mp: 50,
+      maxMp: 50,
+      exp: 0,
+      nextExp: 100,
+      coins: 0,
+      inventory: [],
+      flags: []
+    };
+  }
+
+  function normalizeRpgState(raw) {
+    const def = getDefaultRpgState();
+    const s = (raw && typeof raw === 'object') ? raw : {};
+    const maxHp = Math.max(1, Math.round(Number(s.maxHp) || def.maxHp));
+    const maxMp = Math.max(0, Math.round(Number.isFinite(Number(s.maxMp)) ? Number(s.maxMp) : def.maxMp));
+    return {
+      active: Boolean(s.active),
+      lv: Math.max(1, Math.round(Number(s.lv) || 1)),
+      maxHp,
+      hp: Math.max(0, Math.min(maxHp, Math.round(Number.isFinite(Number(s.hp)) ? Number(s.hp) : maxHp))),
+      maxMp,
+      mp: Math.max(0, Math.min(maxMp, Math.round(Number.isFinite(Number(s.mp)) ? Number(s.mp) : maxMp))),
+      exp: Math.max(0, Math.round(Number(s.exp) || 0)),
+      nextExp: Math.max(10, Math.round(Number(s.nextExp) || 100)),
+      coins: Math.max(0, Math.round(Number(s.coins) || 0)),
+      inventory: Array.isArray(s.inventory) ? s.inventory.filter(x => x && x.name).map(x => ({
+        icon: String(x.icon || '📦'),
+        name: String(x.name || 'Item'),
+        rarity: normalizeRarity(x.rarity),
+        qty: Math.max(1, Math.round(Number(x.qty) || 1)),
+        equipped: Boolean(x.equipped)
+      })) : [],
+      flags: Array.isArray(s.flags) ? Array.from(new Set(s.flags.map(f => String(f || '').trim()).filter(Boolean))) : []
+    };
+  }
+
+  function getRpgState() {
+    const raw = (api() && typeof api().getStoryRpgState === 'function')
+      ? api().getStoryRpgState()
+      : fallbackRpgState;
+    return normalizeRpgState(raw);
+  }
+
+  function saveRpgState(nextState, opts = {}) {
+    const norm = normalizeRpgState(nextState);
+    if (api() && typeof api().setStoryRpgState === 'function') {
+      api().setStoryRpgState(norm, opts);
+    } else {
+      fallbackRpgState = norm;
+    }
+    return norm;
+  }
+
+  function resetRpgState(opts = {}) {
+    return saveRpgState(getDefaultRpgState(), opts);
+  }
+
+  function parseCoinNumber(str) {
+    if (typeof str === 'number') return Math.max(0, Math.round(str));
+    const digits = String(str || '').replace(/,/g, '').match(/(\d+)/);
+    return digits ? Math.max(0, parseInt(digits[1], 10) || 0) : 0;
+  }
+
+  function formatCoins(n) {
+    return Math.max(0, Math.round(Number(n) || 0)).toLocaleString('en-US');
+  }
+
+  function parseUnlockReq(reqInput) {
+    const out = { minLv: 0, minCoins: 0, reqFlags: [], reqItems: [] };
+    if (!reqInput) return out;
+    if (typeof reqInput === 'object') {
+      out.minLv = Math.max(0, Number(reqInput.minLv) || 0);
+      out.minCoins = Math.max(0, Number(reqInput.minCoins) || 0);
+      if (reqInput.reqFlag) out.reqFlags.push(String(reqInput.reqFlag).trim());
+      if (reqInput.reqItem) out.reqItems.push(String(reqInput.reqItem).trim());
+      return out;
+    }
+    String(reqInput).split(/[,;&]+/).map(s => s.trim()).filter(Boolean).forEach(part => {
+      const clean = part.replace(/^REQ\s*:\s*/i, '').trim();
+      const lvM = clean.match(/^(?:LV|LEVEL)\.?\s*(?:>=|:|=)?\s*(\d+)$/i);
+      if (lvM) { out.minLv = Math.max(out.minLv, parseInt(lvM[1], 10) || 0); return; }
+      const coinM = clean.match(/^(?:COINS?|GOLD)\.?\s*(?:>=|:|=)?\s*(\d[\d,]*)$/i) || clean.match(/^(\d[\d,]*)\s*(?:G|GOLD|COINS?)$/i);
+      if (coinM) { out.minCoins = Math.max(out.minCoins, parseCoinNumber(coinM[1])); return; }
+      const flagM = clean.match(/^FLAG\s*[:=]\s*(.+)$/i);
+      if (flagM) { out.reqFlags.push(flagM[1].trim()); return; }
+      const itemM = clean.match(/^ITEM\s*[:=]\s*(.+)$/i);
+      if (itemM) { out.reqItems.push(itemM[1].trim()); return; }
+      if (clean && !/^LOCKED$/i.test(clean)) {
+        out.reqFlags.push(clean);
+      }
+    });
+    return out;
+  }
+
+  function evaluateUnlockReq(reqInput, rpg) {
+    const parsed = parseUnlockReq(reqInput);
+    const hasReq = parsed.minLv > 0 || parsed.minCoins > 0 || parsed.reqFlags.length > 0 || parsed.reqItems.length > 0;
+    if (!hasReq) return { hasReq: false, unlocked: true, missing: [], summary: '' };
+    const st = rpg || getRpgState();
+    const missing = [];
+    const allLabels = [];
+    if (parsed.minLv > 0) {
+      allLabels.push(`LV.${parsed.minLv}`);
+      if (st.lv < parsed.minLv) missing.push(`LV.${parsed.minLv}`);
+    }
+    if (parsed.minCoins > 0) {
+      allLabels.push(`${formatCoins(parsed.minCoins)} G`);
+      if (st.coins < parsed.minCoins) missing.push(`${formatCoins(parsed.minCoins)} G`);
+    }
+    const flagsLower = new Set((st.flags || []).map(f => String(f).toLowerCase()));
+    parsed.reqFlags.forEach(f => {
+      allLabels.push(`Flag:${f}`);
+      if (!flagsLower.has(f.toLowerCase())) missing.push(f);
+    });
+    const invNamesLower = new Set((st.inventory || []).filter(it => (Number(it.qty) || 1) > 0).map(it => String(it.name).toLowerCase()));
+    parsed.reqItems.forEach(itName => {
+      allLabels.push(`Item:${itName}`);
+      if (!invNamesLower.has(itName.toLowerCase())) missing.push(`Item: ${itName}`);
+    });
+    return {
+      hasReq: true,
+      unlocked: missing.length === 0,
+      missing,
+      summary: allLabels.join(' • ')
+    };
+  }
+
+  function normalizeRpgLink(rawLink) {
+    const s = (rawLink && typeof rawLink === 'object') ? rawLink : {};
+    const pr = (s.passReward && typeof s.passReward === 'object') ? s.passReward : {};
+    const fp = (s.failPenalty && typeof s.failPenalty === 'object') ? s.failPenalty : {};
+    return {
+      enabled: Boolean(s.enabled),
+      passBtnIndex: Math.max(0, Number.isFinite(Number(s.passBtnIndex)) ? Math.round(Number(s.passBtnIndex)) : 0),
+      failBtnIndex: Math.max(0, Number.isFinite(Number(s.failBtnIndex)) ? Math.round(Number(s.failBtnIndex)) : 1),
+      resolvedOutcome: ['pass', 'fail'].includes(s.resolvedOutcome) ? s.resolvedOutcome : '',
+      timerExpirePenalty: s.timerExpirePenalty !== false,
+      passReward: {
+        coins: Math.max(0, Math.round(Number(pr.coins) || 0)),
+        exp: Math.max(0, Math.round(Number(pr.exp) || 0)),
+        hp: Math.round(Number(pr.hp) || 0),
+        mp: Math.round(Number(pr.mp) || 0),
+        itemName: String(pr.itemName || '').trim(),
+        itemIcon: String(pr.itemIcon || '🗡️').trim() || '🗡️',
+        itemRarity: normalizeRarity(pr.itemRarity || 'rare'),
+        itemQty: Math.max(1, Math.round(Number(pr.itemQty) || 1)),
+        flag: String(pr.flag || '').trim(),
+        spawnTag: String(pr.spawnTag || '').trim()
+      },
+      failPenalty: {
+        coins: Math.max(0, Math.round(Number(fp.coins) || 0)),
+        hp: Math.max(0, Math.round(Number(fp.hp) || 0)),
+        mp: Math.max(0, Math.round(Number(fp.mp) || 0)),
+        loseItemName: String(fp.loseItemName || '').trim(),
+        flag: String(fp.flag || '').trim(),
+        spawnTag: String(fp.spawnTag || '').trim()
+      }
+    };
+  }
+
+  function spawnBranchWindowIfConfigured(spawnSpec) {
+    const raw = String(spawnSpec || '').trim();
+    if (!raw || !api() || typeof api().upsertSystemWindowMessage !== 'function') return false;
+    let parsed = parseSysWindowLine(raw);
+    if (!parsed) {
+      const preset = PRESETS.find(p => p.id.toLowerCase() === raw.toLowerCase());
+      if (preset) parsed = { title: preset.config.headerTitle, text: preset.config.bodyText, systemConfig: normalizeConfig({ systemConfig: cloneObj(preset.config) }), delayMs: 2000 };
+    }
+    if (!parsed || !parsed.systemConfig) return false;
+    api().upsertSystemWindowMessage({
+      title: parsed.title || parsed.systemConfig.headerTitle,
+      text: parsed.text || parsed.systemConfig.bodyText,
+      systemConfig: parsed.systemConfig,
+      delayMs: parsed.delayMs || 2000
+    });
+    return true;
+  }
+
+  function applyRpgDelta(outcomeType, rule, opts = {}) {
+    const st = getRpgState();
+    st.active = true;
+    const notes = [];
+    let leveledUp = false;
+
+    if (outcomeType === 'pass') {
+      const r = rule || {};
+      if (r.coins > 0) { st.coins += r.coins; notes.push(`+${formatCoins(r.coins)} G`); }
+      if (r.hp) { st.hp = Math.max(0, Math.min(st.maxHp, st.hp + r.hp)); notes.push(`${r.hp >= 0 ? '+' : ''}${r.hp} HP`); }
+      if (r.mp) { st.mp = Math.max(0, Math.min(st.maxMp, st.mp + r.mp)); notes.push(`${r.mp >= 0 ? '+' : ''}${r.mp} MP`); }
+      if (r.exp > 0) {
+        st.exp += r.exp;
+        notes.push(`+${r.exp} EXP`);
+        while (st.exp >= st.nextExp) {
+          st.exp -= st.nextExp;
+          st.lv += 1;
+          st.nextExp = Math.round(st.nextExp * 1.4);
+          st.maxHp += 20;
+          st.hp = st.maxHp;
+          st.maxMp += 10;
+          st.mp = st.maxMp;
+          leveledUp = true;
+        }
+        if (leveledUp) notes.push(`⚡ LV.${st.lv}!`);
+      }
+      if (r.itemName) {
+        const existing = st.inventory.find(it => it.name.toLowerCase() === r.itemName.toLowerCase());
+        const addQty = Math.max(1, Number(r.itemQty) || 1);
+        if (existing) existing.qty += addQty;
+        else st.inventory.push({ icon: r.itemIcon || '🗡️', name: r.itemName, rarity: normalizeRarity(r.itemRarity), qty: addQty, equipped: false });
+        notes.push(`+${r.itemName}`);
+      }
+      if (r.flag && !st.flags.some(f => f.toLowerCase() === r.flag.toLowerCase())) {
+        st.flags.push(r.flag);
+        notes.push(`Flag: ${r.flag}`);
+      }
+    } else {
+      const p = rule || {};
+      if (p.coins > 0) { st.coins = Math.max(0, st.coins - p.coins); notes.push(`-${formatCoins(p.coins)} G`); }
+      if (p.hp > 0) { st.hp = Math.max(0, st.hp - p.hp); notes.push(`-${p.hp} HP`); }
+      if (p.mp > 0) { st.mp = Math.max(0, st.mp - p.mp); notes.push(`-${p.mp} MP`); }
+      if (p.loseItemName) {
+        const idx = st.inventory.findIndex(it => it.name.toLowerCase() === p.loseItemName.toLowerCase());
+        if (idx >= 0) {
+          if (st.inventory[idx].qty > 1) st.inventory[idx].qty -= 1;
+          else st.inventory.splice(idx, 1);
+          notes.push(`Lost ${p.loseItemName}`);
+        }
+      }
+      if (p.flag && !st.flags.some(f => f.toLowerCase() === p.flag.toLowerCase())) {
+        st.flags.push(p.flag);
+        notes.push(`Flag: ${p.flag}`);
+      }
+    }
+
+    const hasSpawn = !opts.skipSpawn && rule && Boolean(String(rule.spawnTag || '').trim());
+    let saved = saveRpgState(st, { rerender: !opts.skipRerender && !hasSpawn });
+    if (hasSpawn) {
+      const spawned = spawnBranchWindowIfConfigured(rule.spawnTag);
+      if (!spawned && !opts.skipRerender && api() && typeof api().refreshChatStream === 'function') {
+        api().refreshChatStream();
+      }
+    }
+    return { state: saved, leveledUp, summary: notes.join(' • ') };
+  }
+
+  function resolveCardOutcome(msg, outcomeType, opts = {}) {
+    if (!msg || !msg.systemConfig) return null;
+    const link = normalizeRpgLink(msg.systemConfig.rpgLink);
+    if (!link.enabled && !opts.force) return null;
+    if (link.resolvedOutcome && !opts.force) return { alreadyResolved: true, state: getRpgState() };
+
+    link.resolvedOutcome = outcomeType === 'pass' ? 'pass' : 'fail';
+    msg.systemConfig.rpgLink = link;
+    if (!msg.systemConfig.stampText) {
+      msg.systemConfig.stampText = outcomeType === 'pass' ? 'CLEARED' : 'PENALTY!';
+      msg.systemConfig.stampColor = outcomeType === 'pass' ? '#4ade80' : '#ef4444';
+    }
+    const rule = outcomeType === 'pass' ? link.passReward : link.failPenalty;
+    const res = applyRpgDelta(outcomeType, rule, opts);
+    if (api() && typeof api().triggerSfxByName === 'function') {
+      api().triggerSfxByName(outcomeType === 'pass' ? (res.leveledUp ? 'sparkle' : 'scifi') : 'sting', 1.05);
+    }
+    if (api() && typeof api().showToast === 'function') {
+      const icon = outcomeType === 'pass' ? '✅ QUEST PASS' : (opts.fromTimer ? '💀 TIME EXPIRED' : '❌ QUEST FAIL');
+      api().showToast(res.summary ? `${icon}: ${res.summary}` : icon);
+    }
+    return res;
+  }
+
   function getEmptyBaseConfig() {
     return {
       presetId: 'notification',
@@ -2576,6 +2856,9 @@
       cardStyle: 'standard',
       canvasHeight: 380,
       layers: [],
+      syncWithStoryRpg: false,
+      unlockReq: '',
+      rpgLink: normalizeRpgLink(null),
       hideHeader: false,
       starburst: false,
       transparentBg: false,
@@ -2668,6 +2951,9 @@
     merged.cardBgTint = sanitizeCssColor(merged.cardBgTint) || '#041226';
     merged.cardBgTintOpacity = Math.max(0, Math.min(0.95, Number.isFinite(Number(merged.cardBgTintOpacity)) ? Number(merged.cardBgTintOpacity) : 0.35));
     merged.elementStyles = normalizeElementStyles(merged.elementStyles);
+    merged.syncWithStoryRpg = Boolean(merged.syncWithStoryRpg);
+    merged.unlockReq = String(merged.unlockReq || '').trim();
+    merged.rpgLink = normalizeRpgLink(merged.rpgLink);
     merged.bars = Array.isArray(merged.bars) ? merged.bars.map(b => ({
       label: String(b.label || 'STAT'),
       value: clampPct(b.value, 100),
@@ -2690,7 +2976,8 @@
       rarity: normalizeRarity(it.rarity),
       qty: String(it.qty ?? '1'),
       equipped: Boolean(it.equipped),
-      locked: Boolean(it.locked)
+      locked: Boolean(it.locked),
+      unlockReq: String(it.unlockReq || '').trim()
     })) : [];
     merged.shopItems = Array.isArray(merged.shopItems) ? merged.shopItems.map(sp => ({
       icon: String(sp.icon || '🛒'),
@@ -2699,7 +2986,8 @@
       meta: String(sp.meta || ''),
       price: String(sp.price || '1,000 G'),
       locked: Boolean(sp.locked),
-      owned: Boolean(sp.owned)
+      owned: Boolean(sp.owned),
+      unlockReq: String(sp.unlockReq || '').trim()
     })) : [];
     merged.pills = Array.isArray(merged.pills) ? merged.pills.map(p => String(p).trim()).filter(Boolean) : [];
     merged.buttons = Array.isArray(merged.buttons) ? merged.buttons.map(btn => ({
@@ -2894,7 +3182,15 @@
       `;
     }).join('');
 
-    el.innerHTML = `<div class="msw-canvas-stage">${layersHtml}</div>`;
+    const cardLock = evaluateUnlockReq(cfg.unlockReq, getRpgState());
+    const lockOverlayHtml = cardLock.hasReq ? `
+      <div class="${cardLock.unlocked ? 'msw-rpg-unlock-banner' : 'msw-rpg-lock-banner'}" style="position:absolute; left:10px; right:10px; bottom:10px; z-index:999; pointer-events:none;">
+        <span>${cardLock.unlocked ? '🔓 UNLOCKED' : '🔒 LOCKED'}</span>
+        <span>${esc(cardLock.unlocked ? cardLock.summary : 'Need: ' + cardLock.missing.join(' • '))}</span>
+      </div>
+    ` : '';
+
+    el.innerHTML = `<div class="msw-canvas-stage">${layersHtml}${lockOverlayHtml}</div>`;
 
     if (previewMode && typeof el.querySelector === 'function') {
       const stage = el.querySelector('.msw-canvas-stage');
@@ -3007,6 +3303,44 @@
     injectCustomFontFaces();
     const cfg = normalizeConfig(msg);
     const previewMode = !!opts.previewMode;
+    const rpg = getRpgState();
+
+    if (cfg.syncWithStoryRpg) {
+      cfg.currencyText = `🪙 ${formatCoins(rpg.coins)} G`;
+      cfg.headerBadge = `LV.${rpg.lv}`;
+      if (Array.isArray(cfg.bars)) {
+        cfg.bars = cfg.bars.map(b => {
+          const lbl = String(b.label || '').toUpperCase();
+          if (lbl === 'HP') {
+            const pct = clampPct((rpg.hp / rpg.maxHp) * 100, 100);
+            return { ...b, value: pct, fromValue: pct, displayText: `${rpg.hp} / ${rpg.maxHp}` };
+          }
+          if (lbl === 'MP') {
+            const pct = rpg.maxMp > 0 ? clampPct((rpg.mp / rpg.maxMp) * 100, 100) : 0;
+            return { ...b, value: pct, fromValue: pct, displayText: `${rpg.mp} / ${rpg.maxMp}` };
+          }
+          if (lbl === 'EXP') {
+            const pct = clampPct((rpg.exp / rpg.nextExp) * 100, 0);
+            return { ...b, value: pct, fromValue: pct, displayText: `${rpg.exp} / ${rpg.nextExp}` };
+          }
+          return b;
+        });
+      }
+      if (cfg.presetId === 'inventory' && rpg.inventory.length > 0) {
+        cfg.inventoryItems = rpg.inventory.map(it => ({
+          icon: it.icon || '📦',
+          name: it.name,
+          rarity: normalizeRarity(it.rarity),
+          qty: String(it.qty || 1),
+          equipped: Boolean(it.equipped),
+          locked: false,
+          unlockReq: ''
+        }));
+      }
+    }
+
+    const syncedFromRpgInv = Boolean(cfg.syncWithStoryRpg && cfg.presetId === 'inventory' && rpg.inventory.length > 0);
+    const cardLockEval = evaluateUnlockReq(cfg.unlockReq, rpg);
     const el = document.createElement('div');
     if (cfg.cardStyle === 'canvas') {
       return renderCanvasModeElement(el, cfg, msg, opts);
@@ -3098,33 +3432,45 @@
 
     const inventoryHtml = cfg.inventoryItems.length > 0 ? `
       <div class="msw-inv-grid">
-        ${cfg.inventoryItems.map((it, idx) => `
-          <div class="msw-inv-slot rarity-${esc(it.rarity)} ${it.equipped ? 'is-equipped' : ''} ${it.locked ? 'is-locked' : ''}" data-inv-idx="${idx}" title="${esc(it.name)} (${esc(it.rarity.toUpperCase())})">
-            ${it.equipped ? '<span class="msw-inv-tag eqp">EQP</span>' : (it.locked ? '<span class="msw-inv-tag lock">🔒</span>' : '')}
+        ${cfg.inventoryItems.map((it, idx) => {
+          const itEval = evaluateUnlockReq(it.unlockReq, rpg);
+          const isLocked = itEval.hasReq ? !itEval.unlocked : Boolean(it.locked);
+          const reqHint = itEval.hasReq ? (isLocked ? `🔒 ${itEval.missing[0]}` : '🔓 READY') : '';
+          return `
+          <div class="msw-inv-slot rarity-${esc(it.rarity)} ${it.equipped && !isLocked ? 'is-equipped' : ''} ${isLocked ? 'is-locked' : ''}" data-inv-idx="${idx}" title="${esc(it.name)} (${esc(it.rarity.toUpperCase())})${itEval.hasReq ? ' • Req: ' + esc(itEval.summary) : ''}">
+            ${it.equipped && !isLocked ? '<span class="msw-inv-tag eqp">EQP</span>' : (isLocked ? '<span class="msw-inv-tag lock">🔒</span>' : '')}
             <span class="msw-inv-icon">${esc(it.icon)}</span>
             <span class="msw-inv-name">${esc(it.name)}</span>
-            ${it.qty && it.qty !== '1' ? `<span class="msw-inv-qty">${esc(it.qty.startsWith('x') || isNaN(Number(it.qty)) ? it.qty : 'x' + it.qty)}</span>` : ''}
-          </div>
-        `).join('')}
+            ${reqHint ? `<span class="msw-rpg-req-chip ${isLocked ? '' : 'unlocked'}">${esc(reqHint)}</span>` : (it.qty && it.qty !== '1' ? `<span class="msw-inv-qty">${esc(it.qty.startsWith('x') || isNaN(Number(it.qty)) ? it.qty : 'x' + it.qty)}</span>` : '')}
+          </div>`;
+        }).join('')}
       </div>
     ` : '';
 
     const shopHtml = cfg.shopItems.length > 0 ? `
       <div class="msw-shop-list">
-        ${cfg.shopItems.map((sp, idx) => `
+        ${cfg.shopItems.map((sp, idx) => {
+          const spEval = evaluateUnlockReq(sp.unlockReq, rpg);
+          const isLocked = spEval.hasReq ? !spEval.unlocked : Boolean(sp.locked);
+          const btnPriceLabel = /^LOCKED/i.test(sp.price) ? (parseCoinNumber(sp.price.replace(/LV\.?\s*\d+/gi, '')) > 0 ? sp.price.replace(/^LOCKED\s*/i, '') : 'CLAIM') : sp.price;
+          const reqChipHtml = spEval.hasReq
+            ? `<span class="msw-rpg-req-chip ${isLocked ? '' : 'unlocked'}">${isLocked ? `🔒 Req: ${esc(spEval.missing.join(', '))}` : `🔓 Unlocked (${esc(spEval.summary)})`}</span>`
+            : '';
+          return `
           <div class="msw-shop-row rarity-${esc(sp.rarity)}">
             <div class="msw-shop-left">
               <span style="font-size:19px; flex-shrink:0;">${esc(sp.icon)}</span>
               <div class="msw-shop-info">
                 <span class="msw-shop-name">${esc(sp.name)}</span>
                 ${sp.meta ? `<span class="msw-shop-meta">${esc(sp.meta)}</span>` : ''}
+                ${reqChipHtml}
               </div>
             </div>
-            <button type="button" class="msw-shop-buy-btn ${sp.owned ? 'owned' : (sp.locked ? 'locked' : '')}" data-shop-idx="${idx}">
-              ${sp.owned ? '✔ OWNED' : (sp.locked ? `🔒 ${esc(sp.price)}` : `🪙 ${esc(sp.price)}`)}
+            <button type="button" class="msw-shop-buy-btn ${sp.owned ? 'owned' : (isLocked ? 'locked' : '')}" data-shop-idx="${idx}">
+              ${sp.owned ? '✔ OWNED' : (isLocked ? `🔒 ${esc(sp.price)}` : `🪙 ${esc(btnPriceLabel)}`)}
             </button>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
     ` : '';
 
@@ -3179,10 +3525,20 @@
     ` : '';
 
     const selectedBtnIdx = (cfg.selectedButtonIdx !== null && cfg.selectedButtonIdx !== undefined) ? Number(cfg.selectedButtonIdx) : -1;
+    const isCardLocked = cardLockEval.hasReq && !cardLockEval.unlocked;
+    const rpgLockBannerHtml = cardLockEval.hasReq ? (
+      isCardLocked
+        ? `<div class="msw-rpg-lock-banner"><span>🔒 LOCKED</span><span>Need: ${esc(cardLockEval.missing.join(' • '))}</span></div>`
+        : `<div class="msw-rpg-unlock-banner"><span>🔓 UNLOCKED</span><span>${esc(cardLockEval.summary)}</span></div>`
+    ) : '';
+    const rpgResolvedHtml = (cfg.rpgLink && cfg.rpgLink.enabled && cfg.rpgLink.resolvedOutcome)
+      ? `<div class="msw-rpg-resolved-bar ${cfg.rpgLink.resolvedOutcome === 'pass' ? 'pass' : 'fail'}"><span>${cfg.rpgLink.resolvedOutcome === 'pass' ? '✅ QUEST CLEARED — REWARDS CLAIMED' : '💀 QUEST FAILED / PENALTY APPLIED'}</span><span>LV.${rpg.lv} • ${formatCoins(rpg.coins)} G</span></div>`
+      : '';
+
     const btnsHtml = cfg.buttons.length > 0 ? `
       <div class="msw-btn-row">
         ${cfg.buttons.map((b, i) => `
-          <button type="button" class="msw-action-btn ${selectedBtnIdx === i ? 'selected' : ''}" data-msw-btn-idx="${i}">${esc(b.label)}</button>
+          <button type="button" class="msw-action-btn ${selectedBtnIdx === i ? 'selected' : ''} ${isCardLocked ? 'is-disabled-locked' : ''}" data-msw-btn-idx="${i}">${esc(b.label)}</button>
         `).join('')}
       </div>
     ` : '';
@@ -3294,6 +3650,8 @@
           </div>
         </div>
         ${mainInnerBodyHtml}
+        ${rpgLockBannerHtml}
+        ${rpgResolvedHtml}
         ${pillsHtml}
         ${timerHtml}
         ${btnsHtml}
@@ -3312,12 +3670,23 @@
           if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.1);
           return;
         }
+        if (isCardLocked) {
+          if (api() && typeof api().showToast === 'function') api().showToast(`🔒 Locked! Requires: ${cardLockEval.missing.join(', ')}`);
+          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+          return;
+        }
         if (typeof opts.onButtonClick === 'function') {
           opts.onButtonClick(msg, idx, btn.textContent);
         } else if (msg && msg.systemConfig) {
           msg.systemConfig.selectedButtonIdx = idx;
           el.querySelectorAll('.msw-action-btn').forEach((b, i) => b.classList.toggle('selected', i === idx));
-          if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.15);
+          const link = normalizeRpgLink(msg.systemConfig.rpgLink);
+          if (link.enabled && !link.resolvedOutcome) {
+            if (idx === link.passBtnIndex) resolveCardOutcome(msg, 'pass');
+            else if (idx === link.failBtnIndex) resolveCardOutcome(msg, 'fail');
+          } else {
+            if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.15);
+          }
           if (api() && typeof api().saveStudioState === 'function') api().saveStudioState();
         }
       });
@@ -3327,10 +3696,16 @@
       slotEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const idx = Number(slotEl.dataset.invIdx);
-        const target = (msg && msg.systemConfig && msg.systemConfig.inventoryItems && msg.systemConfig.inventoryItems[idx]) || cfg.inventoryItems[idx];
+        const curRpg = getRpgState();
+        const target = syncedFromRpgInv
+          ? (curRpg.inventory && curRpg.inventory[idx])
+          : ((msg && msg.systemConfig && msg.systemConfig.inventoryItems && msg.systemConfig.inventoryItems[idx]) || cfg.inventoryItems[idx]);
         if (!target) return;
-        if (target.locked) {
-          if (api() && typeof api().showToast === 'function') api().showToast(`🔒 ${target.name} is Locked!`);
+        const liveEval = evaluateUnlockReq(target.unlockReq, curRpg);
+        const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(target.locked);
+        if (lockedNow) {
+          const msgTxt = liveEval.hasReq ? `🔒 ${target.name} requires: ${liveEval.missing.join(', ')}` : `🔒 ${target.name} is Locked!`;
+          if (api() && typeof api().showToast === 'function') api().showToast(msgTxt);
           if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
           return;
         }
@@ -3345,6 +3720,9 @@
         } else if (!target.equipped && tag) {
           tag.remove();
         }
+        if (syncedFromRpgInv && !previewMode) {
+          saveRpgState(curRpg, { rerender: false });
+        }
         if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.15);
         if (api() && typeof api().showToast === 'function') api().showToast(target.equipped ? `⚔️ Equipped ${target.name}!` : `🎒 Unequipped ${target.name}`);
         if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
@@ -3357,21 +3735,56 @@
         const idx = Number(buyBtn.dataset.shopIdx);
         const target = (msg && msg.systemConfig && msg.systemConfig.shopItems && msg.systemConfig.shopItems[idx]) || cfg.shopItems[idx];
         if (!target) return;
-        if (target.locked) {
-          if (api() && typeof api().showToast === 'function') api().showToast(`🔒 Locked: ${target.meta || target.price}`);
+        const curRpg = getRpgState();
+        const liveEval = evaluateUnlockReq(target.unlockReq, curRpg);
+        const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(target.locked);
+        if (lockedNow) {
+          const msgTxt = liveEval.hasReq ? `🔒 Locked — Need: ${liveEval.missing.join(', ')}` : `🔒 Locked: ${target.meta || target.price}`;
+          if (api() && typeof api().showToast === 'function') api().showToast(msgTxt);
           if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+          return;
+        }
+        if (target.owned) return;
+        const economyLinked = curRpg.active || (cfg.rpgLink && cfg.rpgLink.enabled) || cfg.syncWithStoryRpg || liveEval.hasReq;
+        const priceNum = /^LOCKED/i.test(target.price) ? parseCoinNumber(String(target.price).replace(/LV\.?\s*\d+/gi, '')) : parseCoinNumber(target.price);
+        if (!previewMode && economyLinked && priceNum > 0) {
+          if (curRpg.coins < priceNum) {
+            if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Need ${formatCoins(priceNum)} G (You have ${formatCoins(curRpg.coins)} G)`);
+            if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+            return;
+          }
+          curRpg.active = true;
+          curRpg.coins -= priceNum;
+          const existingInv = curRpg.inventory.find(it => it.name.toLowerCase() === String(target.name).toLowerCase());
+          if (existingInv) existingInv.qty += 1;
+          else curRpg.inventory.push({ icon: target.icon || '🛒', name: target.name, rarity: normalizeRarity(target.rarity), qty: 1, equipped: false });
+          target.owned = true;
+          buyBtn.classList.add('owned');
+          buyBtn.textContent = '✔ OWNED';
+          saveRpgState(curRpg);
+          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
+          if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Bought ${target.name} (-${formatCoins(priceNum)} G)!`);
+          if (api() && typeof api().saveStudioState === 'function') api().saveStudioState();
           return;
         }
         target.owned = true;
         buyBtn.classList.add('owned');
         buyBtn.textContent = '✔ OWNED';
+        if (economyLinked && !previewMode) {
+          curRpg.active = true;
+          curRpg.inventory.push({ icon: target.icon || '🛒', name: target.name, rarity: normalizeRarity(target.rarity), qty: 1, equipped: false });
+          saveRpgState(curRpg);
+        }
         if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
         if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Purchased ${target.name}!`);
         if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
       });
     });
 
-    if (cfg.timerEnabled && !previewMode && timerSec > 0) {
+    const alreadyResolved = Boolean(cfg.rpgLink && cfg.rpgLink.enabled && cfg.rpgLink.resolvedOutcome);
+    if (cfg.timerEnabled && alreadyResolved && cfg.rpgLink.resolvedOutcome === 'fail') {
+      applyTimerVisualState(el, 0, timerSec || 10);
+    } else if (cfg.timerEnabled && !previewMode && timerSec > 0 && !alreadyResolved) {
       let remaining = timerSec;
       const total = timerSec;
       const iv = setInterval(() => {
@@ -3383,7 +3796,13 @@
         applyTimerVisualState(el, remaining, total);
         if (remaining <= 0) {
           clearInterval(iv);
-          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 0.95);
+          const link = msg && msg.systemConfig ? normalizeRpgLink(msg.systemConfig.rpgLink) : null;
+          if (link && link.enabled && link.timerExpirePenalty !== false && !link.resolvedOutcome) {
+            resolveCardOutcome(msg, 'fail', { fromTimer: true });
+            if (api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+          } else if (api() && typeof api().triggerSfxByName === 'function') {
+            api().triggerSfxByName('sting', 0.95);
+          }
         }
       }, 1000);
     }
@@ -3493,6 +3912,7 @@
     let equipped = false;
     let locked = false;
     let owned = false;
+    let unlockReq = '';
     let metaNotes = [];
     let icon = isShop ? '🛒' : '📦';
 
@@ -3515,7 +3935,16 @@
       else if (['RARE', 'B', 'B-RANK'].includes(tu)) { rarity = 'rare'; qty = tu; }
       else if (['COMMON', 'C', 'D', 'E'].includes(tu)) { rarity = 'common'; qty = tu; }
       else if (tu === 'EQUIPPED' || tu === 'EQP') equipped = true;
-      else if (tu.startsWith('LOCKED')) { locked = true; if (isShop) price = tok; }
+      else if (tu.startsWith('LOCKED')) {
+        locked = true;
+        if (isShop) price = tok;
+        const cond = tok.replace(/^LOCKED\s*/i, '').trim();
+        if (cond) unlockReq = unlockReq ? `${unlockReq}, ${cond}` : cond;
+      }
+      else if (/^(?:REQ:|FLAG:|ITEM:|COINS?\s*>=?\s*\d|LV\s*>=?\s*\d)/i.test(tok)) {
+        const cleanReq = tok.replace(/^REQ\s*:\s*/i, '').trim();
+        if (cleanReq) unlockReq = unlockReq ? `${unlockReq}, ${cleanReq}` : cleanReq;
+      }
       else if (tu === 'OWNED') owned = true;
       else if (/^x\d+$/i.test(tok)) qty = tok;
       else if (/\d[\d,]*\s*(?:G|GOLD|C|COINS|GEMS)/i.test(tok)) price = tok;
@@ -3523,9 +3952,9 @@
     });
 
     if (isShop) {
-      return { icon, name, rarity, meta: metaNotes.join(' • '), price, locked, owned };
+      return { icon, name, rarity, meta: metaNotes.join(' • '), price, locked, owned, unlockReq };
     }
-    return { icon, name, rarity, qty, equipped, locked };
+    return { icon, name, rarity, qty, equipped, locked, unlockReq };
   }
 
   function parseSysWindowLine(line, idx = 0) {
@@ -3807,7 +4236,7 @@
   function serializeSysWindowToTag(msg) {
     if (!msg || !msg.systemConfig) return '';
     const c = normalizeConfig(msg);
-    if (c.cardStyle === 'canvas') {
+    if (c.cardStyle === 'canvas' || c.syncWithStoryRpg || c.unlockReq || (c.rpgLink && c.rpgLink.enabled)) {
       return `[SYSWINDOW: ${JSON.stringify(c)}]`;
     }
     const mods = [];
@@ -3839,6 +4268,7 @@
         if (it.qty && it.qty !== '1' && it.qty.toUpperCase() !== it.rarity.toUpperCase()) tags.push(it.qty);
         if (it.equipped) tags.push('EQUIPPED');
         if (it.locked) tags.push('LOCKED');
+        if (it.unlockReq) tags.push(`REQ:${it.unlockReq}`);
         return `${it.name} (${tags.join(', ')})`;
       }).join(', ');
       return `[SYS_INVENTORY: ${c.currencyText || '0 G'} | ${itemsStr}${modSuffix}]`;
@@ -3847,6 +4277,7 @@
       const itemsStr = c.shopItems.map(sp => {
         const tags = [sp.locked ? (sp.price || 'LOCKED') : sp.price, sp.rarity.toUpperCase()];
         if (sp.owned) tags.push('OWNED');
+        if (sp.unlockReq && !(sp.price || '').toUpperCase().includes(sp.unlockReq.toUpperCase())) tags.push(`REQ:${sp.unlockReq}`);
         return `${sp.name} (${tags.join(', ')})`;
       }).join(', ');
       return `[SYS_SHOP: ${c.headerTitle} | ${c.currencyText || '0 G'} | ${itemsStr}${modSuffix}]`;
@@ -4161,6 +4592,8 @@
                 </div>
               </div>
             </div>
+
+            <div class="syswin-rpg-box" id="sysWinRpgPanel"></div>
           </div>
 
           <div class="syswin-tab-panel" id="sysTabPanel_style">
@@ -4546,6 +4979,7 @@
     renderShopEditor();
     renderBarsEditor();
     renderStatsEditor();
+    renderRpgPanel();
     refreshPreviewOnly();
   }
 
@@ -5139,6 +5573,7 @@
         <input type="text" class="syswin-input" style="width:48px;" value="${esc(it.qty)}" placeholder="x1" title="Qty / Rank" data-inv-eidx="${idx}" data-inv-efield="qty">
         <label style="font-size:10px; color:#4ade80; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${it.equipped ? 'checked' : ''} data-inv-eidx="${idx}" data-inv-efield="equipped">EQP</label>
         <label style="font-size:10px; color:#fca5a5; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${it.locked ? 'checked' : ''} data-inv-eidx="${idx}" data-inv-efield="locked">🔒</label>
+        <input type="text" class="syswin-input" style="width:125px; font-size:10.5px;" value="${esc(it.unlockReq || '')}" placeholder="Unlock Req (LV>=5)" data-inv-eidx="${idx}" data-inv-efield="unlockReq" title="e.g. LV>=5, FLAG:boss_dead, ITEM:Key">
         <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeInventoryItem(${idx})">✕</button>
       </div>
     `).join('');
@@ -5168,6 +5603,7 @@
         <input type="text" class="syswin-input" style="flex:1; min-width:85px;" value="${esc(sp.meta)}" placeholder="Meta / ATK" data-shop-eidx="${idx}" data-shop-efield="meta">
         <input type="text" class="syswin-input" style="width:76px;" value="${esc(sp.price)}" placeholder="50,000 G" data-shop-eidx="${idx}" data-shop-efield="price">
         <label style="font-size:10px; color:#fca5a5; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${sp.locked ? 'checked' : ''} data-shop-eidx="${idx}" data-shop-efield="locked">🔒</label>
+        <input type="text" class="syswin-input" style="width:130px; font-size:10.5px;" value="${esc(sp.unlockReq || '')}" placeholder="Req (LV>=3, FLAG:x)" data-shop-eidx="${idx}" data-shop-efield="unlockReq" title="e.g. LV>=5, 500 G, FLAG:gate_open, ITEM:Key">
         <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeShopItem(${idx})">✕</button>
       </div>
     `).join('');
@@ -5239,6 +5675,168 @@
         const f = inp.dataset.statField;
         if (builderDraft.stats[i]) builderDraft.stats[i][f] = inp.value;
         refreshPreviewOnly();
+      });
+    });
+  }
+
+  function renderRpgPanel() {
+    const panel = document.getElementById('sysWinRpgPanel');
+    if (!panel || !builderDraft) return;
+    const rpg = getRpgState();
+    const link = normalizeRpgLink(builderDraft.rpgLink);
+    builderDraft.rpgLink = link;
+    const pr = link.passReward;
+    const fp = link.failPenalty;
+    const invSummary = rpg.inventory.length > 0
+      ? rpg.inventory.map(it => `${it.icon || '📦'} ${it.name}${it.qty > 1 ? ' x' + it.qty : ''}`).join(', ')
+      : 'Empty';
+
+    panel.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+        <span style="font-size:12px; font-weight:900; color:#38bdf8;">⚔️ Connected Story RPG State & Tree-Branching</span>
+        <button type="button" class="syswin-chip-btn" style="border-color:#f87171; color:#fca5a5;" id="sysBtnResetRpgState">↺ Reset Player RPG</button>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:5px;">
+        <div><label class="syswin-label">LV</label><input type="number" class="syswin-input" min="1" data-rpg-stat="lv" value="${rpg.lv}"></div>
+        <div><label class="syswin-label">HP / ${rpg.maxHp}</label><input type="number" class="syswin-input" min="0" data-rpg-stat="hp" value="${rpg.hp}"></div>
+        <div><label class="syswin-label">MP / ${rpg.maxMp}</label><input type="number" class="syswin-input" min="0" data-rpg-stat="mp" value="${rpg.mp}"></div>
+        <div><label class="syswin-label">EXP / ${rpg.nextExp}</label><input type="number" class="syswin-input" min="0" data-rpg-stat="exp" value="${rpg.exp}"></div>
+        <div><label class="syswin-label">Coins (G)</label><input type="number" class="syswin-input" min="0" data-rpg-stat="coins" value="${rpg.coins}"></div>
+      </div>
+      <div class="syswin-field-row">
+        <div>
+          <label class="syswin-label">Active Story Flags (comma-separated)</label>
+          <input type="text" class="syswin-input" id="sysInpRpgFlags" placeholder="e.g. dungeon_cleared, gate_open" value="${esc((rpg.flags || []).join(', '))}">
+        </div>
+        <div>
+          <label class="syswin-label">Player Inventory (${rpg.inventory.length} items)</label>
+          <div style="font-size:10.5px; color:#cbd5e1; background:#131c31; border:1px solid #293548; border-radius:7px; padding:6px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(invSummary)}">${esc(invSummary)}</div>
+        </div>
+      </div>
+      <div class="syswin-field-row">
+        <label class="syswin-chip-btn" style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="sysChkSyncRpg" ${builderDraft.syncWithStoryRpg ? 'checked' : ''}> 🔄 Sync Card Bars/Coins/Inv to Player</label>
+        <input type="text" class="syswin-input" id="sysInpCardUnlockReq" placeholder="Card Lock Req (e.g. LV>=3, FLAG:x, ITEM:Key)" value="${esc(builderDraft.unlockReq || '')}">
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-top:1px solid #1e293b; padding-top:6px;">
+        <label class="syswin-chip-btn" style="border-color:#00f0ff; color:#00f0ff; display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" id="sysChkRpgLink" ${link.enabled ? 'checked' : ''}> 🔗 Link Buttons & Timer to Outcomes
+        </label>
+        ${link.resolvedOutcome ? `<button type="button" class="syswin-chip-btn" id="sysBtnResetCardOutcome">↺ Clear "${esc(link.resolvedOutcome.toUpperCase())}" Lock</button>` : ''}
+      </div>
+      <div id="sysRpgBranchFields" style="display:${link.enabled ? 'flex' : 'none'}; flex-direction:column; gap:7px; background:#131c31; border:1px solid #293548; border-radius:8px; padding:8px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:6px; align-items:center;">
+          <div><label class="syswin-label">PASS Button # (0=1st)</label><input type="number" class="syswin-input" min="0" max="5" data-rpg-link="passBtnIndex" value="${link.passBtnIndex}"></div>
+          <div><label class="syswin-label">FAIL Button # (1=2nd)</label><input type="number" class="syswin-input" min="0" max="5" data-rpg-link="failBtnIndex" value="${link.failBtnIndex}"></div>
+          <label class="syswin-chip-btn" style="margin-top:14px;"><input type="checkbox" data-rpg-link-chk="timerExpirePenalty" ${link.timerExpirePenalty ? 'checked' : ''}> 00:00 = FAIL</label>
+        </div>
+        <div style="font-size:10.5px; font-weight:900; color:#4ade80;">✅ On PASS Rewards:</div>
+        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:5px;">
+          <div><label class="syswin-label">+Coins</label><input type="number" class="syswin-input" min="0" data-rpg-pass="coins" data-num="1" value="${pr.coins}"></div>
+          <div><label class="syswin-label">+EXP</label><input type="number" class="syswin-input" min="0" data-rpg-pass="exp" data-num="1" value="${pr.exp}"></div>
+          <div><label class="syswin-label">+HP</label><input type="number" class="syswin-input" data-rpg-pass="hp" data-num="1" value="${pr.hp}"></div>
+          <div><label class="syswin-label">+MP</label><input type="number" class="syswin-input" data-rpg-pass="mp" data-num="1" value="${pr.mp}"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:46px 1fr 1fr 1fr; gap:5px;">
+          <input type="text" class="syswin-input" style="text-align:center;" data-rpg-pass="itemIcon" value="${esc(pr.itemIcon || '🗡️')}" title="Reward Icon">
+          <input type="text" class="syswin-input" placeholder="+Item Name (e.g. Abyssal Key)" data-rpg-pass="itemName" value="${esc(pr.itemName)}">
+          <input type="text" class="syswin-input" placeholder="+Flag (e.g. gate_open)" data-rpg-pass="flag" value="${esc(pr.flag)}">
+          <input type="text" class="syswin-input" placeholder="Spawn tag/preset (e.g. levelup)" data-rpg-pass="spawnTag" value="${esc(pr.spawnTag)}">
+        </div>
+        <div style="font-size:10.5px; font-weight:900; color:#fca5a5;">💀 On FAIL / 00:00 Penalty:</div>
+        <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:5px;">
+          <div><label class="syswin-label">-Coins</label><input type="number" class="syswin-input" min="0" data-rpg-fail="coins" data-num="1" value="${fp.coins}"></div>
+          <div><label class="syswin-label">-HP</label><input type="number" class="syswin-input" min="0" data-rpg-fail="hp" data-num="1" value="${fp.hp}"></div>
+          <div><label class="syswin-label">-MP</label><input type="number" class="syswin-input" min="0" data-rpg-fail="mp" data-num="1" value="${fp.mp}"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
+          <input type="text" class="syswin-input" placeholder="Lose Item Name" data-rpg-fail="loseItemName" value="${esc(fp.loseItemName)}">
+          <input type="text" class="syswin-input" placeholder="+Flag (e.g. penalty_curse)" data-rpg-fail="flag" value="${esc(fp.flag)}">
+          <input type="text" class="syswin-input" placeholder="Spawn tag/preset (e.g. penalty)" data-rpg-fail="spawnTag" value="${esc(fp.spawnTag)}">
+        </div>
+      </div>
+    `;
+
+    panel.querySelectorAll('[data-rpg-stat]').forEach(inp => {
+      const updateStat = (rerenderChat) => {
+        const cur = getRpgState();
+        cur.active = true;
+        cur[inp.dataset.rpgStat] = Math.max(0, parseInt(inp.value, 10) || 0);
+        saveRpgState(cur, { rerender: rerenderChat });
+        refreshPreviewOnly();
+      };
+      inp.addEventListener('input', () => updateStat(false));
+      inp.addEventListener('change', () => updateStat(true));
+    });
+    const flagsInp = document.getElementById('sysInpRpgFlags');
+    if (flagsInp) {
+      const updateFlags = (rerenderChat) => {
+        const cur = getRpgState();
+        cur.active = true;
+        cur.flags = String(flagsInp.value || '').split(',').map(s => s.trim()).filter(Boolean);
+        saveRpgState(cur, { rerender: rerenderChat });
+        refreshPreviewOnly();
+      };
+      flagsInp.addEventListener('input', () => updateFlags(false));
+      flagsInp.addEventListener('change', () => updateFlags(true));
+    }
+    const resetRpgBtn = document.getElementById('sysBtnResetRpgState');
+    if (resetRpgBtn) {
+      resetRpgBtn.addEventListener('click', () => {
+        resetRpgState();
+        renderRpgPanel();
+        refreshPreviewOnly();
+        if (api() && typeof api().showToast === 'function') api().showToast('↺ Reset Story Player RPG State!');
+      });
+    }
+    const syncChk = document.getElementById('sysChkSyncRpg');
+    if (syncChk) {
+      syncChk.addEventListener('change', () => {
+        builderDraft.syncWithStoryRpg = Boolean(syncChk.checked);
+        refreshPreviewOnly();
+      });
+    }
+    const lockReqInp = document.getElementById('sysInpCardUnlockReq');
+    if (lockReqInp) {
+      lockReqInp.addEventListener('input', () => {
+        builderDraft.unlockReq = lockReqInp.value;
+        refreshPreviewOnly();
+      });
+    }
+    const linkChk = document.getElementById('sysChkRpgLink');
+    if (linkChk) {
+      linkChk.addEventListener('change', () => {
+        builderDraft.rpgLink.enabled = Boolean(linkChk.checked);
+        const box = document.getElementById('sysRpgBranchFields');
+        if (box) box.style.display = builderDraft.rpgLink.enabled ? 'flex' : 'none';
+        refreshPreviewOnly();
+      });
+    }
+    const clearOutBtn = document.getElementById('sysBtnResetCardOutcome');
+    if (clearOutBtn) {
+      clearOutBtn.addEventListener('click', () => {
+        builderDraft.rpgLink.resolvedOutcome = '';
+        renderRpgPanel();
+        refreshPreviewOnly();
+      });
+    }
+    panel.querySelectorAll('[data-rpg-link]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        builderDraft.rpgLink[inp.dataset.rpgLink] = Math.max(0, parseInt(inp.value, 10) || 0);
+      });
+    });
+    panel.querySelectorAll('[data-rpg-link-chk]').forEach(chk => {
+      chk.addEventListener('change', () => {
+        builderDraft.rpgLink[chk.dataset.rpgLinkChk] = Boolean(chk.checked);
+      });
+    });
+    panel.querySelectorAll('[data-rpg-pass]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        builderDraft.rpgLink.passReward[inp.dataset.rpgPass] = inp.dataset.num ? (parseInt(inp.value, 10) || 0) : inp.value;
+      });
+    });
+    panel.querySelectorAll('[data-rpg-fail]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        builderDraft.rpgLink.failPenalty[inp.dataset.rpgFail] = inp.dataset.num ? (parseInt(inp.value, 10) || 0) : inp.value;
       });
     });
   }
@@ -5649,6 +6247,13 @@
     parseSysWindowLine,
     serializeSysWindowToTag,
     playSfxForConfig,
+    getRpgState,
+    saveRpgState,
+    resetRpgState,
+    parseUnlockReq,
+    evaluateUnlockReq,
+    applyRpgDelta,
+    resolveCardOutcome,
     openBuilder: openSystemWindowBuilder,
     closeBuilder: closeSystemWindowBuilder,
     switchTab,
