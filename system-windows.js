@@ -2825,6 +2825,8 @@
     return { state: saved, leveledUp, summary: notes.join(' • ') };
   }
 
+  const AUTO_OUTCOME_STAMP_RE = /^(CLEARED|PASS(ED)?|COMPLETED|PENALTY!?|FAIL(ED)?|DECLINED|EXPIRED)$/i;
+
   function resolveCardOutcome(msg, outcomeType, opts = {}) {
     if (!msg || !msg.systemConfig) return null;
     const link = normalizeRpgLink(msg.systemConfig.rpgLink);
@@ -2833,7 +2835,8 @@
 
     link.resolvedOutcome = outcomeType === 'pass' ? 'pass' : 'fail';
     msg.systemConfig.rpgLink = link;
-    if (!msg.systemConfig.stampText) {
+    const curStamp = String(msg.systemConfig.stampText || '').trim();
+    if (!curStamp || AUTO_OUTCOME_STAMP_RE.test(curStamp)) {
       msg.systemConfig.stampText = outcomeType === 'pass' ? 'CLEARED' : 'PENALTY!';
       msg.systemConfig.stampColor = outcomeType === 'pass' ? '#4ade80' : '#ef4444';
     }
@@ -3337,6 +3340,8 @@
           unlockReq: ''
         }));
       }
+    } else if (rpg.active && (cfg.presetId === 'shop' || cfg.shopItems.some(sp => sp.unlockReq))) {
+      cfg.currencyText = `🪙 ${formatCoins(rpg.coins)} G`;
     }
 
     const syncedFromRpgInv = Boolean(cfg.syncWithStoryRpg && cfg.presetId === 'inventory' && rpg.inventory.length > 0);
@@ -3535,16 +3540,29 @@
       ? `<div class="msw-rpg-resolved-bar ${cfg.rpgLink.resolvedOutcome === 'pass' ? 'pass' : 'fail'}"><span>${cfg.rpgLink.resolvedOutcome === 'pass' ? '✅ QUEST CLEARED — REWARDS CLAIMED' : '💀 QUEST FAILED / PENALTY APPLIED'}</span><span>LV.${rpg.lv} • ${formatCoins(rpg.coins)} G</span></div>`
       : '';
 
+    const isOutcomeResolved = Boolean(cfg.rpgLink && cfg.rpgLink.enabled && cfg.rpgLink.resolvedOutcome);
+    const isFailOutcome = isOutcomeResolved && cfg.rpgLink.resolvedOutcome === 'fail';
     const btnsHtml = cfg.buttons.length > 0 ? `
       <div class="msw-btn-row">
         ${cfg.buttons.map((b, i) => `
-          <button type="button" class="msw-action-btn ${selectedBtnIdx === i ? 'selected' : ''} ${isCardLocked ? 'is-disabled-locked' : ''}" data-msw-btn-idx="${i}">${esc(b.label)}</button>
+          <button type="button" class="msw-action-btn ${selectedBtnIdx === i ? (isFailOutcome ? 'selected is-outcome-fail' : 'selected') : ''} ${(isCardLocked || (isOutcomeResolved && selectedBtnIdx !== i)) ? 'is-disabled-locked' : ''}" ${(isCardLocked || isOutcomeResolved) ? 'disabled' : ''} data-msw-btn-idx="${i}">${esc(b.label)}</button>
         `).join('')}
       </div>
     ` : '';
 
-    const stampHtml = cfg.stampText ? `
-      <div class="msw-stamp" style="--stamp-color:${esc(cfg.stampColor || '#facc15')}">${esc(cfg.stampText)}</div>
+    let displayStampText = cfg.stampText;
+    let displayStampColor = cfg.stampColor || '#facc15';
+    if (isOutcomeResolved && displayStampText && AUTO_OUTCOME_STAMP_RE.test(String(displayStampText).trim())) {
+      if (cfg.rpgLink.resolvedOutcome === 'fail' && /^(CLEARED|PASS(ED)?|COMPLETED)$/i.test(String(displayStampText).trim())) {
+        displayStampText = 'PENALTY!';
+        displayStampColor = '#ef4444';
+      } else if (cfg.rpgLink.resolvedOutcome === 'pass' && /^(PENALTY!?|FAIL(ED)?|DECLINED|EXPIRED)$/i.test(String(displayStampText).trim())) {
+        displayStampText = 'CLEARED';
+        displayStampColor = '#4ade80';
+      }
+    }
+    const stampHtml = displayStampText ? `
+      <div class="msw-stamp" style="--stamp-color:${esc(displayStampColor)}">${esc(displayStampText)}</div>
     ` : '';
 
     const splitClass = hasMedia && (cfg.mediaLayout === 'portrait_left' || cfg.mediaLayout === 'icon_title' || cfg.mediaLayout === 'circle_halo')
@@ -4794,11 +4812,11 @@
               </div>
               <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;">
                 <div>
-                  <label class="syswin-label">Text/Icon Color <a href="#" style="color:#94a3b8; font-weight:600;" onclick="event.preventDefault(); window.ChatHubSystemWindows.clearElementColor('color')">auto</a></label>
+                  <label class="syswin-label">Text/Icon Color <a href="#" style="color:#94a3b8; font-weight:600;" onclick="event.preventDefault(); window.ChatHubSystemWindows.clearElementColor('color')">(reset)</a></label>
                   <input type="color" id="sysInpElColor" value="#ffffff" style="width:100%; height:30px; border:none; border-radius:6px; background:#0f172a; cursor:pointer;">
                 </div>
                 <div>
-                  <label class="syswin-label">Glow Color <a href="#" style="color:#94a3b8; font-weight:600;" onclick="event.preventDefault(); window.ChatHubSystemWindows.clearElementColor('glowColor')">auto</a></label>
+                  <label class="syswin-label">Glow Color <a href="#" style="color:#94a3b8; font-weight:600;" onclick="event.preventDefault(); window.ChatHubSystemWindows.clearElementColor('glowColor')">(reset)</a></label>
                   <input type="color" id="sysInpElGlowColor" value="#00f0ff" style="width:100%; height:30px; border:none; border-radius:6px; background:#0f172a; cursor:pointer;">
                 </div>
                 <div>
@@ -5815,6 +5833,10 @@
     if (clearOutBtn) {
       clearOutBtn.addEventListener('click', () => {
         builderDraft.rpgLink.resolvedOutcome = '';
+        builderDraft.selectedButtonIdx = null;
+        if (AUTO_OUTCOME_STAMP_RE.test(String(builderDraft.stampText || '').trim())) {
+          builderDraft.stampText = '';
+        }
         renderRpgPanel();
         refreshPreviewOnly();
       });

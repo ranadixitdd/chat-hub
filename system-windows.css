@@ -908,6 +908,12 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   color: #020617;
   box-shadow: 0 0 14px color-mix(in srgb, var(--sys-accent) 75%, transparent);
 }
+.msw-action-btn.selected.is-outcome-fail {
+  background: rgba(153, 27, 27, 0.88);
+  border-color: #f87171;
+  color: #fee2e2;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+}
 
 /* --- DIAGONAL SEAL / WATERMARK STAMP --- */
 .msw-stamp {
@@ -923,11 +929,21 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
   letter-spacing: 1.5px;
   text-transform: uppercase;
   transform: rotate(-14deg);
-  opacity: 0.82;
+  opacity: 0.85;
   background: rgba(2, 6, 23, 0.55);
   pointer-events: none;
   z-index: 4;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+}
+.manhwa-sys-win:has(.msw-btn-row) .msw-stamp {
+  top: 42px;
+  bottom: auto;
+  right: 12px;
+}
+.manhwa-sys-win.has-hidden-header:has(.msw-btn-row) .msw-stamp {
+  top: 12px;
+  bottom: auto;
+  right: 12px;
 }
 
 .msw-footer {
@@ -958,12 +974,12 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 .syswin-preview-stage {
   background: radial-gradient(circle at top, #131f38 0%, #060a14 100%);
   border-bottom: 1px solid #1e293b;
-  padding: 12px 14px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-height: 270px;
+  max-height: 310px;
   overflow-y: auto;
   flex-shrink: 0;
 }
@@ -971,7 +987,7 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 .syswin-tabs {
   display: flex;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 7px 10px;
   background: #0f172a;
   border-bottom: 1px solid #1e293b;
   overflow-x: auto;
@@ -981,12 +997,12 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 .syswin-tab-btn {
   flex: 1;
   white-space: nowrap;
-  padding: 7px 10px;
+  padding: 6px 6px;
   border-radius: 8px;
   border: 1px solid #334155;
   background: #1e293b;
   color: #cbd5e1;
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -1200,9 +1216,10 @@ body.msg-select-mode .manhwa-sys-win .msg-select-checkbox {
 .manhwa-sys-win.is-icon-blend-dark .msw-media-img {
   mix-blend-mode: screen;
 }
+.msw-emblem-box:has(.msw-emblem-frame-svg),
 .msw-emblem-box.is-thorn-emblem {
-  border-color: #fde047;
-  box-shadow: 0 0 24px rgba(239, 68, 68, 0.85), inset 0 0 20px rgba(0, 0, 0, 0.85);
+  border: none;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--sys-accent-2) 78%, transparent), inset 0 0 20px rgba(0, 0, 0, 0.85);
 }
 .msw-emblem-frame-svg {
   position: absolute;

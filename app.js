@@ -10857,238 +10857,7 @@ if (msg.type === 'quest') {
     }
   });
 
-  /* =====================================================================
-     14. INITIALIZE STUDIO
-     ===================================================================== */
-  loadStudioState();
-  ensureAiCastMembers();
-  applyChatStyle(chatThemeStyle);
-  applyDirectorBarLayout();
-  switchAppMode(activeAppMode);
-  renderGroupHeader();
-  renderDirectorStrip();
-  renderChatStream();
-  renderDrawerContent();
-  updateCinemaSpeedUI();
-  autoResizeComposerInput(document.getElementById('chatMessageInput'));
-  initTurboGestures();
-
-  // Hydrate studio if IndexedDB holds newer/larger state than synchronous localStorage preload
-  window.addEventListener('chathub:storage-ready', (ev) => {
-    const detail = (ev && ev.detail) || {};
-    if (!detail.hydratedFromIdb) return;
-    const dirty = new Set(detail.dirtyKeys || []);
-
-    if (!dirty.has('wh_current_story_title')) {
-      currentStoryTitle = safeGetStorage('wh_current_story_title') || currentStoryTitle;
-    }
-    if (!dirty.has('wh_current_story_id')) {
-      currentStoryId = safeGetStorage('wh_current_story_id') || currentStoryId;
-    }
-    if (!dirty.has(STORIES_LIB_KEY)) {
-      try {
-        const rawStories = safeGetStorage(STORIES_LIB_KEY);
-        if (rawStories) {
-          const parsedStories = JSON.parse(rawStories);
-          if (Array.isArray(parsedStories)) savedStories = parsedStories;
-        }
-      } catch (e) {}
-    }
-    if (!dirty.has('wh_sound_enabled')) {
-      soundEnabled = safeGetStorage('wh_sound_enabled') !== 'false';
-    }
-    if (!dirty.has('wh_cinema_speed')) {
-      cinemaSpeedMultiplier = parseFloat(safeGetStorage('wh_cinema_speed') || '1.0');
-    }
-    if (!dirty.has('wh_cinema_spam_delay')) {
-      cinemaSpamDelayMs = parseInt(safeGetStorage('wh_cinema_spam_delay') || '280', 10);
-    }
-    if (!dirty.has('wh_cinema_cam_engine')) {
-      cinemaCameraEngineEnabled = safeGetStorage('wh_cinema_cam_engine') !== 'false';
-    }
-    if (!dirty.has('wh_chat_theme_style')) {
-      chatThemeStyle = safeGetStorage('wh_chat_theme_style') || chatThemeStyle;
-    }
-    if (!dirty.has('chathub_director_layout')) {
-      directorBarLayout = safeGetStorage('chathub_director_layout') || directorBarLayout;
-    }
-    if (!dirty.has('wh_builtin_sticker_sounds')) {
-      try {
-        const rawSnds = safeGetStorage('wh_builtin_sticker_sounds');
-        if (rawSnds) customBuiltInSounds = JSON.parse(rawSnds);
-        if (typeof builtInStickers !== 'undefined') {
-          builtInStickers.forEach(s => {
-            if (customBuiltInSounds[s.id]) {
-              if (customBuiltInSounds[s.id].sfx) s.sfx = customBuiltInSounds[s.id].sfx;
-              if (customBuiltInSounds[s.id].customAudioData) {
-                s.customAudioData = customBuiltInSounds[s.id].customAudioData;
-                s.customAudioLabel = customBuiltInSounds[s.id].customAudioLabel;
-              }
-            }
-          });
-        }
-      } catch (_) {}
-    }
-
-    if (!dirty.has(STORAGE_KEY) && !isCinemaPlaying && !pendingSaveStudioTimer) {
-      loadStudioState();
-      ensureAiCastMembers();
-    }
-
-    applyChatStyle(chatThemeStyle);
-    applyDirectorBarLayout();
-    switchAppMode(activeAppMode, true);
-    renderGroupHeader();
-    renderDirectorStrip();
-    renderChatStream();
-    renderDrawerContent();
-    renderStoriesList();
-    updateCinemaSpeedUI();
-    const sBtn = document.getElementById('soundToggleBtn');
-    if (sBtn) sBtn.textContent = soundEnabled ? '🔊' : '🔇';
-    const sIcon = document.getElementById('globalSoundIcon');
-    const sLabel = document.getElementById('globalSoundLabel');
-    if (sIcon) sIcon.textContent = soundEnabled ? '🔊' : '🔇';
-    if (sLabel) sLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
-  });
-
-  // Initialize Sound UI state
-  const initSoundBtn = document.getElementById('soundToggleBtn');
-  if (initSoundBtn) initSoundBtn.textContent = soundEnabled ? '🔊' : '🔇';
-  const initSoundIcon = document.getElementById('globalSoundIcon');
-  const initSoundLabel = document.getElementById('globalSoundLabel');
-  if (initSoundIcon) initSoundIcon.textContent = soundEnabled ? '🔊' : '🔇';
-  if (initSoundLabel) initSoundLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
-
-  // Cinema Dock Auto-Hide Interaction Listeners (keeps video capture crystal clean)
-  const phoneWrapperEl = document.getElementById('phoneWrapper');
-  if (phoneWrapperEl) {
-    phoneWrapperEl.addEventListener('mousemove', resetCinemaAutoHideTimer);
-    phoneWrapperEl.addEventListener('touchstart', resetCinemaAutoHideTimer, { passive: true });
-    phoneWrapperEl.addEventListener('click', resetCinemaAutoHideTimer);
-  }
-
-  // Mobile virtual keyboard handling: scroll to bottom on input focus
-  const mobileInputEl = document.getElementById('chatMessageInput');
-  if (mobileInputEl) {
-    mobileInputEl.addEventListener('focus', () => {
-      setTimeout(() => {
-        const stream = document.getElementById('chatStream');
-        if (stream) stream.scrollTop = stream.scrollHeight;
-      }, 300);
-    });
-  }
-
-  /* =====================================================================
-     GLOBAL OUTSIDE-CLICK & ESCAPE KEY LISTENERS (TAP ANYWHERE TO CLOSE)
-     ===================================================================== */
-  function closeAllModals() {
-    document.querySelectorAll('.modal-backdrop').forEach(modal => {
-      modal.classList.remove('open');
-    });
-    modalHistoryStack = [];
-    dismissLingeringModals();
-  }
-
-  // Tap anywhere outside to close modals, dropdown menu, or sticker drawer
-  document.addEventListener('click', (e) => {
-    // 1. If clicked on modal backdrop (outside the modal window)
-    if (e.target.classList.contains('modal-backdrop')) {
-      if (e.target.id === 'imageLightboxModal') {
-        closeFullscreenImage();
-      } else if (e.target.id === 'videoLightboxModal') {
-        closeFullscreenVideo();
-      } else {
-        navigateModalBack();
-      }
-    }
-
-    // 2. If studio dropdown menu is open and click was outside
-    const dropdown = document.getElementById('studioDropdown');
-    if (dropdown && dropdown.classList.contains('open')) {
-      if (!e.target.closest('#studioDropdown') && !e.target.closest('.header-icon-btn') && !e.target.closest('[onclick*="toggleDropdownMenu"]')) {
-        closeDropdownMenu();
-      }
-    }
-
-    // 3. If sticker drawer is open and click was outside (allow clicking directorDeck to switch chars)
-    const drawer = document.getElementById('stickerDrawer');
-    if (drawer && drawer.classList.contains('open')) {
-      if (!e.target.closest('#stickerDrawer') && !e.target.closest('#stickerToggleBtn') && !e.target.closest('#attachToggleBtn') && !e.target.closest('.drawer-tab') && !e.target.closest('#directorDeck')) {
-        drawer.classList.remove('open');
-        const btn = document.getElementById('stickerToggleBtn');
-        if (btn) btn.classList.remove('active');
-        const aBtn = document.getElementById('attachToggleBtn');
-        if (aBtn) aBtn.classList.remove('active');
-      }
-    }
-
-    // 4. If cinema speed popover is open and click was outside
-    const speedPopover = document.getElementById('cinemaSpeedPopover');
-    if (speedPopover && speedPopover.classList.contains('open')) {
-      if (!e.target.closest('#cinemaSpeedPopover') && !e.target.closest('#cinemaSpeedBtn')) {
-        hideSpeedPopover();
-      }
-    }
-
-    // 5. If character picker popover is open and click was outside directorDeck
-    const castPopover = document.getElementById('castPickerPopover');
-    if (castPopover && castPopover.classList.contains('open')) {
-      if (!e.target.closest('#directorDeck')) {
-        closeCastPickerPopover();
-      }
-    }
-  });
-
-  // Escape key closes any active modal, menu, or drawer immediately, or emergency-stops playback
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (typeof isCinemaPlaying !== 'undefined' && isCinemaPlaying) {
-        stopCinemaMode();
-        showToast('⏹️ Urgent Stop: Playback halted');
-      }
-      stopCurrentAudio();
-      exitMessageSelectMode();
-      closeAllModals();
-      closeDropdownMenu();
-      hideSpeedPopover();
-      closeCastPickerPopover();
-      const drawer = document.getElementById('stickerDrawer');
-      if (drawer) drawer.classList.remove('open');
-      const vModal = document.getElementById('vaultPickModal');
-      if (vModal) vModal.classList.remove('open');
-      closeFullscreenImage();
-      closeFullscreenVideo();
-    }
-  });
-
-  // Global window bindings for new WhatsApp modes, media editing & media drawer
-  window.setWhatsAppChatType = setWhatsAppChatType;
-  window.onPrivateCharSelectChange = onPrivateCharSelectChange;
-  window.setEditingMessageType = setEditingMessageType;
-  window.triggerMsgEditFilePick = triggerMsgEditFilePick;
-  window.handleMsgEditFileUpload = handleMsgEditFileUpload;
-  window.clearEditingMediaAttachment = clearEditingMediaAttachment;
-  window.onMsgEditUrlInput = onMsgEditUrlInput;
-  window.pickMediaFromVaultForEdit = pickMediaFromVaultForEdit;
-  window.closeVaultPickModal = closeVaultPickModal;
-  window.selectVaultMediaForEdit = selectVaultMediaForEdit;
-  window.toggleAttachMenu = toggleAttachMenu;
-  window.triggerAttachFileInput = triggerAttachFileInput;
-  window.handleDirectAttachmentUpload = handleDirectAttachmentUpload;
-  window.sendMediaItemToChat = sendMediaItemToChat;
-  window.handleMultipleMediaUpload = handleMultipleMediaUpload;
-  window.handleSoundUpload = handleSoundUpload;
-  window.saveGroupSettings = saveGroupSettings;
-  window.openGroupModal = openGroupModal;
-  window.closeGroupModal = closeGroupModal;
-  window.triggerCustomUploadForCategory = triggerCustomUploadForCategory;
-  window.toggleMediaItemStickerType = toggleMediaItemStickerType;
-  window.playStickerOrImageSound = playStickerOrImageSound;
-  window.openFullscreenImage = openFullscreenImage;
-  window.closeFullscreenImage = closeFullscreenImage;
-
-  // Creator Marketplace Bridge API (keeps Studio state encapsulated while allowing safe pack install/export)
+  // Creator Marketplace Bridge API (defined before studio boot so initial render reads RPG & Studio hooks immediately)
   window.ChatHubStudioApi = {
     escapeHtml,
     showToast,
@@ -11411,5 +11180,237 @@ if (msg.type === 'quest') {
       handleScriptStudioImport(true, !!autoPlay);
     }
   };
+
+  /* =====================================================================
+     14. INITIALIZE STUDIO
+     ===================================================================== */
+  loadStudioState();
+  ensureAiCastMembers();
+  applyChatStyle(chatThemeStyle);
+  applyDirectorBarLayout();
+  switchAppMode(activeAppMode);
+  renderGroupHeader();
+  renderDirectorStrip();
+  renderChatStream();
+  renderDrawerContent();
+  updateCinemaSpeedUI();
+  autoResizeComposerInput(document.getElementById('chatMessageInput'));
+  initTurboGestures();
+
+  // Hydrate studio if IndexedDB holds newer/larger state than synchronous localStorage preload
+  window.addEventListener('chathub:storage-ready', (ev) => {
+    const detail = (ev && ev.detail) || {};
+    if (!detail.hydratedFromIdb) return;
+    const dirty = new Set(detail.dirtyKeys || []);
+
+    if (!dirty.has('wh_current_story_title')) {
+      currentStoryTitle = safeGetStorage('wh_current_story_title') || currentStoryTitle;
+    }
+    if (!dirty.has('wh_current_story_id')) {
+      currentStoryId = safeGetStorage('wh_current_story_id') || currentStoryId;
+    }
+    if (!dirty.has(STORIES_LIB_KEY)) {
+      try {
+        const rawStories = safeGetStorage(STORIES_LIB_KEY);
+        if (rawStories) {
+          const parsedStories = JSON.parse(rawStories);
+          if (Array.isArray(parsedStories)) savedStories = parsedStories;
+        }
+      } catch (e) {}
+    }
+    if (!dirty.has('wh_sound_enabled')) {
+      soundEnabled = safeGetStorage('wh_sound_enabled') !== 'false';
+    }
+    if (!dirty.has('wh_cinema_speed')) {
+      cinemaSpeedMultiplier = parseFloat(safeGetStorage('wh_cinema_speed') || '1.0');
+    }
+    if (!dirty.has('wh_cinema_spam_delay')) {
+      cinemaSpamDelayMs = parseInt(safeGetStorage('wh_cinema_spam_delay') || '280', 10);
+    }
+    if (!dirty.has('wh_cinema_cam_engine')) {
+      cinemaCameraEngineEnabled = safeGetStorage('wh_cinema_cam_engine') !== 'false';
+    }
+    if (!dirty.has('wh_chat_theme_style')) {
+      chatThemeStyle = safeGetStorage('wh_chat_theme_style') || chatThemeStyle;
+    }
+    if (!dirty.has('chathub_director_layout')) {
+      directorBarLayout = safeGetStorage('chathub_director_layout') || directorBarLayout;
+    }
+    if (!dirty.has('wh_builtin_sticker_sounds')) {
+      try {
+        const rawSnds = safeGetStorage('wh_builtin_sticker_sounds');
+        if (rawSnds) customBuiltInSounds = JSON.parse(rawSnds);
+        if (typeof builtInStickers !== 'undefined') {
+          builtInStickers.forEach(s => {
+            if (customBuiltInSounds[s.id]) {
+              if (customBuiltInSounds[s.id].sfx) s.sfx = customBuiltInSounds[s.id].sfx;
+              if (customBuiltInSounds[s.id].customAudioData) {
+                s.customAudioData = customBuiltInSounds[s.id].customAudioData;
+                s.customAudioLabel = customBuiltInSounds[s.id].customAudioLabel;
+              }
+            }
+          });
+        }
+      } catch (_) {}
+    }
+
+    if (!dirty.has(STORAGE_KEY) && !isCinemaPlaying && !pendingSaveStudioTimer) {
+      loadStudioState();
+      ensureAiCastMembers();
+    }
+
+    applyChatStyle(chatThemeStyle);
+    applyDirectorBarLayout();
+    switchAppMode(activeAppMode, true);
+    renderGroupHeader();
+    renderDirectorStrip();
+    renderChatStream();
+    renderDrawerContent();
+    renderStoriesList();
+    updateCinemaSpeedUI();
+    const sBtn = document.getElementById('soundToggleBtn');
+    if (sBtn) sBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    const sIcon = document.getElementById('globalSoundIcon');
+    const sLabel = document.getElementById('globalSoundLabel');
+    if (sIcon) sIcon.textContent = soundEnabled ? '🔊' : '🔇';
+    if (sLabel) sLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
+  });
+
+  // Initialize Sound UI state
+  const initSoundBtn = document.getElementById('soundToggleBtn');
+  if (initSoundBtn) initSoundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+  const initSoundIcon = document.getElementById('globalSoundIcon');
+  const initSoundLabel = document.getElementById('globalSoundLabel');
+  if (initSoundIcon) initSoundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+  if (initSoundLabel) initSoundLabel.textContent = 'Audio FX: ' + (soundEnabled ? 'ON' : 'MUTED');
+
+  // Cinema Dock Auto-Hide Interaction Listeners (keeps video capture crystal clean)
+  const phoneWrapperEl = document.getElementById('phoneWrapper');
+  if (phoneWrapperEl) {
+    phoneWrapperEl.addEventListener('mousemove', resetCinemaAutoHideTimer);
+    phoneWrapperEl.addEventListener('touchstart', resetCinemaAutoHideTimer, { passive: true });
+    phoneWrapperEl.addEventListener('click', resetCinemaAutoHideTimer);
+  }
+
+  // Mobile virtual keyboard handling: scroll to bottom on input focus
+  const mobileInputEl = document.getElementById('chatMessageInput');
+  if (mobileInputEl) {
+    mobileInputEl.addEventListener('focus', () => {
+      setTimeout(() => {
+        const stream = document.getElementById('chatStream');
+        if (stream) stream.scrollTop = stream.scrollHeight;
+      }, 300);
+    });
+  }
+
+  /* =====================================================================
+     GLOBAL OUTSIDE-CLICK & ESCAPE KEY LISTENERS (TAP ANYWHERE TO CLOSE)
+     ===================================================================== */
+  function closeAllModals() {
+    document.querySelectorAll('.modal-backdrop').forEach(modal => {
+      modal.classList.remove('open');
+    });
+    modalHistoryStack = [];
+    dismissLingeringModals();
+  }
+
+  // Tap anywhere outside to close modals, dropdown menu, or sticker drawer
+  document.addEventListener('click', (e) => {
+    // 1. If clicked on modal backdrop (outside the modal window)
+    if (e.target.classList.contains('modal-backdrop')) {
+      if (e.target.id === 'imageLightboxModal') {
+        closeFullscreenImage();
+      } else if (e.target.id === 'videoLightboxModal') {
+        closeFullscreenVideo();
+      } else {
+        navigateModalBack();
+      }
+    }
+
+    // 2. If studio dropdown menu is open and click was outside
+    const dropdown = document.getElementById('studioDropdown');
+    if (dropdown && dropdown.classList.contains('open')) {
+      if (!e.target.closest('#studioDropdown') && !e.target.closest('.header-icon-btn') && !e.target.closest('[onclick*="toggleDropdownMenu"]')) {
+        closeDropdownMenu();
+      }
+    }
+
+    // 3. If sticker drawer is open and click was outside (allow clicking directorDeck to switch chars)
+    const drawer = document.getElementById('stickerDrawer');
+    if (drawer && drawer.classList.contains('open')) {
+      if (!e.target.closest('#stickerDrawer') && !e.target.closest('#stickerToggleBtn') && !e.target.closest('#attachToggleBtn') && !e.target.closest('.drawer-tab') && !e.target.closest('#directorDeck')) {
+        drawer.classList.remove('open');
+        const btn = document.getElementById('stickerToggleBtn');
+        if (btn) btn.classList.remove('active');
+        const aBtn = document.getElementById('attachToggleBtn');
+        if (aBtn) aBtn.classList.remove('active');
+      }
+    }
+
+    // 4. If cinema speed popover is open and click was outside
+    const speedPopover = document.getElementById('cinemaSpeedPopover');
+    if (speedPopover && speedPopover.classList.contains('open')) {
+      if (!e.target.closest('#cinemaSpeedPopover') && !e.target.closest('#cinemaSpeedBtn')) {
+        hideSpeedPopover();
+      }
+    }
+
+    // 5. If character picker popover is open and click was outside directorDeck
+    const castPopover = document.getElementById('castPickerPopover');
+    if (castPopover && castPopover.classList.contains('open')) {
+      if (!e.target.closest('#directorDeck')) {
+        closeCastPickerPopover();
+      }
+    }
+  });
+
+  // Escape key closes any active modal, menu, or drawer immediately, or emergency-stops playback
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (typeof isCinemaPlaying !== 'undefined' && isCinemaPlaying) {
+        stopCinemaMode();
+        showToast('⏹️ Urgent Stop: Playback halted');
+      }
+      stopCurrentAudio();
+      exitMessageSelectMode();
+      closeAllModals();
+      closeDropdownMenu();
+      hideSpeedPopover();
+      closeCastPickerPopover();
+      const drawer = document.getElementById('stickerDrawer');
+      if (drawer) drawer.classList.remove('open');
+      const vModal = document.getElementById('vaultPickModal');
+      if (vModal) vModal.classList.remove('open');
+      closeFullscreenImage();
+      closeFullscreenVideo();
+    }
+  });
+
+  // Global window bindings for new WhatsApp modes, media editing & media drawer
+  window.setWhatsAppChatType = setWhatsAppChatType;
+  window.onPrivateCharSelectChange = onPrivateCharSelectChange;
+  window.setEditingMessageType = setEditingMessageType;
+  window.triggerMsgEditFilePick = triggerMsgEditFilePick;
+  window.handleMsgEditFileUpload = handleMsgEditFileUpload;
+  window.clearEditingMediaAttachment = clearEditingMediaAttachment;
+  window.onMsgEditUrlInput = onMsgEditUrlInput;
+  window.pickMediaFromVaultForEdit = pickMediaFromVaultForEdit;
+  window.closeVaultPickModal = closeVaultPickModal;
+  window.selectVaultMediaForEdit = selectVaultMediaForEdit;
+  window.toggleAttachMenu = toggleAttachMenu;
+  window.triggerAttachFileInput = triggerAttachFileInput;
+  window.handleDirectAttachmentUpload = handleDirectAttachmentUpload;
+  window.sendMediaItemToChat = sendMediaItemToChat;
+  window.handleMultipleMediaUpload = handleMultipleMediaUpload;
+  window.handleSoundUpload = handleSoundUpload;
+  window.saveGroupSettings = saveGroupSettings;
+  window.openGroupModal = openGroupModal;
+  window.closeGroupModal = closeGroupModal;
+  window.triggerCustomUploadForCategory = triggerCustomUploadForCategory;
+  window.toggleMediaItemStickerType = toggleMediaItemStickerType;
+  window.playStickerOrImageSound = playStickerOrImageSound;
+  window.openFullscreenImage = openFullscreenImage;
+  window.closeFullscreenImage = closeFullscreenImage;
+
 
 
