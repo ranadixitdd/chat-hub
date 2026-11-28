@@ -166,6 +166,7 @@
         'wh_current_story_title',
         'wh_current_story_id',
         'wh_cinema_speed',
+        'wh_cinema_step_mode',
         'wh_cinema_spam_delay',
         'wh_cinema_cam_engine',
         'wh_chat_theme_style',

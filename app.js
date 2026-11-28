@@ -363,6 +363,8 @@
   let pendingMessageCommit = null;
   let isCinemaPlaying = false;
   let isCinemaPaused = false;
+  let isCinemaStepMode = safeGetStorage('wh_cinema_step_mode') === 'true';
+  let pendingManualAdvanceFn = null;
   let cinemaStepTimeout = null;
   let cinemaSpeedMultiplier = parseFloat(safeGetStorage('wh_cinema_speed') || '1.0');
   let cinemaSpamDelayMs = parseInt(safeGetStorage('wh_cinema_spam_delay') || '280', 10);
@@ -3209,6 +3211,9 @@ if (msg.type === 'quest') {
 
     stream.appendChild(fragment);
     scrollStreamBottomNow(stream);
+    if (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.renderRpgHudBar === 'function') {
+      window.ChatHubSystemWindows.renderRpgHudBar({ hidden: isCinemaPlaying || cleanRecordMode });
+    }
   }
 
   function appendMessageRowToStream(msg) {
@@ -3307,16 +3312,14 @@ if (msg.type === 'quest') {
   /* Adaptive message-length-aware timing calculation for snappy short messages & smooth long paragraphs */
   function calculateAdaptiveTypingTiming(text, speedMultiplier = 1.0, isPov = false) {
     const mult = Math.max(0.2, speedMultiplier || 1.0);
-    const rawLen = (text || '').trim().length;
-    const len = Math.max(1, rawLen);
+    const rawText = (text || '').trim();
+    const len = Math.max(1, rawText.length);
+    const words = Math.max(1, rawText ? rawText.split(/\s+/).filter(Boolean).length : 1);
 
     // Adaptive typing duration based on character length using sub-linear curve
-    // Short messages (3-15 chars): ~220ms - 450ms
-    // Medium messages (20-60 chars): ~500ms - 1200ms
-    // Long messages (100-300+ chars): ~1200ms - 2200ms max
-    const rawTypingDuration = 220 + Math.pow(len, 0.76) * 24;
+    const rawTypingDuration = 260 + Math.pow(len, 0.76) * 26;
     const maxCap = isPov ? 2200 : 2400;
-    const minCap = isPov ? 220 : 300;
+    const minCap = isPov ? 260 : 340;
     const clampedBaseDuration = Math.max(minCap, Math.min(maxCap, rawTypingDuration));
     const typingDuration = clampedBaseDuration / mult;
 
@@ -3326,12 +3329,12 @@ if (msg.type === 'quest') {
 
     // Pre-typing think pause (reaction time before typing starts)
     const rawThink = isPov
-      ? (140 + Math.min(len * 2, 140))
-      : (180 + Math.min(len * 3, 200));
-    const thinkPause = Math.max(100, rawThink / mult);
+      ? (180 + Math.min(len * 2, 180))
+      : (220 + Math.min(len * 3, 240));
+    const thinkPause = Math.max(110, rawThink / mult);
 
-    // Post-bubble reading pause (time viewers need to read the message on screen)
-    const rawReading = Math.max(450, Math.min(1800, 320 + Math.pow(len, 0.72) * 20));
+    // Balanced post-bubble reading pause (~1.6s - 3.2s at 1.0x based on word count)
+    const rawReading = Math.max(1600, Math.min(3200, 1250 + words * 145));
     const readingPause = rawReading / mult;
 
     return {
@@ -5696,6 +5699,44 @@ if (msg.type === 'quest') {
     }
 
     let stepIndex = 0;
+    pendingManualAdvanceFn = null;
+
+    function getSystemCardHoldMs(msg) {
+      if (!msg) return 3600;
+      if (msg.type === 'syswindow') {
+        if (msg.delayMs && Number(msg.delayMs) >= 3500) return Number(msg.delayMs);
+        if (window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.estimateSystemWindowHoldMs === 'function') {
+          return window.ChatHubSystemWindows.estimateSystemWindowHoldMs(msg.systemConfig);
+        }
+        return 4000;
+      }
+      if (msg.type === 'quest') return Math.max(3500, Number(msg.delayMs) || 3800);
+      return Math.max(1800, Number(msg.delayMs) || 1900);
+    }
+
+    function scheduleNextCinemaAdvance(holdMs) {
+      if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
+      const isInstant = (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0);
+      if (isCinemaStepMode && !isInstant && stepIndex < fullQueue.length) {
+        const statusText = document.getElementById('cinemaStatusText');
+        if (statusText) statusText.textContent = `👆 Tap (${stepIndex}/${fullQueue.length})`;
+        pendingManualAdvanceFn = () => {
+          pendingManualAdvanceFn = null;
+          if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
+          isCinemaPaused = false;
+          const pauseBtn = document.getElementById('cinemaPauseBtn');
+          if (pauseBtn) {
+            const icon = pauseBtn.querySelector('.btn-icon');
+            const text = pauseBtn.querySelector('.btn-text');
+            if (icon) icon.textContent = '⏸️';
+            if (text) text.textContent = 'Pause';
+          }
+          playNextStep();
+        };
+        return;
+      }
+      cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, holdMs, sessionId);
+    }
 
     resumeCinemaAfterChoiceCallback = (selectedOpt) => {
       if (!isCinemaPlaying) return;
@@ -5708,7 +5749,7 @@ if (msg.type === 'quest') {
       }
 
       if (!isCinemaPaused) {
-        cinemaStepTimeout = setTimeout(playNextStep, 450 / cinemaSpeedMultiplier);
+        scheduleNextCinemaAdvance(450 / cinemaSpeedMultiplier);
       }
     };
 
@@ -5934,33 +5975,50 @@ if (msg.type === 'quest') {
       }
 
       if (nextMsg.type === 'divider' || nextMsg.type === 'system' || nextMsg.type === 'quest' || nextMsg.type === 'syswindow') {
-        const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
-        stream.appendChild(el);
-        if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
-        scrollStreamBottomNow(stream);
-        if ((nextMsg.type === 'quest' || nextMsg.type === 'syswindow') && window.ChatHubVfx) {
-          requestAnimationFrame(() => {
-            if (window.ChatHubVfx) {
-              window.ChatHubVfx.playBubbleVfx('quest', 'shock', el.querySelector('.quest-card') || el);
-            }
-          });
-        }
-        if (nextMsg.type === 'syswindow' && window.ChatHubSystemWindows) {
-          window.ChatHubSystemWindows.animateBarsInElement(el);
-          if (soundEnabled) {
-            const cfg = nextMsg.systemConfig || {};
-            if (cfg.sfx !== undefined) {
-              if (cfg.sfx) window.ChatHubSystemWindows.playSfxForConfig(cfg);
-            } else {
-              playSciFiChimeSound();
-            }
+        const isInstantSys = (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0);
+        const sysPreDelay = isInstantSys ? 0 : ((nextMsg.preDelayMs || 0) / cinemaSpeedMultiplier);
+
+        function renderAndHoldSysStep() {
+          if (!isCinemaPlaying || sessionId !== cinemaSessionId) return;
+          if (isCinemaPaused) {
+            cinemaStepTimeout = scheduleCinemaTimeout(renderAndHoldSysStep, 200, sessionId);
+            return;
           }
-        } else if (soundEnabled) {
-          if (nextMsg.type === 'quest') playSciFiChimeSound();
-          else playPopSound();
+          const el = createMessageRowElement(nextMsg, stepIndex, fullQueue);
+          stream.appendChild(el);
+          if (appSceneStreams[currentCinemaApp]) appSceneStreams[currentCinemaApp].push(el);
+          scrollStreamBottomNow(stream);
+          if ((nextMsg.type === 'quest' || nextMsg.type === 'syswindow') && window.ChatHubVfx) {
+            requestAnimationFrame(() => {
+              if (window.ChatHubVfx) {
+                window.ChatHubVfx.playBubbleVfx('quest', 'shock', el.querySelector('.quest-card') || el);
+              }
+            });
+          }
+          if (nextMsg.type === 'syswindow' && window.ChatHubSystemWindows) {
+            window.ChatHubSystemWindows.animateBarsInElement(el);
+            if (soundEnabled) {
+              const cfg = nextMsg.systemConfig || {};
+              if (cfg.sfx !== undefined) {
+                if (cfg.sfx) window.ChatHubSystemWindows.playSfxForConfig(cfg);
+              } else {
+                playSciFiChimeSound();
+              }
+            }
+          } else if (soundEnabled) {
+            if (nextMsg.type === 'quest') playSciFiChimeSound();
+            else playPopSound();
+          }
+          stepIndex++;
+          const holdMs = isInstantSys ? 60 : (getSystemCardHoldMs(nextMsg) / cinemaSpeedMultiplier);
+          scheduleNextCinemaAdvance(holdMs);
         }
-        stepIndex++;
-        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || (nextMsg.type === 'quest' || nextMsg.type === 'syswindow' ? 1600 : 1000)) / cinemaSpeedMultiplier, sessionId);
+
+        if (sysPreDelay > 20) {
+          cinemaStepTimeout = scheduleCinemaTimeout(renderAndHoldSysStep, sysPreDelay, sessionId);
+        } else {
+          renderAndHoldSysStep();
+        }
         return;
       }
 
@@ -5989,12 +6047,14 @@ if (msg.type === 'quest') {
         showToast('👉 Tap your choice on screen to continue!');
 
         if (cinemaChoiceAutoTimer) clearTimeout(cinemaChoiceAutoTimer);
-        cinemaChoiceAutoTimer = scheduleCinemaTimeout(() => {
-          if (isCinemaWaitingForChoice) {
-            const fallbackIdx = nextMsg.selectedIdx !== null && nextMsg.selectedIdx !== undefined ? nextMsg.selectedIdx : 0;
-            handleSelectChoiceOption(nextMsg.id, fallbackIdx);
-          }
-        }, 8000 / cinemaSpeedMultiplier, sessionId);
+        if (!isCinemaStepMode) {
+          cinemaChoiceAutoTimer = scheduleCinemaTimeout(() => {
+            if (isCinemaWaitingForChoice) {
+              const fallbackIdx = nextMsg.selectedIdx !== null && nextMsg.selectedIdx !== undefined ? nextMsg.selectedIdx : 0;
+              handleSelectChoiceOption(nextMsg.id, fallbackIdx);
+            }
+          }, 8000 / cinemaSpeedMultiplier, sessionId);
+        }
 
         return;
       }
@@ -6033,8 +6093,8 @@ if (msg.type === 'quest') {
             });
           }
           stepIndex++;
-          const holdMs = isInstantSfx ? 60 : (Math.max(1100, nextMsg.delayMs || 1350) / cinemaSpeedMultiplier);
-          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, holdMs, sessionId);
+          const holdMs = isInstantSfx ? 60 : (Math.max(1500, nextMsg.delayMs || 1650) / cinemaSpeedMultiplier);
+          scheduleNextCinemaAdvance(holdMs);
         }
 
         if (sfxPreDelayMs > 20) {
@@ -6142,7 +6202,7 @@ if (msg.type === 'quest') {
           });
 
           stepIndex++;
-          cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || 700) / cinemaSpeedMultiplier, sessionId);
+          scheduleNextCinemaAdvance((nextMsg.delayMs || 1100) / cinemaSpeedMultiplier);
         }
         activePreDelayTimer = setTimeout(finalizeMediaStep, sendDuration);
         return;
@@ -6184,7 +6244,7 @@ if (msg.type === 'quest') {
         });
         if (soundEnabled && nextMsg.sfx) triggerSfxByName(nextMsg.sfx, char.pitch || 1.05);
         stepIndex++;
-        cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, (nextMsg.delayMs || 250) / cinemaSpeedMultiplier, sessionId);
+        scheduleNextCinemaAdvance((nextMsg.delayMs || 350) / cinemaSpeedMultiplier);
         return;
       }
 
@@ -6288,7 +6348,7 @@ if (msg.type === 'quest') {
 
             stepIndex++;
             const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
-            cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, readingPause, sessionId);
+            scheduleNextCinemaAdvance(readingPause);
           }
           activeTypingTimer = setTimeout(finalizeIncomingMessage, durationMs);
         }
@@ -6416,7 +6476,7 @@ if (msg.type === 'quest') {
 
                 stepIndex++;
                 const readingPause = nextMsg.delayMs ? (nextMsg.delayMs / cinemaSpeedMultiplier) : timing.readingPause;
-                cinemaStepTimeout = scheduleCinemaTimeout(playNextStep, readingPause, sessionId);
+                scheduleNextCinemaAdvance(readingPause);
               }, sendPause);
             }
           }
@@ -6447,6 +6507,7 @@ if (msg.type === 'quest') {
     }
     isCinemaWaitingForChoice = false;
     activeWaitingChoiceMsg = null;
+    pendingManualAdvanceFn = null;
     if (cinemaChoiceAutoTimer) clearTimeout(cinemaChoiceAutoTimer);
     if (cinemaStepTimeout) clearTimeout(cinemaStepTimeout);
     if (cinemaAutoHideTimeout) clearTimeout(cinemaAutoHideTimeout);
@@ -6463,6 +6524,45 @@ if (msg.type === 'quest') {
   }
 
   const replayCinemaStory = restartCinemaPlayback;
+
+  function advanceCinemaManualStep() {
+    if (!isCinemaPlaying || typeof pendingManualAdvanceFn !== 'function') return false;
+    const fn = pendingManualAdvanceFn;
+    pendingManualAdvanceFn = null;
+    fn();
+    resetCinemaAutoHideTimer();
+    return true;
+  }
+
+  function updateCinemaStepUI() {
+    const stepBtn = document.getElementById('cinemaStepBtn');
+    const stepTxt = document.getElementById('cinemaStepBtnText');
+    const popBtn = document.getElementById('cinemaStepPopoverBtn');
+    if (stepBtn) {
+      stepBtn.classList.toggle('active', isCinemaStepMode);
+      stepBtn.title = isCinemaStepMode
+        ? 'Manual Step Mode ON: Tap screen or press Space / → for next line'
+        : 'Manual Step Mode: Tap screen or press Space / → to advance 1 line at a time';
+    }
+    if (stepTxt) stepTxt.textContent = isCinemaStepMode ? 'Step ON' : 'Step';
+    if (popBtn) {
+      popBtn.classList.toggle('active', isCinemaStepMode);
+      popBtn.textContent = isCinemaStepMode ? '👆 Step: ON' : '👆 Step: OFF';
+    }
+  }
+
+  function toggleCinemaStepMode() {
+    isCinemaStepMode = !isCinemaStepMode;
+    safeSetStorage('wh_cinema_step_mode', isCinemaStepMode ? 'true' : 'false');
+    updateCinemaStepUI();
+    showToast(isCinemaStepMode
+      ? '👆 Step Mode ON — Tap chat or press Space / → for next line'
+      : '▶️ Auto-Play Mode Resumed');
+    if (!isCinemaStepMode && pendingManualAdvanceFn) {
+      advanceCinemaManualStep();
+    }
+    resetCinemaAutoHideTimer();
+  }
 
   function toggleCinemaPause() {
     isCinemaPaused = !isCinemaPaused;
@@ -6485,7 +6585,7 @@ if (msg.type === 'quest') {
 
   function updateCinemaSpeedUI() {
     const isInstant = (cinemaPlaybackMode === 'instant' || cinemaSpeedMultiplier >= 8.0);
-    const speedStr = isInstant ? 'Instant' : `${cinemaSpeedMultiplier.toFixed(1).replace(/\.0$/, '')}x`;
+    const speedStr = isInstant ? 'Instant' : `${parseFloat(cinemaSpeedMultiplier.toFixed(2))}x`;
     const speedTextEl = document.getElementById('cinemaSpeedText');
     if (speedTextEl) speedTextEl.textContent = speedStr;
 
@@ -6494,7 +6594,7 @@ if (msg.type === 'quest') {
 
     // Update active state in named choice buttons
     const slowBtn = document.getElementById('speedChoiceSlow');
-    if (slowBtn) slowBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 0.6) < 0.1);
+    if (slowBtn) slowBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 0.5) < 0.08);
 
     const normBtn = document.getElementById('speedChoiceNormal');
     if (normBtn) normBtn.classList.toggle('active', !isInstant && Math.abs(cinemaSpeedMultiplier - 1.0) < 0.1);
@@ -6510,7 +6610,7 @@ if (msg.type === 'quest') {
 
     // Update active state in popover pill buttons
     document.querySelectorAll('.speed-pill-btn').forEach(pill => {
-      if (['speedChoiceSlow', 'speedChoiceNormal', 'speedChoiceFast', 'speedChoiceVeryFast', 'speedChoiceInstant'].includes(pill.id)) return;
+      if (['speedChoiceSlow', 'speedChoiceNormal', 'speedChoiceFast', 'speedChoiceVeryFast', 'speedChoiceInstant', 'cinemaStepPopoverBtn'].includes(pill.id)) return;
       const text = pill.textContent.trim().toLowerCase();
       if (isInstant && text.includes('instant')) {
         pill.classList.add('active');
@@ -6538,6 +6638,7 @@ if (msg.type === 'quest') {
     const spamSlider = document.getElementById('cinemaSpamDelaySlider');
     if (spamSlider) spamSlider.value = cinemaSpamDelayMs;
     updateCinemaCamBtnUI();
+    updateCinemaStepUI();
   }
 
   function toggleCinemaSpeedPopover(e) {
@@ -6558,7 +6659,7 @@ if (msg.type === 'quest') {
   }
 
   function cycleCinemaSpeed() {
-    const speeds = [0.6, 1.0, 1.6, 2.5];
+    const speeds = [0.5, 1.0, 1.6, 2.5];
     const curr = parseFloat(cinemaSpeedMultiplier.toFixed(1));
     const nextIdx = (speeds.indexOf(curr) + 1) % speeds.length;
     setQuickCinemaSpeed(speeds[nextIdx]);
@@ -6571,21 +6672,21 @@ if (msg.type === 'quest') {
       showToast('⚡ Instant Playback Mode (Zero delay)');
     } else {
       cinemaPlaybackMode = 'natural';
-      if (val === 'slow') cinemaSpeedMultiplier = 0.6;
+      if (val === 'slow') cinemaSpeedMultiplier = 0.5;
       else if (val === 'normal') cinemaSpeedMultiplier = 1.0;
       else if (val === 'fast') cinemaSpeedMultiplier = 1.6;
       else if (val === 'very_fast') cinemaSpeedMultiplier = 2.5;
-      else cinemaSpeedMultiplier = Math.max(0.4, Math.min(3.0, parseFloat(val) || 1.0));
+      else cinemaSpeedMultiplier = Math.max(0.25, Math.min(3.0, parseFloat(val) || 1.0));
 
       safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
-      showToast(`⚡ Playback Speed: ${cinemaSpeedMultiplier.toFixed(1)}x`);
+      showToast(`⚡ Playback Speed: ${parseFloat(cinemaSpeedMultiplier.toFixed(2))}x`);
     }
     updateCinemaSpeedUI();
   }
 
   function updateCinemaSpeedSlider(val) {
     cinemaPlaybackMode = 'natural';
-    cinemaSpeedMultiplier = Math.max(0.4, Math.min(3.0, parseFloat(val)));
+    cinemaSpeedMultiplier = Math.max(0.25, Math.min(3.0, parseFloat(val)));
     safeSetStorage('wh_cinema_speed', cinemaSpeedMultiplier.toString());
     updateCinemaSpeedUI();
   }
@@ -6814,6 +6915,7 @@ if (msg.type === 'quest') {
     clearAllCinemaTimers();
     isCinemaPlaying = false;
     isCinemaPaused = false;
+    pendingManualAdvanceFn = null;
     isCinemaWaitingForChoice = false;
     activeWaitingChoiceMsg = null;
     resumeCinemaAfterChoiceCallback = null;
@@ -6868,9 +6970,16 @@ if (msg.type === 'quest') {
     const stream = document.getElementById('chatStream');
     if (!stream) return;
 
+    let tapStartX = 0;
+    let tapStartY = 0;
+    let tapStartTime = 0;
+    let trackingTap = false;
+    let didTurboInPress = false;
+
     function startTurbo() {
       if (!isCinemaPlaying || isCinemaPaused || isTurboActive) return;
       isTurboActive = true;
+      didTurboInPress = true;
       preTurboSpeed = cinemaSpeedMultiplier;
       cinemaSpeedMultiplier = 2.5;
       updateCinemaSpeedUI();
@@ -6887,16 +6996,34 @@ if (msg.type === 'quest') {
 
     stream.addEventListener('pointerdown', (e) => {
       if (!isCinemaPlaying) return;
-      if (e.target.closest('button, a, input, .dropdown-menu, .cinema-control-dock, .cinema-ghost-trigger')) return;
+      if (e.target.closest('button, a, input, .msw-action-btn, .msw-shop-buy-btn, .msw-inv-slot, .choice-option-btn, .dropdown-menu, .cinema-control-dock, .cinema-ghost-trigger')) return;
+      trackingTap = true;
+      didTurboInPress = false;
+      tapStartX = e.clientX || 0;
+      tapStartY = e.clientY || 0;
+      tapStartTime = Date.now();
       turboHoldTimer = setTimeout(startTurbo, 350);
     });
 
+    stream.addEventListener('pointerup', (e) => {
+      if (turboHoldTimer) clearTimeout(turboHoldTimer);
+      endTurbo();
+      if (!trackingTap) return;
+      trackingTap = false;
+      const dx = Math.abs((e.clientX || 0) - tapStartX);
+      const dy = Math.abs((e.clientY || 0) - tapStartY);
+      const elapsed = Date.now() - tapStartTime;
+      if (!didTurboInPress && dx < 12 && dy < 12 && elapsed < 350 && isCinemaStepMode && pendingManualAdvanceFn) {
+        advanceCinemaManualStep();
+      }
+    });
+
     const cancelTurbo = () => {
+      trackingTap = false;
       if (turboHoldTimer) clearTimeout(turboHoldTimer);
       endTurbo();
     };
 
-    stream.addEventListener('pointerup', cancelTurbo);
     stream.addEventListener('pointercancel', cancelTurbo);
     stream.addEventListener('pointerleave', cancelTurbo);
   }
@@ -8845,42 +8972,51 @@ if (msg.type === 'quest') {
     md += `=== 📝 STRICT SCREENPLAY SYNTAX (EXACT FORMAT) ===\n`;
     md += `Every line in your script MUST match one of these exact syntaxes:\n`;
     md += `• Character Dialogue: [Character:emotion]: dialogue text\n`;
-    md += `• Dialogue + SFX Burst: [Character:emotion:sfx_id]: dialogue text\n`;
-    md += `• Manga Visual SFX Card (animated burst + comic stamp!): [Character:sfx]: 💥 BAM!!\n`;
-    md += `• Photo Bubble: [Character:IMAGE]: photo_label\n`;
+    md += `• Dialogue Bubble + Sound FX: [Character:emotion:sfx_id]: dialogue text (normal speech bubble with avatar + plays sound!)\n`;
+    md += `• Manga Visual SFX Card: [Character:sfx]: 💥 BAM!! (animated comic burst card!)\n`;
+    if (customPhotoLabels.length > 0) {
+      md += `• Photo Bubble (USE ONLY exact labels listed in Section 5 above!): [Character:IMAGE]: exact_photo_label\n`;
+    } else {
+      md += `• Photo Bubble: Only use [Character:IMAGE]: label if a photo is listed in Section 5 above (never invent fake filenames!).\n`;
+    }
     md += `• Reaction Sticker: [Character:STICKER]: sticker_label\n`;
-    md += `• Video Clip Bubble: [Character:VIDEO]: video_label\n`;
-    md += `• Background Audio / Song: [Character:AUDIO]: song_label\n`;
+    if (customVideoLabels.length > 0) md += `• Video Clip Bubble: [Character:VIDEO]: exact_video_label\n`;
+    if (customAudioLabels.length > 0) md += `• Background Audio / Song: [Character:AUDIO]: exact_song_label\n`;
     md += `• Realistic Reading Delay: /delay 1.5sec\n`;
     md += `• Suspense Pause: [PAUSE: 2s]\n`;
     md += `• System Banner: [SYSTEM: Episode Title or Narration]\n`;
-    md += `• Solo Leveling Quest: [QUEST: Urgent Mission Alert]\n`;
+    md += `• Simple Quest Alert: [QUEST: Urgent Mission Alert]\n`;
+    md += `• Interactive RPG Quest (Accept/Decline + Rewards/Penalties + Auto Result): [SYS_QUEST: Title | Objective? | reward=500 G | penalty=-30 HP | pass=+500G,+50EXP | fail=-30HP | timer=10s]\n`;
     md += `• Manhwa RPG Status Window: [SYS_STATUS: Name | Rank/Job | HP:100 | MP:85 | STR:142, AGI:168]\n`;
-    md += `• Level-Up & Stat Surge Window: [SYS_LEVELUP: LV. 12 -> LV. 13 | NEW SKILL: Shadow Extraction | STR +15, AGI +12, ATK +20%, CRIT +5%]\n`;
-    md += `• Inventory Grid Vault: [SYS_INVENTORY: 125,400 G | Kasaka Fang (MYTHIC, EQUIPPED), Elixir of Life (EPIC, x3), Return Stone (RARE, x2), Monarch Key (MYTHIC, LOCKED)]\n`;
-    md += `• System Coin Shop: [SYS_SHOP: SYSTEM COIN SHOP | 120,000 G | Demon King Daggers (80,000 G, LEGENDARY), Full Potion (5,000 G, EPIC), Crown of Abyss (LOCKED LV.50, MYTHIC)]\n`;
-    md += `• Daily / Guild Quest Board: [SYS_QUESTBOARD: DAILY QUEST: TRAIN TO SURVIVE | 🔥 7-DAY STREAK | Push-ups 100/100, Squats 100/100, 10km Run 8/10]\n`;
+    md += `• Level-Up & Stat Surge Window: [SYS_LEVELUP: LV. 12 -> LV. 13 | NEW SKILL: Shadow Extraction | STR +15, AGI +12, ATK +20% | stamp=LEVEL UP!]\n`;
+    md += `• Inventory Grid Vault: [SYS_INVENTORY: 125,400 G | Kasaka Fang (MYTHIC, EQUIPPED), Elixir of Life (EPIC, x3), Return Stone (RARE, x2)]\n`;
+    md += `• System Coin Shop: [SYS_SHOP: SYSTEM COIN SHOP | 120,000 G | Demon King's Daggers (80,000 G, LEGENDARY), Full Recovery Potion (5,000 G, EPIC), Crown of Abyss (LOCKED LV.50, MYTHIC)]\n`;
+    md += `• Daily / Guild Quest Board: [SYS_QUESTBOARD: DAILY QUEST: TRAIN TO SURVIVE | 🔥 7-DAY STREAK | Push-ups 100/100, 10km Run 8/10]\n`;
     md += `• Shadow Army / Ranker Roster: [SYS_SHADOWARMY: SHADOW ROSTER | 🌑 3/20 SLOTS | Igris (LEGENDARY, EQUIPPED), Beru (MYTHIC, EQUIPPED), Tank (EPIC)]\n`;
     md += `• Item / Artifact Drop Card: [SYS_ITEM: Name | S-RANK | ATK:+180, Crit:+30% | Item lore text]\n`;
     md += `• Animated Loading Window: [SYS_LOADING: Title | 100% | Awakening progress text]\n`;
     md += `• Otome Affection Meter: [SYS_AFFECTION: TargetName | 40->78 | Flustered reaction note]\n`;
     md += `• Constellation Sponsor Alert: [SYS_CONSTELLATION: ConstellationName | +1000 Coins | Message]\n`;
-    md += `• Ornate Relic / Unique Ability Card: [SYS_RELIC: DEVOUR | UNIQUE ABILITY OF THE SPEAR | Absorbs all surrounding aura. | icon=demonic_eye]\n`;
-    md += `• System Codex / Illustrated World Rule Box: [SYS_CODEX: [INTERVERSE MONEY EXCHANGE] | - All worlds use GOLD. ; - Pay fee to cash out. | icon=gold_exchange]\n`;
-    md += `• Dynamic Penalty Countdown: [SYS_TIMER: 10s | PENALTY COUNTDOWN | Failure warning — animates bar & slams PENALTY stamp at 00:00!]\n`;
+    md += `• Ornate Relic / Unique Ability Card: [SYS_RELIC: DEVOUR | UNIQUE ABILITY | Absorbs all surrounding aura. | icon=demonic_eye | frame=demonic_thorn]\n`;
+    md += `• System Codex / World Rule Box: [SYS_CODEX: [INTERVERSE EXCHANGE] | - All worlds use GOLD. ; - Complete quests to unlock gear. | icon=gold_exchange]\n`;
+    md += `• Dynamic Penalty Countdown: [SYS_TIMER: 10s | PENALTY COUNTDOWN | Ticks to 00:00 and slams PENALTY!]\n`;
     md += `• WhatsApp Mode Switch: [CHAT: group] or [CHAT: private: CharacterName] or [CHAT: global]\n`;
     md += `• App Screen Switch: [SCENE: whatsapp] or [SCENE: chatgpt] or [SCENE: gemini]\n`;
     md += `• Interactive Choice Dilemma: [CHOICE: Dilemma Question | Option A label -> Character: Reply A | Option B label -> Character: Reply B]\n\n`;
 
-    md += `=== 🖥️ HOW TO USE MANHWA SYSTEM WINDOWS (FOR AI — ZERO JSON REQUIRED!) ===\n`;
-    md += `• IMPORTANT: NEVER output JSON (like [SYSWINDOW: {...}]). Always use the simple 1-line [SYS_*] tags listed above!\n`;
-    md += `• Each "|" separates parts of the card cleanly:\n`;
-    md += `  - Status: [SYS_STATUS: CharacterName | Rank/Title | HP:value | MP:value | STAT:val, STAT:val] (auto-shows character portrait if in Cast!)\n`;
-    md += `  - Level-Up: [SYS_LEVELUP: OldLv -> NewLv | NEW SKILL: Ability Name | Stat +Num, Stat +Pct%] (supports BOTH numbers like STR +15 and percentages like ATK +20%!)\n`;
-    md += `  - Inventory: [SYS_INVENTORY: Coins | Item (RARITY, xQty, EQUIPPED/LOCKED), ...] — Rarities: COMMON, RARE, EPIC, LEGENDARY, MYTHIC.\n`;
-    md += `  - Coin Shop: [SYS_SHOP: Shop Title | Coins | Item (Price, RARITY), Item (LOCKED LV.50, MYTHIC)]\n`;
-    md += `  - Dynamic Timer: Use short timers like "10s" or "15s" for YouTube Shorts climax impact — viewers watch it tick to 00:00 and trigger the Penalty!\n`;
-    md += `• Optional Color/Theme Override at end of ANY [SYS_*] tag: add | theme=shadow_violet (or hunter_blue, crimson_danger, murim_gold, cyber_green, otome_rose) or | stamp=COMPLETED!\n\n`;
+    md += `=== ✨ WHAT HAPPENS AUTOMATICALLY (NO EXTRA CODE NEEDED) ===\n`;
+    md += `• Balanced Reading Pacing & Step Mode: Lines auto-pace for comfortable reading (~1.6s-3.2s per bubble, ~3.5s-5.2s per System card at 1.0x) with a 0.25x-3.0x slider and manual Step Mode. Auto-play pauses cleanly on [CHOICE] and [SYS_QUEST].\n`;
+    md += `• Auto-Hide Quests -> Before➔After Result Cards: Tapping Accept/Decline or letting a [SYS_QUEST] timer hit 00:00 stamps CLEARED / PENALTY! (or YOU DIED! at 0 HP), fades out after ~1.8s, and replaces with an animated Before➔After stat & coin Result card!\n`;
+    md += `• Full Shop ➔ Bag ➔ Boosted Profile Loop: Buying items in [SYS_SHOP] deducts Coins and adds to Player Bag. Equipping gear adds green +X stat bonuses to PLAYER STATUS WINDOW, and drinking potions restores HP/MP (even reviving from 0 HP!).\n`;
+    md += `• Portrait Auto-Detection: [SYS_STATUS] and [SYS_AFFECTION] auto-attach matching character portraits from your Cast.\n`;
+    md += `• IMPORTANT: NEVER output JSON (like [SYSWINDOW: {...}]). Always use the simple 1-line [SYS_*] tags above.\n\n`;
+
+    md += `=== 🎨 VALID SYSTEM THEMES, FRAMES & SVG ICONS (OPTIONAL MODIFIERS) ===\n`;
+    md += `Append "| key=value" at the end of ANY [SYS_*] tag:\n`;
+    md += `• Themes (| theme=...): hunter_blue, shadow_violet, crimson_danger, murim_gold, cyber_green, otome_rose, comic_pop\n`;
+    md += `• Frames (| frame=...): tech_brackets, cyber_bevel, imperial_ornate, demonic_thorn, void_seraph, abyssal_crown, frost_monarch, necromancer_rib, divine_lotus, celestial_arcane, cursed_chains, cyber_circuit, dragon_scroll, glitch_corrupted, glass_hud, comic_ink, blueprint_double\n`;
+    md += `• SVG Vector Icons (| icon=...): demonic_eye, gold_exchange, neon_miners, death_skull, cursed_spear, shadow_crown, crimson_fangs, void_gate, broken_chains, aegis_shield, soul_flame, constellation_orb, hourglass_doom, guild_crest, heart_lock, level_wings, quest_scroll, portal_rank, lightning_bolt, crystal_core\n`;
+    md += `• Stamp & Layout Modifiers: | stamp=LEVEL UP! or | stamp=COMPLETED! | shopLayout=grid | statusLayout=compact\n\n`;
 
     // 3. Pacing & Delay Rule
     md += `=== ⏳ MANDATORY READING DELAYS BEFORE APP & SCENE SWITCHES ===\n`;
@@ -8946,230 +9082,79 @@ if (msg.type === 'quest') {
     md += `5. STRICT ONE COMMAND PER LINE: Every dialogue line, delay (/delay), pause ([PAUSE]), or banner ([SYSTEM]) MUST be on its own line (press Enter after every line). NEVER combine a delay with dialogue on the same line!\n`;
     md += `6. EXACT SYNTAX ONLY: Always place a colon after the closing bracket, e.g. [Character:emotion]: dialogue text.\n\n`;
 
-    // 8. The 6 Master Genre Blueprints & Complete Unabbreviated Examples
-    md += `=== 🎭 MASTER GENRE BLUEPRINTS & FULL SCREENPLAY EXAMPLES ===\n`;
-    md += `You can write ANY of the following 6 styles. Study each complete, unabbreviated example below to understand the exact pacing, syntax, and emotional beats:\n\n`;
+    // 8. 3 Crisp Master Genre Blueprints & Complete Examples
+    md += `=== 🎭 3 MASTER GENRE EXAMPLES (COMPACT REFERENCE) ===\n`;
+    md += `Study these 3 complete styles (Anime Comedy + AI, Solo Leveling RPG Quest/Shop, and Late-Night Rom-Com DM):\n\n`;
 
-    // --- STYLE 1: ANIME COMEDY CHAOS ---
     const pDora = squadPartners.includes('Doraemon') ? 'Doraemon' : (squadPartners[0] || 'Doraemon');
     const pShiz = squadPartners.includes('Shizuka') ? 'Shizuka' : (squadPartners[1] || 'Shizuka');
     const pGian = squadPartners.includes('Gian') ? 'Gian' : (squadPartners[2] || 'Gian');
 
-    md += `--- 🌟 STYLE 1: ANIME SLAPSTICK COMEDY & GIAN'S RAGE CHASE ---\n`;
-    md += `Vibe: Over-the-top anime panic, shouting in ALL CAPS, gadget backfires, vineboom/punch SFX, and rapid sprint choices.\n`;
+    md += `--- 🌟 STYLE 1: ANIME SLAPSTICK COMEDY + CROSS-APP AI SWITCH ---\n`;
     md += `[SYSTEM: 🎬 EPISODE 1: GIAN'S BASEBALL CARD CRISIS]\n`;
     md += `[CHAT: group]\n`;
     md += `/delay 1.2sec\n`;
-    md += `[${povChar}:cry]: ${pDora}!! Emergency! Gian is standing outside my front gate holding two baseball bats!\n`;
+    md += `[${povChar}:cry]: ${pDora}!! Emergency! Gian is outside my gate holding TWO baseball bats!!\n`;
     md += `[${povChar}:sfx]: 😭 WAAAHH!!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${pDora}:angry]: Again?! What on earth did you do to anger him this time?!\n`;
+    md += `/delay 1.6sec\n`;
+    md += `[${povChar}:shock:vineboom]: I accidentally stepped on his signed 1998 rookie card!\n`;
     md += `/delay 1.5sec\n`;
-    md += `[${povChar}:shock:vineboom]: I accidentally stepped on his ultra-rare autographed baseball card!\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[PAUSE: 2s]\n`;
-    md += `[${pGian}:angry:punch]: NOBITAAA! COME OUT HERE RIGHT NOW OR I WILL FOLD YOU LIKE ORIGAMI!\n`;
+    md += `[${pGian}:angry:punch]: NOBITAAA! COME OUT RIGHT NOW OR I WILL FOLD YOU LIKE ORIGAMI!\n`;
     md += `[${pGian}:sfx]: 💥 BAM!!\n`;
-    md += `/delay 1.6sec\n`;
-    md += `[${pDora}:shock:shock]: NANI?! That was his holy grail card from the 1998 Tokyo championship!!\n`;
-    md += `[${pDora}:sfx]: ⚡ NANI?!\n`;
-    md += `/delay 1.6sec\n`;
-    md += `[${povChar}:cry]: Lend me a 4D gadget! The Anywhere Door, the Invisibility Cloak, ANYTHING!!\n`;
-    md += `/delay 2.2sec\n`;
+    md += `/delay 2sec\n`;
     md += `[SCENE: chatgpt]\n`;
-    md += `[${povChar}]: ChatGPT, calculate a tactical survival strategy against a raging baseball kid!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[ChatGPT]: Tactical Advice: 1. Distract with a shiny decoy. 2. Sacrifice emergency snacks. 3. Engage maximum sprint velocity!\n`;
-    md += `/delay 2.5sec\n`;
+    md += `[${povChar}]: ChatGPT, calculate a tactical escape strategy against an angry baseball kid!\n`;
+    md += `/delay 2.4sec\n`;
+    md += `[ChatGPT]: Tactical Advice: 1. Throw decoy snacks. 2. Engage maximum sprint velocity!\n`;
+    md += `/delay 2.2sec\n`;
     md += `[SCENE: whatsapp]\n`;
-    md += `[CHAT: private: ${pDora}]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:bliss:sparkle]: ${pDora}, lend me your emergency snack stash to distract Gian!\n`;
+    md += `[CHOICE: How should ${povChar} escape Gian? | 💨 Use Nigerundayo Sprint -> ${povChar}: 💨 NIGERUNDAYO SPRINT!! | 🍪 Toss ${pDora}'s Dorayaki -> ${pDora}: 🤬 NOBITA!! NOT MY DORAYAKI!!]\n`;
     md += `/delay 1.8sec\n`;
-    md += `[${pDora}:angry]: Anything EXCEPT my limited-edition Dorayaki!\n`;
-    md += `[${pDora}:sfx]: 🤡 BRUH...\n`;
-    md += `/delay 2sec\n`;
-    md += `[CHAT: group]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[CHOICE: How should ${povChar} escape Gian? | 💨 Use Nigerundayo Sprint Speed -> ${povChar}: 💨 NIGERUNDAYO SPRINT!! | 🍪 Sacrifice ${pDora}'s Dorayaki -> ${pDora}: 🤬 NOBITA!! DON'T YOU DARE TOUCH MY DORAYAKI!!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pGian}:shock:vineboom]: NANI?! HE DISAPPEARED INTO THIN AIR?!\n`;
-    md += `[${pGian}:sfx]: 😭 EMOTIONAL DAMAGE!!\n`;
-    md += `/delay 1.5sec\n`;
     md += `[${povChar}:STICKER]: DEAD\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[SYSTEM: 🎬 TO BE CONTINUED IN EPISODE 2]\n\n`;
+    md += `[SYSTEM: 🎬 TO BE CONTINUED]\n\n`;
 
-    // --- STYLE 2: VIRAL ROM-COM ---
-    md += `--- 💖 STYLE 2: VIRAL ROM-COM & MIDNIGHT PRIVATE DM ---\n`;
-    md += `Vibe: Relatable romantic comedy, awkward midnight texting (12:47 AM), cute teasing banter, blushing expressions, heart emojis, suspense pauses, and a secret 1-on-1 private confession.\n`;
-    md += `[SYSTEM: 🎬 EPISODE 2: 12:47 AM LATE-NIGHT CONFESSION]\n`;
-    md += `[CHAT: private: ${pShiz}]\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[${povChar}:normal]: ${pShiz}... are you awake?\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pShiz}:normal]: ${povChar}? It's 12:47 AM. Why are you texting me this late?\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${povChar}:boring]: Nothing... I just couldn't sleep.\n`;
-    md += `/delay 2sec\n`;
-    md += `[${pShiz}:laugh:boing]: That's your excuse every single night 😂\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${povChar}:love]: Maybe I was waiting for your message.\n`;
-    md += `/delay 2sec\n`;
-    md += `[PAUSE: 2s]\n`;
-    md += `[${pShiz}:shock:sparkle]: Ehhh?! Seriously?!\n`;
-    md += `/delay 1.6sec\n`;
-    md += `[${povChar}:cry]: FORGET I SAID THAT!! MY BRAIN IS HALF ASLEEP!!\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pShiz}:love]: You know... I was waiting too. ❤️\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${povChar}:shock:vineboom]: MY BRAIN JUST OFFICIALLY STOPPED WORKING.\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${pShiz}:laugh]: Hahaha! You're so easy to tease.\n`;
-    md += `/delay 1.6sec\n`;
-    md += `[${povChar}:angry]: THAT WAS CRUEL!!\n`;
-    md += `/delay 2sec\n`;
-    md += `[${pShiz}:love]: I'm not joking this time. Can I ask you something honestly, ${povChar}?\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${povChar}:normal]: Anything in the world.\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pShiz}:love]: Have you ever imagined what it would be like if we were more than just friends?\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[CHOICE: How should ${povChar} answer? | 💖 I think about it every single day -> ${povChar}: 💖 I think about it more than you know... | 🙈 Panic and blame ${pDora} -> ${povChar}: 😱 ${pDora.toUpperCase()} HACKED MY PHONE!!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pShiz}:love:sparkle]: Ask me properly tomorrow at school. Face to face. ❤️\n`;
-    md += `/delay 2sec\n`;
-    md += `[${povChar}:STICKER]: LOVE\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[SYSTEM: 🎬 TO BE CONTINUED IN EPISODE 3]\n\n`;
-
-    // --- STYLE 3: 3 AM ANALOG HORROR ---
-    md += `--- 😱 STYLE 3: 3 AM ANALOG HORROR & CREEPY MYSTERY ---\n`;
-    md += `Vibe: Analog horror / 3 AM emergency broadcast, eerie silence, locked doors, countdown timers, sudden unread alerts, photo attachments, and an intense spine-chilling cliffhanger.\n`;
-    md += `[SYSTEM: 🚨 2:47 AM — YOU HAVE 1 UNREAD EMERGENCY BROADCAST]\n`;
-    md += `[CHAT: private: ${pDora}]\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[${povChar}:shock:shock]: ${pDora}... please wake up. Don't leave me on read.\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pDora}:angry]: ${povChar}, it is 2:47 in the morning! Go back to sleep!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${povChar}:cry]: I'm serious! The basement door downstairs just creaked open by itself!\n`;
-    md += `[${povChar}:sfx]: 💀 OMAE WA MOU...\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pDora}:normal]: It's just the wind. Or a neighborhood stray cat.\n`;
-    md += `/delay 2.2sec\n`;
+    md += `--- 🟦 STYLE 2: SOLO LEVELING MANHWA QUEST, COIN SHOP & LEVEL-UP ---\n`;
+    md += `[SYSTEM: 🚨 2:47 AM — HIDDEN MONARCH SYSTEM ACTIVATED]\n`;
     md += `[CHAT: group]\n`;
     md += `/delay 1.2sec\n`;
-    md += `[${pGian}:shock:vineboom]: Guys... I just saw a weird shadow moving outside ${povChar}'s second-floor window.\n`;
-    md += `/delay 2sec\n`;
-    md += `[${povChar}:shock:vineboom]: ${pGian.toUpperCase()}?! Why are you texting in our squad chat at 3 AM?!\n`;
-    md += `[${povChar}:sfx]: 🤫 PLOT TWIST!!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${pGian}:angry]: Because I couldn't sleep! And whatever is outside your window is NOT human!\n`;
-    md += `/delay 2sec\n`;
-    md += `[${povChar}:IMAGE]: MYSTERIOUS_SHADOW\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[PAUSE: 2.5s]\n`;
-    md += `[${povChar}:cry]: I can hear footsteps coming from INSIDE my bedroom ceiling right now!!\n`;
-    md += `/delay 2sec\n`;
-    md += `[CHOICE: The bedroom doorknob starts turning slowly! | 🔦 Shine UV flashlight at the door -> ${povChar}: 😱 AHHH!! WHAT IS THAT THING?! | 🚪 Slam the Anywhere Door -> ${pDora}: ⚡ GADGET OVERHEAT!! WE'RE TRAPPED!!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${povChar}:STICKER]: DEAD\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[SYSTEM: 🎬 TO BE CONTINUED — LIKE FOR PART 2]\n\n`;
-
-    // --- STYLE 4: MANHWA SOLO LEVELING ---
-    md += `--- 🟦 STYLE 4: MANHWA SOLO LEVELING, LEVEL-UP, SHOP & PENALTY COUNTDOWN ---\n`;
-    md += `Vibe: Manhwa Solo Leveling action comedy, floating holographic system windows, live 10s penalty timers, Coin Shop panic-buying, Level-Up +stats, and Inventory reveals.\n`;
-    md += `[SYSTEM: 🎬 EPISODE 4: THE HUNTER AWAKENING CRISIS]\n`;
-    md += `[CHAT: group]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:cry]: ${pDora}!! I skipped today's running quest and Gian just cornered me!\n`;
+    md += `[SYS_LOADING: SYSTEM AWAKENING PROTOCOL | 100% | Syncing Shadow Core... | theme=cyber_green]\n`;
     md += `/delay 1.5sec\n`;
-    md += `[SYS_LOADING: SYSTEM AWAKENING PROTOCOL | 100% | Syncing Hidden Monarch Authority... | theme=cyber_green]\n`;
+    md += `[${povChar}:shock:vineboom]: Wait... a glowing blue hologram just appeared above my phone?!\n`;
+    md += `[SYS_QUEST: SECRET QUEST: COURAGE OF THE WEAK | Accept the Awakening Contract before time runs out? | reward=500 G + Abyssal Key | penalty=-50 HP | pass=+500G,+100EXP,ITEM:Abyssal Key | fail=-50HP | timer=10s | theme=crimson_danger | stamp=URGENT!]\n`;
     md += `/delay 1.8sec\n`;
-    md += `[SYS_TIMER: 10s | PENALTY QUEST: SURVIVE GIAN | Defeat or evade Gian before 00:00 or enter Crimson Penalty Zone!]\n`;
-    md += `/delay 2sec\n`;
-    md += `[${povChar}:shock:vineboom]: A TEN-SECOND PENALTY COUNTDOWN JUST STARTED IN FRONT OF MY EYES?!\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[${pDora}:laugh:boing]: Quick! Open the System Coin Shop and buy an S-Rank weapon!\n`;
+    md += `[${pDora}:shock:scifi]: Accept it quick!! I'm unlocking the System Coin Shop!\n`;
+    md += `[SYS_SHOP: EMERGENCY HUNTER SHOP | 120,000 G | Demon King's Daggers (80,000 G, LEGENDARY), Full Recovery Potion (5,000 G, EPIC), Crown of Abyss (LOCKED LV.50, MYTHIC)]\n`;
     md += `/delay 1.8sec\n`;
-    md += `[SYS_SHOP: EMERGENCY HUNTER SHOP | 50,000 G | Demon King Daggers (45,000 G, LEGENDARY), Full Potion (5,000 G, EPIC), Monarch Armor (LOCKED LV.50, MYTHIC)]\n`;
-    md += `/delay 2.4sec\n`;
-    md += `[${povChar}:angry:sword]: Bought the Demon King Daggers for 45,000 G! EAT SHADOW BLADE, GIAN!!\n`;
+    md += `[${povChar}:angry:sword]: Equipped Demon King's Daggers! SHADOW BLADE!\n`;
     md += `[${povChar}:sfx]: 👑 ARISE!!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[${pGian}:shock:vineboom]: NANI?! WHERE DID HE PULL DUAL S-RANK DAGGERS FROM?!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[SYS_LEVELUP: LV. 1 -> LV. 15 | NEW SKILL: Shadow Extraction (S-Rank) | STR +25, AGI +18, ATK +40%, CRIT +12% | theme=shadow_violet | stamp=LEVEL UP!]\n`;
-    md += `/delay 2.4sec\n`;
-    md += `[SYS_INVENTORY: 5,000 G | Demon King Daggers (LEGENDARY, EQUIPPED), Elixir of Life (EPIC, x2), Monarch Key (MYTHIC, LOCKED)]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${povChar}:STICKER]: HYPE\n`;
-    md += `/delay 1.8sec\n`;
+    md += `[SYS_LEVELUP: LV. 1 -> LV. 15 | NEW SKILL: Shadow Extraction | STR +25, AGI +18, ATK +40% | theme=shadow_violet | stamp=LEVEL UP!]\n`;
+    md += `[SYS_RELIC: SHADOW MONARCH | PASSIVE AUTHORITY | Commands fallen shadows cleanly. | icon=demonic_eye | frame=demonic_thorn | theme=shadow_violet]\n`;
+    md += `[SYS_STATUS: ${povChar} | S-RANK HUNTER | HP:100 | MP:100 | STR:142, AGI:168, ATK:340 | theme=hunter_blue]\n`;
     md += `[SYSTEM: 🎬 QUEST COMPLETED — PLAYER RANK: S-TIER]\n\n`;
 
-    // --- STYLE 5: MULTIVERSE AI INVESTIGATION ---
-    md += `--- 🤖 STYLE 5: MULTIVERSE AI INVESTIGATION (WHATSAPP ➔ CHATGPT ➔ GEMINI) ---\n`;
-    md += `Vibe: Cross-app investigative comedy. Nobita catches a squad member in a lie and rapidly switches across WhatsApp, ChatGPT, and Gemini to uncover the truth.\n`;
-    md += `[SYSTEM: 🎬 EPISODE 5: THE GREAT DORAYAKI CONSPIRACY]\n`;
-    md += `[CHAT: group]\n`;
+    md += `--- 💖 STYLE 3: LATE-NIGHT ROM-COM & SECRET DM ---\n`;
+    md += `[SYSTEM: 🎬 EPISODE 3: 12:47 AM SECRET CONFESSION]\n`;
+    md += `[CHAT: private: ${pShiz}]\n`;
     md += `/delay 1.2sec\n`;
-    md += `[${povChar}:angry]: ${pDora}!! Where is the Time Machine?! You said it was in the repair shop!\n`;
+    md += `[${povChar}:normal]: ${pShiz}... are you still awake?\n`;
     md += `/delay 1.8sec\n`;
-    md += `[${pDora}:normal]: It IS in the repair shop. The chrononavigation rotor blew a fuse yesterday!\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[SCENE: chatgpt]\n`;
-    md += `[${povChar}]: ChatGPT, analyze ${pDora}'s excuse. Does a Time Machine have a chrononavigation rotor?!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[ChatGPT]: Analysis: False. A 22nd-century Time Machine operates on tachyon flux coils. ${pDora} fabricated the rotor excuse to hide something!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[SCENE: gemini]\n`;
-    md += `[${povChar}]: Gemini, cross-examine ChatGPT's findings and scan ${pDora}'s secret pocket inventory!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[Gemini]: Deep Lore Scan: Detected 48 boxes of premium jumbo Dorayaki hidden inside the Time Machine compartment!\n`;
-    md += `/delay 2.5sec\n`;
-    md += `[SCENE: whatsapp]\n`;
-    md += `[CHAT: private: ${pDora}]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:laugh:vineboom]: ${pDora.toUpperCase()}! EVEN GEMINI AND CHATGPT EXPOSED YOUR SECRET DORAYAKI HOARD!!\n`;
-    md += `/delay 2sec\n`;
-    md += `[${pDora}:shock:boing]: N-NANI?! Who leaked my classified pastry treaty to the AI models?!\n`;
-    md += `/delay 2sec\n`;
-    md += `[CHAT: group]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[CHOICE: What will ${povChar} do with this revelation? | 📢 Expose in Group Chat -> ${povChar}: 🤣 THE ENTIRE SQUAD KNOWS YOUR SECRET NOW!! | 🍪 Blackmail for Gadgets -> ${pDora}: 😱 OKAY OKAY! TAKE THE ANYWHERE DOOR JUST DON'T TELL MOM!!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${povChar}:STICKER]: DEAD\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[SYSTEM: 🎬 MISSION COMPLETE — CASE CLOSED]\n\n`;
-
-    // --- STYLE 6: VIRAL HOOK SHORT ---
-    md += `--- 🔥 STYLE 6: HIGH-RETENTION VIRAL HOOK SHORT (REELS / TIKTOK) ---\n`;
-    md += `Vibe: Maximum curiosity gap in the first 2 seconds, high-velocity pacing, high-stakes conflict, and an unbearable cliffhanger that forces viewers to like and watch Part 2.\n`;
-    md += `[SYSTEM: 🚨 2:47 AM — YOU HAVE 1 UNREAD EMERGENCY BROADCAST]\n`;
-    md += `[CHAT: private: ${pDora}]\n`;
-    md += `/delay 1.2sec\n`;
-    md += `[${povChar}:shock:vineboom]: ${pDora}... Tell me you see what is standing outside our second-floor window right now.\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${pDora}:shock:shock]: Don't move. Don't blink. It's looking directly at your phone screen.\n`;
-    md += `[QUEST: ⚠️ SURVIVAL QUEST: Evade eye contact for 10 seconds without making a sound!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${povChar}:cry]: I can hear footsteps coming from INSIDE our ceiling!!\n`;
-    md += `/delay 1.8sec\n`;
-    md += `[CHOICE: The bedroom doorknob starts turning slowly! | 🔦 Shine UV flashlight at the door -> ${povChar}: 😱 AHHH!! WHAT IS THAT THING?! | 🚪 Slam the Anywhere Door -> ${pDora}: ⚡ GADGET OVERHEAT!! WE'RE TRAPPED!!]\n`;
-    md += `/delay 2.2sec\n`;
-    md += `[${povChar}:STICKER]: DEAD\n`;
-    md += `/delay 1.5sec\n`;
-    md += `[SYSTEM: 🎬 TO BE CONTINUED — LIKE FOR PART 2]\n\n`;
+    md += `[${pShiz}:normal]: ${povChar}? It's 12:47 AM. Why are you texting this late?\n`;
+    md += `/delay 1.6sec\n`;
+    md += `[${povChar}:bored]: Couldn't sleep... maybe I was waiting for your reply.\n`;
+    md += `[PAUSE: 2s]\n`;
+    md += `[${pShiz}:love:sparkle]: Funny... I was waiting too. ❤️\n`;
+    md += `[SYS_AFFECTION: ${pShiz} | 55->88 | Heartbeat accelerating rapidly! | theme=otome_rose]\n`;
+    md += `[CHOICE: How should ${povChar} reply? | 💖 Tell her the truth -> ${povChar}: 💖 Meet me at the rooftop tomorrow! | 🙈 Panic & blame ${pDora} -> ${povChar}: 😱 ${pDora.toUpperCase()} HACKED MY PHONE!!]\n`;
+    md += `[${povChar}:STICKER]: LOVE\n`;
+    md += `[SYSTEM: 🎬 TO BE CONTINUED]\n\n`;
 
     // 9. Instructions for AI Screenwriter
     md += `=== 🚀 YOUR INSTRUCTIONS (HOW TO WRITE SCRIPT) ===\n`;
     md += `When asked to generate or continue a story:\n`;
-    md += `1. Choose whichever of the 6 Master Genres best fits the user's prompt or idea, or combine comedy with suspense/romance.\n`;
-    md += `2. Follow the 4-act structure and character personality bibles strictly.\n`;
-    md += `3. Output ONLY the raw script lines starting immediately with Line 1: [SYSTEM: Episode Title].\n`;
-    md += `4. Zero markdown code fences, zero conversational intro, zero bullet points!\n`;
+    md += `1. Choose whichever of the 3 Master Genres best fits the user's prompt or combine comedy, romance, and Manhwa System action.\n`;
+    md += `2. Follow the 4-act structure, valid cast names, existing Section 5 media labels only, and character voice bibles strictly.\n`;
+    md += `3. Output ONLY raw script lines starting immediately with Line 1: [SYSTEM: Episode Title].\n`;
+    md += `4. Zero markdown code fences, zero conversational intro/outro, zero bullet points!\n`;
 
     return md;
   }
@@ -10111,7 +10096,6 @@ if (msg.type === 'quest') {
           explicitExpr = tl;
         } else if (knownSounds.includes(tl) || tl.startsWith('sound_')) {
           explicitSfx = (tl === 'boom' ? 'vineboom' : (tl === 'hit' ? 'punch' : (tl === 'cut' ? 'sword' : tl)));
-          isSfxType = true;
         } else if (tu === 'FAST' || tu === 'BURST_SPEED') {
           isFast = true;
         } else if (tu === 'SLOW') {
@@ -10272,12 +10256,12 @@ if (msg.type === 'quest') {
         expr = autoExpr;
       }
 
-      // Smart Typing Delay (words pace)
-      const textLen = msgBody.length;
-      let calculatedDelay = Math.max(300, Math.min(1200, textLen * 24));
-      if (expr === 'angry') calculatedDelay = Math.max(220, textLen * 16);
-      if (isFast) calculatedDelay = 220;
-      if (isSlow) calculatedDelay = 1200;
+      // Balanced Reading Delay (words pace ~1.6s - 3.2s at 1.0x)
+      const msgWords = Math.max(1, msgBody.trim().split(/\s+/).filter(Boolean).length);
+      let calculatedDelay = Math.max(1600, Math.min(3200, 1250 + msgWords * 145));
+      if (expr === 'angry') calculatedDelay = Math.max(1450, calculatedDelay - 200);
+      if (isFast) calculatedDelay = 750;
+      if (isSlow) calculatedDelay = 3200;
 
       const newMsg = {
         id: 'm_imp_' + Date.now() + '_' + idx,
@@ -10817,14 +10801,17 @@ if (msg.type === 'quest') {
   }
 
   let toastTimeout = null;
-  function showToast(text) {
+  function showToast(text, opts = {}) {
     const el = document.getElementById('appToast');
     if (!el) return;
-    if (window.SakugaStudio && window.SakugaStudio.isEnabled() && window.SakugaStudio.animateToast(el, text)) {
+    const hasAction = Boolean(opts && opts.actionLabel && typeof opts.onAction === 'function');
+    if (!hasAction && window.SakugaStudio && window.SakugaStudio.isEnabled() && window.SakugaStudio.animateToast(el, text)) {
       if (toastTimeout) {
         clearTimeout(toastTimeout);
         toastTimeout = null;
       }
+      el.classList.remove('has-action');
+      el.style.pointerEvents = 'none';
       return;
     }
     el.classList.remove('sakuga-toast-mode');
@@ -10832,10 +10819,28 @@ if (msg.type === 'quest') {
     el.style.scale = '';
     el.textContent = text;
     el.style.display = 'flex';
+    el.classList.toggle('has-action', hasAction);
+    el.style.pointerEvents = hasAction ? 'auto' : 'none';
+    if (hasAction) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'app-toast-action-btn';
+      btn.textContent = opts.actionLabel;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        el.style.display = 'none';
+        el.classList.remove('has-action');
+        el.style.pointerEvents = 'none';
+        try { opts.onAction(); } catch (err) {}
+      });
+      el.appendChild(btn);
+    }
     if (toastTimeout) clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => {
       el.style.display = 'none';
-    }, 2400);
+      el.classList.remove('has-action');
+      el.style.pointerEvents = 'none';
+    }, hasAction ? 4200 : 2400);
   }
 
   function escapeHtml(str) {
@@ -10847,13 +10852,16 @@ if (msg.type === 'quest') {
       .replace(/'/g, '&#39;');
   }
 
-  // Keyboard shortcut 'H' for Clean Record View
+  // Keyboard shortcut 'H' for Clean Record View & Space/ArrowRight for Step Mode advance
   document.addEventListener('keydown', (e) => {
     const tag = document.activeElement ? document.activeElement.tagName : '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (e.key.toLowerCase() === 'h') {
       e.preventDefault();
       toggleCleanRecordMode();
+    } else if ((e.code === 'Space' || e.key === 'ArrowRight') && isCinemaPlaying && isCinemaStepMode && pendingManualAdvanceFn) {
+      e.preventDefault();
+      advanceCinemaManualStep();
     }
   });
 
@@ -10919,6 +10927,35 @@ if (msg.type === 'quest') {
         const s = document.getElementById('chatStream');
         if (s && typeof scrollStreamBottomNow === 'function') scrollStreamBottomNow(s);
       }
+    },
+    replaceSystemWindowMessage(targetMsgId, nextPayload = {}) {
+      if (!nextPayload || !nextPayload.systemConfig) return false;
+      const idx = messages.findIndex(m => m.id === targetMsgId);
+      const newMsg = {
+        id: 'm_syswin_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        type: 'syswindow',
+        title: nextPayload.title || nextPayload.systemConfig.headerTitle || 'SYSTEM RESULT',
+        text: nextPayload.text || nextPayload.systemConfig.bodyText || '',
+        systemConfig: nextPayload.systemConfig,
+        delayMs: nextPayload.delayMs || 3800
+      };
+      if (idx >= 0) messages.splice(idx, 1, newMsg);
+      else messages.push(newMsg);
+      saveStudioState();
+      if (isCinemaPlaying && window.ChatHubSystemWindows && typeof window.ChatHubSystemWindows.renderSystemWindowElement === 'function') {
+        const curEl = document.querySelector(`.manhwa-sys-win[data-msw-msg-id="${CSS.escape(String(targetMsgId))}"]`);
+        if (curEl && curEl.parentNode) {
+          const nextEl = window.ChatHubSystemWindows.renderSystemWindowElement(newMsg, { onEditClick: () => {} });
+          curEl.parentNode.replaceChild(nextEl, curEl);
+          window.ChatHubSystemWindows.animateBarsInElement(nextEl);
+          return true;
+        }
+      }
+      const s = document.getElementById('chatStream');
+      const prevScroll = s ? s.scrollTop : 0;
+      renderChatStream();
+      if (s) s.scrollTop = prevScroll;
+      return true;
     },
 
     installCharacters(packId, charDefs = []) {
@@ -11223,6 +11260,9 @@ if (msg.type === 'quest') {
     }
     if (!dirty.has('wh_cinema_speed')) {
       cinemaSpeedMultiplier = parseFloat(safeGetStorage('wh_cinema_speed') || '1.0');
+    }
+    if (!dirty.has('wh_cinema_step_mode')) {
+      isCinemaStepMode = safeGetStorage('wh_cinema_step_mode') === 'true';
     }
     if (!dirty.has('wh_cinema_spam_delay')) {
       cinemaSpamDelayMs = parseInt(safeGetStorage('wh_cinema_spam_delay') || '280', 10);

@@ -312,6 +312,7 @@
     <div class="dropdown-item" onclick="openStoriesModal(); closeDropdownMenu();">📁 Saved Stories & Episodes</div>
     <div class="dropdown-item" onclick="openScriptModal(); closeDropdownMenu();">📜 AI Script Importer</div>
     <div class="dropdown-item" style="color:#00f0ff; font-weight:800; background:rgba(0, 240, 255, 0.08);" onclick="openSystemWindowBuilder(); closeDropdownMenu();">🖥️ Manhwa System Studio</div>
+    <div class="dropdown-item" id="menuRpgBagItem" style="color:#fde047; font-weight:800; background:rgba(250, 204, 21, 0.08);" onclick="window.ChatHubSystemWindows && window.ChatHubSystemWindows.openRpgDrawer('bag'); closeDropdownMenu();">🎒 Player Bag &amp; Boosted Profile</div>
     <div class="dropdown-item" onclick="openSpecialEventModal(); closeDropdownMenu();">✨ Insert Banner / Special Alert</div>
     <div class="dropdown-item" onclick="openGlobalSettingsModal(); closeDropdownMenu();">⚙️ Global Settings & Studio Hub</div>
     <div class="dropdown-item" style="color:#facc15; font-weight:800; background:rgba(250, 204, 21, 0.08);" onclick="openAboutModal(); closeDropdownMenu();">ℹ️ About Studio & Versions</div>
@@ -356,7 +357,7 @@
     <div class="cinema-speed-popover" id="cinemaSpeedPopover">
       <div class="speed-popover-title">⚡ Typing & Pacing Speed</div>
       <div class="speed-presets-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
-        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('slow'); hideSpeedPopover();" id="speedChoiceSlow">🐢 Slow (0.6x)</button>
+        <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('slow'); hideSpeedPopover();" id="speedChoiceSlow">🐢 Slow (0.5x)</button>
         <button type="button" class="speed-pill-btn active" onclick="setQuickCinemaSpeed('normal'); hideSpeedPopover();" id="speedChoiceNormal">🚶 Normal (1.0x)</button>
         <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('fast'); hideSpeedPopover();" id="speedChoiceFast">🏃 Fast (1.6x)</button>
         <button type="button" class="speed-pill-btn" onclick="setQuickCinemaSpeed('very_fast'); hideSpeedPopover();" id="speedChoiceVeryFast">⚡ Very Fast (2.5x)</button>
@@ -366,11 +367,12 @@
       </div>
       <div class="speed-slider-row" style="margin-top: 8px;">
         <span style="font-size:10px; color:#94a3b8;">Slow</span>
-        <input type="range" min="0.4" max="3.0" step="0.1" value="1.0" id="cinemaQuickSpeedSlider" oninput="updateCinemaSpeedSlider(this.value)" class="cinema-mini-slider">
+        <input type="range" min="0.25" max="3.0" step="0.05" value="1.0" id="cinemaQuickSpeedSlider" oninput="updateCinemaSpeedSlider(this.value)" class="cinema-mini-slider">
         <span style="font-size:10px; color:#94a3b8;">Fast</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin-top:8px; border-top:1px solid #334155; padding-top:6px;">
-        <button type="button" class="speed-pill-btn" onclick="toggleCinemaCameraEngine();" id="cinemaCamToggleBtn" style="font-size:10px; flex:1; margin-right:4px;">🎥 Cam: ON</button>
+      <div style="display:flex; justify-content:space-between; gap:4px; margin-top:8px; border-top:1px solid #334155; padding-top:6px;">
+        <button type="button" class="speed-pill-btn" onclick="toggleCinemaStepMode();" id="cinemaStepPopoverBtn" style="font-size:10px; flex:1;" title="Wait for your tap / Spacebar after each line">👆 Step: OFF</button>
+        <button type="button" class="speed-pill-btn" onclick="toggleCinemaCameraEngine();" id="cinemaCamToggleBtn" style="font-size:10px; flex:1;">🎥 Cam: ON</button>
         <button type="button" class="speed-pill-btn" onclick="openCinemaSpeedModal(); hideSpeedPopover();" style="font-size:10px; flex:1;">⚙️ More</button>
       </div>
     </div>
@@ -389,8 +391,14 @@
         <span class="btn-text">Pause</span>
       </button>
 
+      <!-- Manual Tap-to-Next Step Mode Toggle -->
+      <button type="button" class="cinema-btn step-btn" onclick="toggleCinemaStepMode()" id="cinemaStepBtn" title="Manual Step Mode: Tap chat screen or press Space / → to advance 1 line at a time">
+        <span class="btn-icon">👆</span>
+        <span class="btn-text" id="cinemaStepBtnText">Step</span>
+      </button>
+
       <!-- Instant Speed Hub (One tap opens speed drawer, hold for turbo) -->
-      <button type="button" class="cinema-btn speed-hub-btn" onclick="toggleCinemaSpeedPopover(event)" id="cinemaSpeedBtn" title="Instant Speed: 0.5x - 3.0x (Tap to choose)">
+      <button type="button" class="cinema-btn speed-hub-btn" onclick="toggleCinemaSpeedPopover(event)" id="cinemaSpeedBtn" title="Instant Speed: 0.25x - 3.0x (Tap to choose)">
         <span class="btn-icon">⚡</span>
         <span class="btn-text" id="cinemaSpeedText">1.0x</span>
       </button>

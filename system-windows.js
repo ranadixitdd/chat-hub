@@ -1208,7 +1208,17 @@
         ],
         stampText: '',
         stampColor: '#00f0ff',
-        footerText: 'Player System Notification • [Click to Edit]'
+        footerText: 'Player System Notification • [Click to Edit]',
+        rpgLink: {
+          enabled: true,
+          passBtnIndex: 0,
+          failBtnIndex: 1,
+          timerExpirePenalty: true,
+          autoHideAfterResolve: true,
+          autoHideDelaySec: 1.8,
+          passReward: { coins: 150, exp: 50, hp: 15, mp: 10 },
+          failPenalty: { coins: 0, hp: 30, mp: 0 }
+        }
       }
     },
     {
@@ -1240,6 +1250,7 @@
           { label: 'MP', value: 84, fromValue: 84, displayText: '2,100 / 2,500', color: '#38bdf8', animated: false }
         ],
         statsCols: 3,
+        statusLayout: 'sheet',
         stats: [
           { label: 'STR', value: '142' },
           { label: 'AGI', value: '168' },
@@ -1255,7 +1266,8 @@
         buttons: [],
         stampText: '',
         stampColor: '#00f0ff',
-        footerText: 'Status Synced with Soul Core'
+        footerText: 'Status Synced with Soul Core',
+        syncWithStoryRpg: true
       }
     },
     {
@@ -1335,6 +1347,7 @@
         shopItems: [],
         bars: [],
         statsCols: 2,
+        shopLayout: 'rows',
         stats: [],
         pills: ['Soul-Bound Vault', 'Zero Weight Limit'],
         timerEnabled: false,
@@ -1343,7 +1356,8 @@
         buttons: [],
         stampText: '',
         stampColor: '#00f0ff',
-        footerText: 'Tap item slot to toggle Equip / Inspect'
+        footerText: 'Tap item slot to Equip / Use',
+        syncWithStoryRpg: true
       }
     },
     {
@@ -1379,6 +1393,7 @@
         ],
         bars: [],
         statsCols: 2,
+        shopLayout: 'rows',
         stats: [],
         pills: ['Discount Active: -10%'],
         timerEnabled: false,
@@ -1429,7 +1444,17 @@
         buttons: [],
         stampText: '',
         stampColor: '#ef4444',
-        footerText: 'DO NOT STOP RUNNING'
+        footerText: 'DO NOT STOP RUNNING',
+        rpgLink: {
+          enabled: true,
+          passBtnIndex: 0,
+          failBtnIndex: 1,
+          timerExpirePenalty: true,
+          autoHideAfterResolve: true,
+          autoHideDelaySec: 1.8,
+          passReward: { coins: 200, exp: 80, hp: 20, mp: 10 },
+          failPenalty: { coins: 50, hp: 50, mp: 0 }
+        }
       }
     },
     {
@@ -1961,6 +1986,7 @@
         shopItems: [],
         bars: [],
         statsCols: 2,
+        shopLayout: 'rows',
         stats: [],
         pills: [],
         timerEnabled: false,
@@ -2013,6 +2039,7 @@
         shopItems: [],
         bars: [],
         statsCols: 2,
+        shopLayout: 'rows',
         stats: [],
         pills: [],
         timerEnabled: false,
@@ -2574,6 +2601,44 @@
      -------------------------------------------------------------------------- */
   let fallbackRpgState = null;
 
+  function parseItemEffects(name = '', meta = '') {
+    const combined = `${name} ${meta}`.trim();
+    const isWeaponOrArmor = /\b(daggers?|blades?|swords?|fangs?|cloaks?|armors?|shields?|crowns?|helms?|helmets?|rings?|staffs?|staves|spears?|bows?|axes?|scythes?|gloves|boots|robes?)\b/i.test(combined);
+    const isConsumable = !isWeaponOrArmor && /\b(potions?|elixirs?|recovery|heal|serums?|medkits?|antidotes?|tonics?)\b/i.test(combined);
+    const bonuses = [];
+    let consumable = null;
+
+    if (isConsumable) {
+      const fullRestore = /\b(full\s*recovery|100%\s*(?:hp|mana|mp)|all\s*hp|max\s*heal)\b/i.test(combined);
+      const hpM = combined.match(/\+(\d+)\s*HP\b|\bHP\s*\+\s*(\d+)/i);
+      const mpM = combined.match(/\+(\d+)\s*(?:MP|MANA)\b|\b(?:MP|MANA)\s*\+\s*(\d+)/i);
+      const hpVal = hpM ? parseInt(hpM[1] || hpM[2], 10) || 0 : (fullRestore ? 0 : 50);
+      const mpVal = mpM ? parseInt(mpM[1] || mpM[2], 10) || 0 : (fullRestore ? 0 : 25);
+      consumable = { fullRestore, hp: hpVal, mp: mpVal };
+    } else if (meta) {
+      const re = /\b([A-Za-z][A-Za-z\s]{1,12}?)\s*[: ]?\+\s*(\d+)\s*(%?)/g;
+      let m;
+      while ((m = re.exec(meta)) !== null) {
+        const stat = m[1].trim().toUpperCase().replace(/\s+/g, ' ');
+        const amt = parseInt(m[2], 10) || 0;
+        const suffix = m[3] || '';
+        if (stat && amt > 0 && !/^(LV|LEVEL|QTY|STAGE|CHAPTER)$/i.test(stat)) {
+          bonuses.push({ stat, amount: amt, suffix });
+        }
+      }
+    }
+
+    const bonusSummary = consumable
+      ? (consumable.fullRestore ? 'Full 100% HP & MP (Revives!)' : `+${consumable.hp} HP${consumable.mp ? `, +${consumable.mp} MP` : ''}`)
+      : bonuses.map(b => `+${b.amount}${b.suffix} ${b.stat}`).join(', ');
+
+    return { bonuses, consumable, bonusSummary };
+  }
+
+  function getDefaultBaseStats() {
+    return { STR: 25, AGI: 25, INT: 20, VIT: 20, PER: 20, ATK: 100, DEF: 50 };
+  }
+
   function getDefaultRpgState() {
     return {
       active: false,
@@ -2585,6 +2650,7 @@
       exp: 0,
       nextExp: 100,
       coins: 0,
+      baseStats: getDefaultBaseStats(),
       inventory: [],
       flags: []
     };
@@ -2595,6 +2661,11 @@
     const s = (raw && typeof raw === 'object') ? raw : {};
     const maxHp = Math.max(1, Math.round(Number(s.maxHp) || def.maxHp));
     const maxMp = Math.max(0, Math.round(Number.isFinite(Number(s.maxMp)) ? Number(s.maxMp) : def.maxMp));
+    const rawStats = (s.baseStats && typeof s.baseStats === 'object') ? s.baseStats : {};
+    const baseStats = { ...getDefaultBaseStats() };
+    Object.keys(baseStats).forEach(k => {
+      if (Number.isFinite(Number(rawStats[k]))) baseStats[k] = Math.max(0, Math.round(Number(rawStats[k])));
+    });
     return {
       active: Boolean(s.active),
       lv: Math.max(1, Math.round(Number(s.lv) || 1)),
@@ -2605,15 +2676,657 @@
       exp: Math.max(0, Math.round(Number(s.exp) || 0)),
       nextExp: Math.max(10, Math.round(Number(s.nextExp) || 100)),
       coins: Math.max(0, Math.round(Number(s.coins) || 0)),
-      inventory: Array.isArray(s.inventory) ? s.inventory.filter(x => x && x.name).map(x => ({
-        icon: String(x.icon || '📦'),
-        name: String(x.name || 'Item'),
-        rarity: normalizeRarity(x.rarity),
-        qty: Math.max(1, Math.round(Number(x.qty) || 1)),
-        equipped: Boolean(x.equipped)
-      })) : [],
+      baseStats,
+      inventory: Array.isArray(s.inventory) ? s.inventory.filter(x => x && x.name).map(x => {
+        const eff = parseItemEffects(x.name, x.meta || '');
+        const bonuses = Array.isArray(x.bonuses) && x.bonuses.length > 0 ? x.bonuses.map(b => ({
+          stat: String(b.stat || '').toUpperCase(),
+          amount: Math.round(Number(b.amount) || 0),
+          suffix: String(b.suffix || '')
+        })).filter(b => b.stat && b.amount) : eff.bonuses;
+        const consumable = (x.consumable && typeof x.consumable === 'object') ? x.consumable : eff.consumable;
+        return {
+          icon: String(x.icon || '📦'),
+          iconImage: isExplicitItemImageUrl(x.iconImage) ? String(x.iconImage).trim() : '',
+          name: String(x.name || 'Item'),
+          rarity: normalizeRarity(x.rarity),
+          qty: Math.max(1, Math.round(Number(x.qty) || 1)),
+          equipped: !consumable && Boolean(x.equipped),
+          meta: String(x.meta || ''),
+          bonuses,
+          consumable: consumable || null,
+          unlockReq: String(x.unlockReq || ''),
+          locked: Boolean(x.locked)
+        };
+      }) : [],
       flags: Array.isArray(s.flags) ? Array.from(new Set(s.flags.map(f => String(f || '').trim()).filter(Boolean))) : []
     };
+  }
+
+  function computeEquippedGearStats(rpg) {
+    const st = rpg || getRpgState();
+    const bonusMap = {};
+    const equippedItems = [];
+    (st.inventory || []).forEach(it => {
+      if (!it || !it.equipped || it.consumable || Number(it.qty || 1) <= 0) return;
+      const ev = evaluateUnlockReq(it.unlockReq, st);
+      if (ev.hasReq && !ev.unlocked) return;
+      equippedItems.push(it);
+      (it.bonuses || []).forEach(b => {
+        const key = String(b.stat || '').toUpperCase();
+        if (!key || !b.amount) return;
+        if (!bonusMap[key]) bonusMap[key] = { stat: key, amount: 0, suffix: b.suffix || '', sources: [] };
+        bonusMap[key].amount += Number(b.amount) || 0;
+        if (b.suffix && !bonusMap[key].suffix) bonusMap[key].suffix = b.suffix;
+        if (!bonusMap[key].sources.includes(it.name)) bonusMap[key].sources.push(it.name);
+      });
+    });
+    return { bonusMap, bonusList: Object.values(bonusMap), equippedItems };
+  }
+
+  function isExplicitItemImageUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    const u = url.trim();
+    if (!u || !isSafeUrl(u)) return false;
+    if (/^(?:data:image\/|blob:|https?:\/\/|\.?\/?assets\/|\/)/i.test(u)) return true;
+    return /\.(?:png|jpe?g|webp|gif|svg|avif)(?:\?.*)?$/i.test(u);
+  }
+
+  function getItemImageSrc(item) {
+    if (!item || typeof item !== 'object') return '';
+    if (isExplicitItemImageUrl(item.iconImage)) return String(item.iconImage).trim();
+    if (isExplicitItemImageUrl(item.imageUrl)) return String(item.imageUrl).trim();
+    if (isExplicitItemImageUrl(item.icon)) return String(item.icon).trim();
+    return '';
+  }
+
+  function renderItemIconVisual(item, fallbackEmoji = '📦', sizeCls = '') {
+    const imgSrc = getItemImageSrc(item);
+    const rarity = normalizeRarity(item && item.rarity);
+    const sz = sizeCls ? ` ${sizeCls}` : '';
+    const inner = imgSrc
+      ? `<img class="msw-item-icon-img" src="${esc(imgSrc)}" alt="${esc((item && item.name) || 'Item')}">`
+      : `<span class="msw-item-icon-emoji">${esc((item && item.icon) || fallbackEmoji)}</span>`;
+    return `<div class="msw-item-pedestal rarity-${esc(rarity)}${sz}">${inner}</div>`;
+  }
+
+  function inferItemCategory(item) {
+    const txt = `${(item && item.name) || ''} ${(item && item.meta) || ''}`;
+    if (/\b(potions?|elixirs?|recovery|heal|serums?|medkits?|antidotes?|tonics?)\b/i.test(txt)) return 'CONSUMABLE';
+    if (/\b(daggers?|blades?|swords?|fangs?|spears?|bows?|axes?|staffs?|staves|scythes?)\b/i.test(txt)) return 'WEAPON';
+    if (/\b(cloaks?|armors?|shields?|crowns?|helms?|helmets?|rings?|gloves|boots|robes?)\b/i.test(txt)) return 'ARMOR';
+    if (/\b(skills?|scrolls?|runes?|books?|manuals?)\b/i.test(txt)) return 'SKILL';
+    return 'RELIC';
+  }
+
+  function buildItemEffectChipsHtml(item) {
+    const meta = String((item && item.meta) || '').trim();
+    const eff = parseItemEffects((item && item.name) || '', meta);
+    const chips = [];
+    if (eff.consumable) {
+      chips.push(`<span class="msw-shop-chip is-heal">💚 ${esc(eff.bonusSummary)}</span>`);
+    } else if (eff.bonuses && eff.bonuses.length > 0) {
+      eff.bonuses.forEach(b => {
+        const cls = /DEF|VIT|HP/i.test(b.stat) ? 'is-def' : (/ATK|STR|CRIT/i.test(b.stat) ? 'is-atk' : '');
+        chips.push(`<span class="msw-shop-chip ${cls}">${/ATK|STR/i.test(b.stat) ? '⚔️' : (/DEF|VIT/i.test(b.stat) ? '🛡️' : '⚡')} +${esc(b.amount + b.suffix)} ${esc(b.stat)}</span>`);
+      });
+    }
+    const extraParts = meta.split('•').map(p => p.trim()).filter(p => p && !/^(?:ATK|DEF|STR|AGI|INT|VIT|PER|STEALTH)\s*\+|Instant\s*100%/i.test(p));
+    extraParts.slice(0, 2).forEach(part => {
+      if (!/^REQ:/i.test(part)) chips.push(`<span class="msw-shop-chip">${esc(part)}</span>`);
+    });
+    if (chips.length === 0 && meta) chips.push(`<span class="msw-shop-chip">${esc(meta)}</span>`);
+    return chips.length > 0 ? `<div class="msw-shop-chips">${chips.join('')}</div>` : '';
+  }
+
+  function renderManhwaStatusSections(cfg, gear) {
+    const pills = Array.isArray(cfg.pills) ? cfg.pills : [];
+    const equippedList = [];
+    const seenEqp = new Set();
+    if (gear && Array.isArray(gear.equippedItems)) {
+      gear.equippedItems.forEach((it, idx) => {
+        seenEqp.add(String(it.name || '').toLowerCase());
+        equippedList.push({ ...it, _eqIdx: idx });
+      });
+    }
+    const passives = [];
+    const traits = [];
+
+    pills.forEach(raw => {
+      const p = String(raw || '').trim();
+      if (!p) return;
+      if (/^⚔️?\s*Equipped:/i.test(p)) {
+        const names = p.replace(/^⚔️?\s*Equipped:\s*/i, '').split(',').map(s => s.trim()).filter(Boolean);
+        names.forEach(n => {
+          const clean = n.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u, '').trim() || n;
+          if (!seenEqp.has(clean.toLowerCase())) {
+            seenEqp.add(clean.toLowerCase());
+            equippedList.push({ icon: '⚔️', name: n, rarity: 'rare', meta: '' });
+          }
+        });
+        return;
+      }
+      const pasMatch = p.match(/^Passive:\s*(.+)$/i);
+      if (pasMatch) {
+        const body = pasMatch[1].trim();
+        const lvMatch = body.match(/^(.*?)\s*(Lv\.?\s*\d+|[SABCD]-?Rank|MAX)$/i);
+        const skillName = lvMatch ? lvMatch[1].trim() : body;
+        const lvTag = lvMatch ? lvMatch[2].toUpperCase().replace(/\s+/g, '') : 'PASSIVE';
+        passives.push({ name: skillName, lv: lvTag, kind: 'PASSIVE' });
+        return;
+      }
+      const trMatch = p.match(/^(Immunity|Resistance|Blessing|Curse|Trait|Title):\s*(.+)$/i);
+      if (trMatch) {
+        traits.push({ kind: trMatch[1].toUpperCase(), name: trMatch[2].trim() });
+        return;
+      }
+      if (/\bLv\.?\s*\d+/i.test(p)) {
+        const lvM = p.match(/^(.*?)\s*(Lv\.?\s*\d+)$/i);
+        passives.push({ name: lvM ? lvM[1].trim() : p, lv: lvM ? lvM[2].toUpperCase() : 'SKILL', kind: 'SKILL' });
+      } else {
+        traits.push({ kind: 'TRAIT', name: p });
+      }
+    });
+
+    if (equippedList.length === 0 && passives.length === 0 && traits.length === 0) return '';
+    const isCompact = cfg.statusLayout === 'compact';
+
+    const eqpHtml = equippedList.length > 0 ? `
+      <div class="msw-sys-section">
+        <div class="msw-sys-sec-title"><span>⚔️</span><span>[EQUIPPED GEAR]</span></div>
+        ${equippedList.map((it, idx) => {
+          const eff = parseItemEffects(it.name, it.meta || '');
+          const bTxt = eff.bonusSummary || (Array.isArray(it.bonuses) ? it.bonuses.map(b => `+${b.amount}${b.suffix} ${b.stat}`).join(', ') : '');
+          return `
+            <div class="msw-gear-row" data-inspect-eqp-idx="${idx}">
+              <div class="msw-skill-left">
+                ${renderItemIconVisual(it, '⚔️', 'sm')}
+                <div style="min-width:0;">
+                  <div class="msw-skill-name">${esc(it.name)}</div>
+                  ${bTxt ? `<div style="font-size:9.5px; font-weight:800; color:#4ade80;">${esc(bTxt)}</div>` : ''}
+                </div>
+              </div>
+              <span class="msw-rarity-pill rarity-${esc(normalizeRarity(it.rarity))}">${esc(normalizeRarity(it.rarity).toUpperCase())}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    ` : '';
+
+    const passHtml = passives.length > 0 ? `
+      <div class="msw-sys-section">
+        <div class="msw-sys-sec-title"><span>⚡</span><span>[PASSIVE SKILLS]</span></div>
+        ${passives.map(sk => {
+          const rune = /shadow|stealth|dark/i.test(sk.name) ? '🌑' : (/sword|blade|slash/i.test(sk.name) ? '⚔️' : '🌀');
+          return `
+            <div class="msw-skill-row">
+              <div class="msw-skill-left">
+                <span class="msw-skill-rune">${rune}</span>
+                <span class="msw-skill-name">${esc(sk.name)}</span>
+              </div>
+              <div class="msw-skill-badges">
+                <span class="msw-lv-pill">${esc(sk.lv)}</span>
+                <span class="msw-type-pill">${esc(sk.kind)}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    ` : '';
+
+    const traitHtml = traits.length > 0 ? `
+      <div class="msw-sys-section">
+        <div class="msw-sys-sec-title"><span>🛡️</span><span>[IMMUNITIES &amp; TRAITS]</span></div>
+        <div class="msw-traits-grid">
+          ${traits.map(tr => `
+            <span class="msw-trait-chip">
+              <span>${/IMMUNITY|RESIST/i.test(tr.kind) ? '🛡️' : '✦'}</span>
+              <span>${esc(tr.name)}</span>
+              <span class="msw-trait-kind">[${esc(tr.kind)}]</span>
+            </span>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    return `<div class="msw-status-sections${isCompact ? ' is-compact' : ''}">${eqpHtml}${passHtml}${traitHtml}</div>`;
+  }
+
+  function closeItemInspectModal() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const el = document.getElementById('mswItemInspectBackdrop');
+    if (el) el.classList.remove('open');
+  }
+
+  let pendingInspectAction = null;
+  function openItemInspectModal(item, ctx = {}) {
+    if (typeof document === 'undefined' || !document.body || !item) return;
+    pendingInspectAction = ctx;
+    let backdrop = document.getElementById('mswItemInspectBackdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'mswItemInspectBackdrop';
+      backdrop.className = 'msw-inspect-backdrop';
+      backdrop.innerHTML = `
+        <div class="msw-inspect-win">
+          <div class="msw-inspect-head">
+            <strong style="font-size:12.5px; color:#00f0ff; letter-spacing:0.8px;">◈ SYSTEM ITEM ANALYSIS</strong>
+            <button type="button" class="syswin-chip-btn" id="mswInspectCloseBtn">✕</button>
+          </div>
+          <div id="mswInspectBody" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeItemInspectModal(); });
+      const clsBtn = document.getElementById('mswInspectCloseBtn');
+      if (clsBtn) clsBtn.addEventListener('click', closeItemInspectModal);
+    }
+
+    const body = document.getElementById('mswInspectBody');
+    const rpg = getRpgState();
+    const rarity = normalizeRarity(item.rarity);
+    const cat = inferItemCategory(item);
+    const liveEval = evaluateUnlockReq(item.unlockReq, rpg);
+    const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(item.locked);
+    const eff = parseItemEffects(item.name, item.meta || '');
+    const isCons = Boolean(item.consumable || eff.consumable);
+    const chipsHtml = buildItemEffectChipsHtml(item);
+    const reqText = liveEval.hasReq
+      ? (lockedNow ? `🔒 Locked — Requires ${liveEval.missing.join(', ')}` : `🔓 Requirement Met (${liveEval.summary})`)
+      : (lockedNow ? `🔒 Locked${item.price ? ': ' + item.price : ''}` : '🔓 Ready for Use');
+
+    let actionBtnHtml = '';
+    if (ctx.source === 'shop') {
+      if (item.owned) {
+        actionBtnHtml = `<button type="button" class="msw-rpg-bag-btn eqp" style="width:100%;" id="mswInspectGoBagBtn">✔ ALREADY OWNED • OPEN 🎒 BAG</button>`;
+      } else if (!lockedNow && !ctx.previewMode) {
+        actionBtnHtml = `<button type="button" class="msw-rpg-bag-btn" style="width:100%; border-color:#facc15; color:#fde047;" id="mswInspectActBtn">🪙 BUY NOW (${esc(item.price || 'CLAIM')})</button>`;
+      }
+    } else if ((ctx.source === 'bag' || ctx.source === 'inv') && !lockedNow && !ctx.previewMode) {
+      const lbl = isCons ? '🧪 USE ITEM NOW' : (item.equipped ? '✔ UNEQUIP GEAR' : '⚔️ EQUIP TO PLAYER');
+      actionBtnHtml = `<button type="button" class="msw-rpg-bag-btn ${isCons ? 'use' : (item.equipped ? 'eqp' : '')}" style="width:100%;" id="mswInspectActBtn">${lbl}</button>`;
+    }
+
+    body.innerHTML = `
+      <div class="msw-inspect-hero">
+        ${renderItemIconVisual(item, '📦', 'lg')}
+        <div style="min-width:0; flex:1; display:flex; flex-direction:column; gap:4px;">
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <span class="msw-rarity-pill rarity-${esc(rarity)}">[${esc(rarity.toUpperCase())}]</span>
+            <span class="msw-cat-pill">[${esc(cat)}]</span>
+            ${item.equipped ? '<span class="msw-lv-pill">EQUIPPED</span>' : ''}
+            ${Number(item.qty) > 1 ? `<span class="msw-type-pill">QTY x${Number(item.qty)}</span>` : ''}
+          </div>
+          <div style="font-size:15px; font-weight:900; color:#f8fafc; line-height:1.2;">${esc(item.name)}</div>
+          ${item.price ? `<div style="font-size:11.5px; font-weight:800; color:#fde047;">🪙 Price: ${esc(item.price)}</div>` : ''}
+        </div>
+      </div>
+      <div class="msw-inspect-box">
+        <div style="font-size:9.5px; font-weight:900; color:#38bdf8; letter-spacing:0.6px; margin-bottom:4px;">◆ SYSTEM EFFECTS &amp; ATTRIBUTES</div>
+        ${chipsHtml || '<div style="color:#94a3b8;">Standard System item.</div>'}
+        <div style="margin-top:6px; font-size:10.5px; color:${lockedNow ? '#fca5a5' : '#86efac'}; font-weight:800;">${esc(reqText)}</div>
+      </div>
+      ${actionBtnHtml}
+    `;
+
+    backdrop.classList.add('open');
+
+    const goBag = document.getElementById('mswInspectGoBagBtn');
+    if (goBag) goBag.onclick = () => { closeItemInspectModal(); openRpgDrawer('bag'); };
+
+    const actBtn = document.getElementById('mswInspectActBtn');
+    if (actBtn) {
+      actBtn.onclick = () => {
+        const c = pendingInspectAction || {};
+        if (c.source === 'shop') {
+          purchaseShopItem(c.msg, c.cfg, c.el, c.idx, c.buyBtn);
+          closeItemInspectModal();
+        } else if (c.source === 'bag') {
+          equipOrUseInventoryItem(c.idx, { fromDrawer: true });
+          closeItemInspectModal();
+          if (document.getElementById('mswRpgDrawerBackdrop')?.classList.contains('open')) renderRpgDrawerBody();
+        } else if (c.source === 'inv' && c.msg && !c.previewMode) {
+          const list = (c.msg.systemConfig && c.msg.systemConfig.inventoryItems) || [];
+          const t = list[c.idx];
+          if (t) {
+            t.equipped = !t.equipped;
+            if (api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+            if (api() && typeof api().showToast === 'function') api().showToast(t.equipped ? `⚔️ Equipped ${t.name}!` : `🎒 Unequipped ${t.name}`);
+            closeItemInspectModal();
+            if (c.el && c.slotEl) {
+              c.slotEl.classList.toggle('is-equipped', t.equipped);
+            }
+          }
+        }
+      };
+    }
+  }
+
+  function purchaseShopItem(msg, cfg, el, idx, buyBtn, previewMode = false) {
+    const target = (msg && msg.systemConfig && msg.systemConfig.shopItems && msg.systemConfig.shopItems[idx]) || (cfg && cfg.shopItems && cfg.shopItems[idx]);
+    if (!target) return false;
+    const curRpg = getRpgState();
+    const liveEval = evaluateUnlockReq(target.unlockReq, curRpg);
+    const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(target.locked);
+    if (lockedNow) {
+      const msgTxt = liveEval.hasReq ? `🔒 Locked — Need: ${liveEval.missing.join(', ')}` : `🔒 Locked: ${target.meta || target.price}`;
+      if (api() && typeof api().showToast === 'function') api().showToast(msgTxt);
+      if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+      return false;
+    }
+    if (target.owned) return false;
+    const eff = parseItemEffects(target.name, target.meta || '');
+    const priceNum = /^LOCKED/i.test(target.price) ? parseCoinNumber(String(target.price).replace(/LV\.?\s*\d+/gi, '')) : parseCoinNumber(target.price);
+    const headerCoins = parseCoinNumber(cfg && cfg.currencyText);
+    if (!previewMode && !curRpg.active && priceNum > 0 && headerCoins >= priceNum) {
+      curRpg.active = true;
+      curRpg.coins = headerCoins;
+    }
+    const economyLinked = curRpg.active || (cfg && cfg.rpgLink && cfg.rpgLink.enabled) || (cfg && cfg.syncWithStoryRpg) || liveEval.hasReq;
+    if (!previewMode && economyLinked && priceNum > 0) {
+      if (curRpg.coins < priceNum) {
+        if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Need ${formatCoins(priceNum)} G (You have ${formatCoins(curRpg.coins)} G)`);
+        if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+        return false;
+      }
+      curRpg.active = true;
+      curRpg.coins -= priceNum;
+      const existingInv = curRpg.inventory.find(it => it.name.toLowerCase() === String(target.name).toLowerCase());
+      if (existingInv) {
+        existingInv.qty += 1;
+        if (!existingInv.iconImage && target.iconImage) existingInv.iconImage = target.iconImage;
+        if (!existingInv.meta && target.meta) existingInv.meta = target.meta;
+        if ((!existingInv.bonuses || !existingInv.bonuses.length) && eff.bonuses.length) existingInv.bonuses = eff.bonuses;
+        if (!existingInv.consumable && eff.consumable) existingInv.consumable = eff.consumable;
+      } else {
+        curRpg.inventory.push({
+          icon: target.icon || '🛒',
+          iconImage: isExplicitItemImageUrl(target.iconImage) ? String(target.iconImage).trim() : '',
+          name: target.name,
+          rarity: normalizeRarity(target.rarity),
+          qty: 1,
+          equipped: false,
+          meta: target.meta || '',
+          bonuses: eff.bonuses,
+          consumable: eff.consumable || null,
+          unlockReq: '',
+          locked: false
+        });
+      }
+      target.owned = true;
+      if (buyBtn) {
+        buyBtn.classList.add('owned');
+        buyBtn.textContent = '✔ OWNED';
+      }
+      if (el) {
+        const curPill = el.querySelector('.msw-currency-pill');
+        if (curPill) curPill.textContent = `🪙 ${formatCoins(curRpg.coins)} G`;
+        const bagBtn = el.querySelector('.msw-card-rpg-bag');
+        if (bagBtn) {
+          const totalQ = curRpg.inventory.reduce((acc, it) => acc + Math.max(1, Number(it.qty) || 1), 0);
+          bagBtn.textContent = `🎒 Bag (${totalQ})`;
+        }
+      }
+      saveRpgState(curRpg);
+      renderRpgHudBar({ pulseBag: true });
+      if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
+      if (api() && typeof api().showToast === 'function') {
+        api().showToast(`🪙 Bought ${target.name} (-${formatCoins(priceNum)} G)!`, {
+          actionLabel: eff.consumable ? '🎒 Bag / Use' : '🎒 Bag / Equip',
+          onAction: () => openRpgDrawer('bag')
+        });
+      }
+      if (api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+      return true;
+    }
+    target.owned = true;
+    if (buyBtn) {
+      buyBtn.classList.add('owned');
+      buyBtn.textContent = '✔ OWNED';
+    }
+    if (economyLinked && !previewMode) {
+      curRpg.active = true;
+      curRpg.inventory.push({
+        icon: target.icon || '🛒',
+        iconImage: isExplicitItemImageUrl(target.iconImage) ? String(target.iconImage).trim() : '',
+        name: target.name,
+        rarity: normalizeRarity(target.rarity),
+        qty: 1,
+        equipped: false,
+        meta: target.meta || '',
+        bonuses: eff.bonuses,
+        consumable: eff.consumable || null
+      });
+      saveRpgState(curRpg);
+      renderRpgHudBar({ pulseBag: true });
+    }
+    if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
+    if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Purchased ${target.name}!`);
+    if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+    return true;
+  }
+
+  let activeRpgDrawerTab = 'bag';
+  let rpgHudPulseState = { bag: false, profile: false };
+
+  function renderRpgHudBar(opts = {}) {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    if (opts.pulseBag !== undefined) rpgHudPulseState.bag = Boolean(opts.pulseBag);
+    if (opts.pulseProfile !== undefined) rpgHudPulseState.profile = Boolean(opts.pulseProfile);
+    // Keep top info bar hidden so native WhatsApp / app chrome stays authentic
+    const bar = document.getElementById('mswRpgHudBar');
+    if (bar) {
+      bar.style.display = 'none';
+      bar.innerHTML = '';
+    }
+    const menuItem = document.getElementById('menuRpgBagItem');
+    if (menuItem) {
+      const rpg = getRpgState();
+      const totalQty = (rpg.inventory || []).reduce((acc, it) => acc + Math.max(1, Number(it.qty) || 1), 0);
+      menuItem.textContent = rpg.active
+        ? `🎒 Player Bag (${totalQty}) • LV.${rpg.lv} • 📊 Profile`
+        : '🎒 Player Bag & Boosted Profile';
+    }
+  }
+
+  function closeRpgDrawer() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const el = document.getElementById('mswRpgDrawerBackdrop');
+    if (el) el.classList.remove('open');
+  }
+
+  function insertSyncedRpgCard(kind = 'status') {
+    if (!api() || typeof api().upsertSystemWindowMessage !== 'function') return false;
+    const preset = PRESETS.find(p => p.id === kind) || PRESETS[0];
+    const cfg = normalizeConfig({ systemConfig: { ...cloneObj(preset.config), syncWithStoryRpg: true } });
+    api().upsertSystemWindowMessage({
+      title: cfg.headerTitle,
+      text: cfg.bodyText || cfg.subtitle,
+      systemConfig: cfg,
+      delayMs: estimateSystemWindowHoldMs(cfg)
+    });
+    closeRpgDrawer();
+    if (typeof api().showToast === 'function') {
+      api().showToast(kind === 'inventory' ? '🎒 Inserted Live Inventory Card!' : '📊 Inserted Live Boosted Profile Card!');
+    }
+    return true;
+  }
+
+  function renderRpgDrawerBody() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const body = document.getElementById('mswRpgDrawerBody');
+    const bagTab = document.getElementById('mswRpgTabBag');
+    const profTab = document.getElementById('mswRpgTabProfile');
+    if (!body) return;
+    const rpg = getRpgState();
+    const totalQty = (rpg.inventory || []).reduce((acc, it) => acc + Math.max(1, Number(it.qty) || 1), 0);
+    if (bagTab) {
+      bagTab.classList.toggle('active', activeRpgDrawerTab === 'bag');
+      bagTab.textContent = `🎒 Bag (${totalQty})`;
+    }
+    if (profTab) profTab.classList.toggle('active', activeRpgDrawerTab === 'profile');
+
+    if (activeRpgDrawerTab === 'profile') {
+      const statusPreset = PRESETS.find(p => p.id === 'status');
+      const cardEl = renderSystemWindowElement({
+        systemConfig: { ...cloneObj(statusPreset.config), syncWithStoryRpg: true }
+      }, { previewMode: true });
+      body.innerHTML = '';
+      body.appendChild(cardEl);
+      const actRow = document.createElement('div');
+      actRow.style.cssText = 'display:flex; gap:8px; justify-content:flex-end; margin-top:4px;';
+      actRow.innerHTML = `
+        <button type="button" class="msw-rpg-bag-btn" onclick="window.ChatHubSystemWindows.insertSyncedRpgCard('status')">➕ Insert Profile Card to Chat</button>
+      `;
+      body.appendChild(actRow);
+      return;
+    }
+
+    if (!rpg.inventory || rpg.inventory.length === 0) {
+      body.innerHTML = `
+        <div style="text-align:center; padding:22px 10px; color:#94a3b8; font-size:12px;">
+          Your Bag is empty. Buy items from a <b>Coin Shop</b> or complete a <b>Quest</b> with reward items!
+        </div>
+      `;
+      return;
+    }
+
+    body.innerHTML = rpg.inventory.map((it, idx) => {
+      const liveEval = evaluateUnlockReq(it.unlockReq, rpg);
+      const isLocked = liveEval.hasReq ? !liveEval.unlocked : Boolean(it.locked);
+      const eff = parseItemEffects(it.name, it.meta || '');
+      const effectLabel = eff.bonusSummary || it.meta || (it.consumable ? 'Consumable' : 'Gear');
+      const btnCls = isLocked ? '' : (it.consumable ? 'use' : (it.equipped ? 'eqp' : ''));
+      const btnLabel = isLocked ? '🔒 LOCKED' : (it.consumable ? '🧪 USE' : (it.equipped ? '✔ EQUIPPED' : '⚔️ EQUIP'));
+      return `
+        <div class="msw-rpg-bag-row ${it.equipped && !isLocked ? 'is-eqp' : ''}">
+          <div class="msw-bag-inspect-hit" data-bag-inspect-idx="${idx}" style="display:flex; align-items:center; gap:9px; min-width:0; flex:1; cursor:pointer;" title="Tap for Item Info">
+            ${renderItemIconVisual(it, '📦', 'sm')}
+            <div style="min-width:0;">
+              <div style="font-size:12.5px; font-weight:800; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${esc(it.name)} ${it.qty > 1 ? `<span style="color:#facc15;">x${it.qty}</span>` : ''}
+              </div>
+              <div style="font-size:10.5px; color:${eff.bonusSummary ? '#4ade80' : '#94a3b8'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${esc(effectLabel)}
+              </div>
+            </div>
+          </div>
+          <button type="button" class="msw-rpg-bag-btn ${btnCls}" data-drawer-inv-idx="${idx}">${btnLabel}</button>
+        </div>
+      `;
+    }).join('') + `
+      <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; margin-top:4px; padding-top:8px; border-top:1px solid #1e293b;">
+        <button type="button" class="msw-rpg-bag-btn" onclick="window.ChatHubSystemWindows.openRpgDrawer('profile')">📊 Check Boosted Profile ➔</button>
+        <button type="button" class="msw-rpg-bag-btn" onclick="window.ChatHubSystemWindows.insertSyncedRpgCard('inventory')">➕ Insert Bag Card</button>
+      </div>
+    `;
+
+    body.querySelectorAll('[data-bag-inspect-idx]').forEach(hit => {
+      hit.addEventListener('click', () => {
+        const idx = Number(hit.dataset.bagInspectIdx);
+        const it = rpg.inventory[idx];
+        if (it) openItemInspectModal(it, { source: 'bag', idx });
+      });
+    });
+
+    body.querySelectorAll('[data-drawer-inv-idx]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.dataset.drawerInvIdx);
+        equipOrUseInventoryItem(idx, { fromDrawer: true });
+        renderRpgDrawerBody();
+      });
+    });
+  }
+
+  function openRpgDrawer(tab = 'bag') {
+    if (typeof document === 'undefined' || !document.body) return;
+    activeRpgDrawerTab = tab === 'profile' ? 'profile' : 'bag';
+    if (activeRpgDrawerTab === 'bag') rpgHudPulseState.bag = false;
+    if (activeRpgDrawerTab === 'profile') rpgHudPulseState.profile = false;
+    renderRpgHudBar();
+    let backdrop = document.getElementById('mswRpgDrawerBackdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'mswRpgDrawerBackdrop';
+      backdrop.className = 'msw-rpg-drawer-backdrop';
+      backdrop.innerHTML = `
+        <div class="msw-rpg-drawer-win">
+          <div class="msw-rpg-drawer-head">
+            <strong style="font-size:13.5px; color:#00f0ff; letter-spacing:0.6px;">⚔️ PLAYER SYSTEM STORAGE & PROFILE</strong>
+            <button type="button" class="syswin-chip-btn" id="mswRpgDrawerCloseBtn">✕</button>
+          </div>
+          <div class="msw-rpg-drawer-tabs">
+            <button type="button" class="msw-rpg-drawer-tab" id="mswRpgTabBag">🎒 Bag</button>
+            <button type="button" class="msw-rpg-drawer-tab" id="mswRpgTabProfile">📊 Boosted Profile</button>
+          </div>
+          <div class="msw-rpg-drawer-body" id="mswRpgDrawerBody"></div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeRpgDrawer(); });
+      const closeBtn = document.getElementById('mswRpgDrawerCloseBtn');
+      if (closeBtn) closeBtn.addEventListener('click', closeRpgDrawer);
+      const bagTab = document.getElementById('mswRpgTabBag');
+      if (bagTab) bagTab.addEventListener('click', () => { activeRpgDrawerTab = 'bag'; rpgHudPulseState.bag = false; renderRpgDrawerBody(); renderRpgHudBar(); });
+      const profTab = document.getElementById('mswRpgTabProfile');
+      if (profTab) profTab.addEventListener('click', () => { activeRpgDrawerTab = 'profile'; rpgHudPulseState.profile = false; renderRpgDrawerBody(); renderRpgHudBar(); });
+    }
+    backdrop.classList.add('open');
+    renderRpgDrawerBody();
+  }
+
+  function equipOrUseInventoryItem(idx, opts = {}) {
+    const st = getRpgState();
+    const target = st.inventory && st.inventory[idx];
+    if (!target) return null;
+    const liveEval = evaluateUnlockReq(target.unlockReq, st);
+    const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(target.locked);
+    if (lockedNow) {
+      const msgTxt = liveEval.hasReq ? `🔒 ${target.name} requires: ${liveEval.missing.join(', ')}` : `🔒 ${target.name} is Locked!`;
+      if (api() && typeof api().showToast === 'function') api().showToast(msgTxt);
+      if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
+      return { locked: true };
+    }
+
+    st.active = true;
+    const eff = parseItemEffects(target.name, target.meta || '');
+    const cons = target.consumable || eff.consumable;
+    if (cons) {
+      const beforeHp = st.hp;
+      const beforeMp = st.mp;
+      if (cons.fullRestore) {
+        st.hp = st.maxHp;
+        st.mp = st.maxMp;
+      } else {
+        if (cons.hp > 0) st.hp = Math.min(st.maxHp, st.hp + cons.hp);
+        if (cons.mp > 0) st.mp = Math.min(st.maxMp, st.mp + cons.mp);
+      }
+      if (target.qty > 1) target.qty -= 1;
+      else st.inventory.splice(idx, 1);
+      const saved = saveRpgState(st, { rerender: !opts.skipRerender });
+      renderRpgHudBar({ pulseProfile: true });
+      if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
+      if (api() && typeof api().showToast === 'function') {
+        const revived = beforeHp <= 0 && saved.hp > 0 ? '⚡ REVIVED! ' : '';
+        api().showToast(`🧪 ${revived}Used ${target.name}! HP ${beforeHp} ➔ ${saved.hp}/${saved.maxHp} • MP ${beforeMp} ➔ ${saved.mp}/${saved.maxMp}`);
+      }
+      return { action: 'used', state: saved, beforeHp, beforeMp, itemName: target.name };
+    }
+
+    target.equipped = !target.equipped;
+    const bonuses = (Array.isArray(target.bonuses) && target.bonuses.length > 0) ? target.bonuses : eff.bonuses;
+    target.bonuses = bonuses;
+    const saved = saveRpgState(st, { rerender: !opts.skipRerender });
+    renderRpgHudBar({ pulseProfile: target.equipped });
+    const bonusTxt = bonuses.map(b => `+${b.amount}${b.suffix} ${b.stat}`).join(', ');
+    if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.15);
+    if (api() && typeof api().showToast === 'function') {
+      api().showToast(target.equipped
+        ? `⚔️ Equipped ${target.name}${bonusTxt ? ' (' + bonusTxt + ')' : ''}! Tap 📊 Profile to see boosted stats.`
+        : `🎒 Unequipped ${target.name}`);
+    }
+    return { action: target.equipped ? 'equipped' : 'unequipped', state: saved, item: target, bonusTxt };
   }
 
   function getRpgState() {
@@ -2630,10 +3343,14 @@
     } else {
       fallbackRpgState = norm;
     }
+    if (!opts || !opts.skipHud) {
+      renderRpgHudBar();
+    }
     return norm;
   }
 
   function resetRpgState(opts = {}) {
+    rpgHudPulseState = { bag: false, profile: false };
     return saveRpgState(getDefaultRpgState(), opts);
   }
 
@@ -2717,6 +3434,8 @@
       failBtnIndex: Math.max(0, Number.isFinite(Number(s.failBtnIndex)) ? Math.round(Number(s.failBtnIndex)) : 1),
       resolvedOutcome: ['pass', 'fail'].includes(s.resolvedOutcome) ? s.resolvedOutcome : '',
       timerExpirePenalty: s.timerExpirePenalty !== false,
+      autoHideAfterResolve: s.autoHideAfterResolve !== undefined ? Boolean(s.autoHideAfterResolve) : true,
+      autoHideDelaySec: clampNum(s.autoHideDelaySec, 0.3, 10, 1.8),
       passReward: {
         coins: Math.max(0, Math.round(Number(pr.coins) || 0)),
         exp: Math.max(0, Math.round(Number(pr.exp) || 0)),
@@ -2740,35 +3459,65 @@
     };
   }
 
-  function spawnBranchWindowIfConfigured(spawnSpec) {
+  function buildBranchPayloadFromSpec(spawnSpec) {
     const raw = String(spawnSpec || '').trim();
-    if (!raw || !api() || typeof api().upsertSystemWindowMessage !== 'function') return false;
+    if (!raw) return null;
     let parsed = parseSysWindowLine(raw);
     if (!parsed) {
       const preset = PRESETS.find(p => p.id.toLowerCase() === raw.toLowerCase());
-      if (preset) parsed = { title: preset.config.headerTitle, text: preset.config.bodyText, systemConfig: normalizeConfig({ systemConfig: cloneObj(preset.config) }), delayMs: 2000 };
+      if (preset) {
+        parsed = {
+          title: preset.config.headerTitle,
+          text: preset.config.bodyText,
+          systemConfig: normalizeConfig({ systemConfig: cloneObj(preset.config) }),
+          delayMs: estimateSystemWindowHoldMs(preset.config)
+        };
+      }
     }
-    if (!parsed || !parsed.systemConfig) return false;
-    api().upsertSystemWindowMessage({
+    if (!parsed || !parsed.systemConfig) return null;
+    return {
       title: parsed.title || parsed.systemConfig.headerTitle,
       text: parsed.text || parsed.systemConfig.bodyText,
       systemConfig: parsed.systemConfig,
-      delayMs: parsed.delayMs || 2000
-    });
+      delayMs: parsed.delayMs || estimateSystemWindowHoldMs(parsed.systemConfig)
+    };
+  }
+
+  function spawnBranchWindowIfConfigured(spawnSpec) {
+    if (!api() || typeof api().upsertSystemWindowMessage !== 'function') return false;
+    const payload = buildBranchPayloadFromSpec(spawnSpec);
+    if (!payload) return false;
+    api().upsertSystemWindowMessage(payload);
     return true;
   }
 
   function applyRpgDelta(outcomeType, rule, opts = {}) {
     const st = getRpgState();
     st.active = true;
+    const before = {
+      lv: st.lv,
+      hp: st.hp,
+      maxHp: st.maxHp,
+      mp: st.mp,
+      maxMp: st.maxMp,
+      exp: st.exp,
+      nextExp: st.nextExp,
+      coins: st.coins
+    };
     const notes = [];
+    const deltas = [];
     let leveledUp = false;
+    let lostItemName = '';
+    let gainedItemText = '';
+    let gainedFlag = '';
 
     if (outcomeType === 'pass') {
       const r = rule || {};
-      if (r.coins > 0) { st.coins += r.coins; notes.push(`+${formatCoins(r.coins)} G`); }
-      if (r.hp) { st.hp = Math.max(0, Math.min(st.maxHp, st.hp + r.hp)); notes.push(`${r.hp >= 0 ? '+' : ''}${r.hp} HP`); }
-      if (r.mp) { st.mp = Math.max(0, Math.min(st.maxMp, st.mp + r.mp)); notes.push(`${r.mp >= 0 ? '+' : ''}${r.mp} MP`); }
+      if (r.coins > 0) {
+        st.coins += r.coins;
+        notes.push(`+${formatCoins(r.coins)} G`);
+        deltas.push({ label: 'COINS', deltaText: `${formatCoins(before.coins)} ➔ ${formatCoins(st.coins)} G (+${formatCoins(r.coins)})`, positive: true });
+      }
       if (r.exp > 0) {
         st.exp += r.exp;
         notes.push(`+${r.exp} EXP`);
@@ -2780,9 +3529,40 @@
           st.hp = st.maxHp;
           st.maxMp += 10;
           st.mp = st.maxMp;
+          if (!st.baseStats) st.baseStats = getDefaultBaseStats();
+          st.baseStats.STR = (st.baseStats.STR || 25) + 3;
+          st.baseStats.AGI = (st.baseStats.AGI || 25) + 3;
+          st.baseStats.INT = (st.baseStats.INT || 20) + 2;
+          st.baseStats.VIT = (st.baseStats.VIT || 20) + 2;
+          st.baseStats.PER = (st.baseStats.PER || 20) + 2;
+          st.baseStats.ATK = (st.baseStats.ATK || 100) + 15;
+          st.baseStats.DEF = (st.baseStats.DEF || 50) + 10;
           leveledUp = true;
         }
-        if (leveledUp) notes.push(`⚡ LV.${st.lv}!`);
+        if (leveledUp) {
+          notes.push(`⚡ LV.${st.lv}!`);
+          deltas.push({ label: 'LEVEL', deltaText: `LV.${before.lv} ➔ LV.${st.lv} (+${st.lv - before.lv})`, positive: true });
+        } else {
+          deltas.push({ label: 'EXP', deltaText: `${before.exp} ➔ ${st.exp} (+${r.exp})`, positive: true });
+        }
+      }
+      if (r.hp && !leveledUp) {
+        st.hp = Math.max(0, Math.min(st.maxHp, st.hp + r.hp));
+        const hpDiff = st.hp - before.hp;
+        notes.push(`${r.hp >= 0 ? '+' : ''}${r.hp} HP`);
+        deltas.push({ label: 'HP', deltaText: `${before.hp} ➔ ${st.hp} (${hpDiff >= 0 ? '+' : ''}${hpDiff})`, positive: hpDiff >= 0 });
+      } else if (leveledUp && st.hp !== before.hp) {
+        const hpDiff = st.hp - before.hp;
+        deltas.push({ label: 'HP', deltaText: `${before.hp} ➔ ${st.hp} (${hpDiff >= 0 ? '+' : ''}${hpDiff})`, positive: hpDiff >= 0 });
+      }
+      if (r.mp && !leveledUp) {
+        st.mp = Math.max(0, Math.min(st.maxMp, st.mp + r.mp));
+        const mpDiff = st.mp - before.mp;
+        notes.push(`${r.mp >= 0 ? '+' : ''}${r.mp} MP`);
+        deltas.push({ label: 'MP', deltaText: `${before.mp} ➔ ${st.mp} (${mpDiff >= 0 ? '+' : ''}${mpDiff})`, positive: mpDiff >= 0 });
+      } else if (leveledUp && st.mp !== before.mp) {
+        const mpDiff = st.mp - before.mp;
+        deltas.push({ label: 'MP', deltaText: `${before.mp} ➔ ${st.mp} (${mpDiff >= 0 ? '+' : ''}${mpDiff})`, positive: mpDiff >= 0 });
       }
       if (r.itemName) {
         const existing = st.inventory.find(it => it.name.toLowerCase() === r.itemName.toLowerCase());
@@ -2790,30 +3570,52 @@
         if (existing) existing.qty += addQty;
         else st.inventory.push({ icon: r.itemIcon || '🗡️', name: r.itemName, rarity: normalizeRarity(r.itemRarity), qty: addQty, equipped: false });
         notes.push(`+${r.itemName}`);
+        gainedItemText = `${r.itemIcon || '🎁'} +${addQty} ${r.itemName}`;
+        deltas.push({ label: 'ITEM GAINED', deltaText: `+${addQty} ${r.itemName}`, positive: true });
       }
       if (r.flag && !st.flags.some(f => f.toLowerCase() === r.flag.toLowerCase())) {
         st.flags.push(r.flag);
         notes.push(`Flag: ${r.flag}`);
+        gainedFlag = r.flag;
       }
     } else {
       const p = rule || {};
-      if (p.coins > 0) { st.coins = Math.max(0, st.coins - p.coins); notes.push(`-${formatCoins(p.coins)} G`); }
-      if (p.hp > 0) { st.hp = Math.max(0, st.hp - p.hp); notes.push(`-${p.hp} HP`); }
-      if (p.mp > 0) { st.mp = Math.max(0, st.mp - p.mp); notes.push(`-${p.mp} MP`); }
+      if (p.hp > 0) {
+        st.hp = Math.max(0, st.hp - p.hp);
+        const lostHp = before.hp - st.hp;
+        notes.push(`-${lostHp} HP`);
+        deltas.push({ label: 'HP', deltaText: `${before.hp} ➔ ${st.hp} (-${lostHp})`, positive: false });
+      }
+      if (p.mp > 0) {
+        st.mp = Math.max(0, st.mp - p.mp);
+        const lostMp = before.mp - st.mp;
+        notes.push(`-${lostMp} MP`);
+        deltas.push({ label: 'MP', deltaText: `${before.mp} ➔ ${st.mp} (-${lostMp})`, positive: false });
+      }
+      if (p.coins > 0) {
+        st.coins = Math.max(0, st.coins - p.coins);
+        const lostCoins = before.coins - st.coins;
+        notes.push(`-${formatCoins(lostCoins)} G`);
+        deltas.push({ label: 'COINS', deltaText: `${formatCoins(before.coins)} ➔ ${formatCoins(st.coins)} G (-${formatCoins(lostCoins)})`, positive: false });
+      }
       if (p.loseItemName) {
         const idx = st.inventory.findIndex(it => it.name.toLowerCase() === p.loseItemName.toLowerCase());
         if (idx >= 0) {
           if (st.inventory[idx].qty > 1) st.inventory[idx].qty -= 1;
           else st.inventory.splice(idx, 1);
+          lostItemName = p.loseItemName;
           notes.push(`Lost ${p.loseItemName}`);
+          deltas.push({ label: 'LOST ITEM', deltaText: `-1 ${p.loseItemName}`, positive: false });
         }
       }
       if (p.flag && !st.flags.some(f => f.toLowerCase() === p.flag.toLowerCase())) {
         st.flags.push(p.flag);
         notes.push(`Flag: ${p.flag}`);
+        gainedFlag = p.flag;
       }
     }
 
+    const isDead = st.hp <= 0;
     const hasSpawn = !opts.skipSpawn && rule && Boolean(String(rule.spawnTag || '').trim());
     let saved = saveRpgState(st, { rerender: !opts.skipRerender && !hasSpawn });
     if (hasSpawn) {
@@ -2822,10 +3624,127 @@
         api().refreshChatStream();
       }
     }
-    return { state: saved, leveledUp, summary: notes.join(' • ') };
+    return { state: saved, before, deltas, leveledUp, isDead, lostItemName, gainedItemText, gainedFlag, summary: notes.join(' • ') };
   }
 
-  const AUTO_OUTCOME_STAMP_RE = /^(CLEARED|PASS(ED)?|COMPLETED|PENALTY!?|FAIL(ED)?|DECLINED|EXPIRED)$/i;
+  function buildOutcomeResultConfig(msg, outcomeType, res, opts = {}) {
+    const src = (msg && msg.systemConfig) || {};
+    const st = (res && res.state) || getRpgState();
+    const b = (res && res.before) || st;
+    const deltas = (res && Array.isArray(res.deltas)) ? res.deltas : [];
+    const srcTitle = src.subtitle || src.headerTitle || 'System Quest';
+
+    if (outcomeType === 'pass') {
+      const themeId = res.leveledUp ? 'cyber_green' : 'hunter_blue';
+      const bars = [];
+      const hpBeforePct = clampPct((b.hp / b.maxHp) * 100, 100);
+      const hpAfterPct = clampPct((st.hp / st.maxHp) * 100, 100);
+      if (st.hp !== b.hp || res.leveledUp) {
+        bars.push({ label: 'HP', fromValue: hpBeforePct, value: hpAfterPct, displayText: `${b.hp} ➔ ${st.hp} / ${st.maxHp}`, color: '#4ade80', animated: true });
+      }
+      if (st.mp !== b.mp || res.leveledUp) {
+        const mpB = b.maxMp > 0 ? clampPct((b.mp / b.maxMp) * 100, 100) : 0;
+        const mpA = st.maxMp > 0 ? clampPct((st.mp / st.maxMp) * 100, 100) : 0;
+        bars.push({ label: 'MP', fromValue: mpB, value: mpA, displayText: `${b.mp} ➔ ${st.mp} / ${st.maxMp}`, color: '#38bdf8', animated: true });
+      }
+      if (st.exp !== b.exp || res.leveledUp) {
+        const expB = clampPct((b.exp / Math.max(1, b.nextExp)) * 100, 0);
+        const expA = clampPct((st.exp / Math.max(1, st.nextExp)) * 100, 0);
+        bars.push({ label: 'EXP', fromValue: res.leveledUp ? 0 : expB, value: expA, displayText: `${st.exp} / ${st.nextExp}`, color: '#facc15', animated: true });
+      }
+      const statBoosts = deltas.map(d => ({ label: d.label, delta: d.deltaText }));
+      if (statBoosts.length === 0) {
+        statBoosts.push(
+          { label: 'HP', delta: `${st.hp} / ${st.maxHp}` },
+          { label: 'COINS', delta: `${formatCoins(st.coins)} G` }
+        );
+      }
+      const unlockNotes = [];
+      if (res.gainedItemText) unlockNotes.push(res.gainedItemText);
+      if (res.gainedFlag) unlockNotes.push(`🔓 Unlocked Flag: ${res.gainedFlag}`);
+
+      const cfg = normalizeConfig({
+        systemConfig: {
+          presetId: res.leveledUp ? 'levelup' : 'notification',
+          ...themeProps(themeId),
+          animation: 'impact',
+          sfx: res.leveledUp ? 'sparkle' : 'scifi',
+          headerIcon: res.leveledUp ? '⚡' : '✅',
+          headerTitle: res.leveledUp ? 'QUEST CLEARED — LEVEL UP!' : 'QUEST CLEARED — RESULT',
+          headerBadge: `LV.${st.lv}`,
+          currencyText: `🪙 ${formatCoins(st.coins)} G`,
+          subtitle: `${srcTitle} • Accepted & Completed`,
+          bodyText: unlockNotes.length === 0 ? 'All quest objectives verified. Player status updated!' : '',
+          levelTransition: res.leveledUp ? `LV.${b.lv} ➔ LV.${st.lv}` : '',
+          unlockedAbility: unlockNotes.join('  •  '),
+          statBoosts,
+          bars,
+          pills: ['Quest Result', ...(res.leveledUp ? ['Max HP/MP Restored!'] : [])],
+          buttons: [],
+          stampText: 'CLEARED',
+          stampColor: '#4ade80',
+          footerText: `Player LV.${st.lv} • HP ${st.hp}/${st.maxHp} • ${formatCoins(st.coins)} G`
+        }
+      });
+      return { title: cfg.headerTitle, text: cfg.bodyText || cfg.subtitle, systemConfig: cfg, delayMs: estimateSystemWindowHoldMs(cfg) };
+    }
+
+    const isDead = Boolean(res && res.isDead);
+    const hpBeforePct = clampPct((b.hp / Math.max(1, b.maxHp)) * 100, 100);
+    const hpAfterPct = clampPct((st.hp / Math.max(1, st.maxHp)) * 100, 0);
+    const failBars = [
+      { label: 'HP', fromValue: hpBeforePct, value: hpAfterPct, displayText: `${b.hp} ➔ ${st.hp} / ${st.maxHp}`, color: '#ef4444', animated: true }
+    ];
+    if (st.mp !== b.mp && st.maxMp > 0) {
+      failBars.push({
+        label: 'MP',
+        fromValue: clampPct((b.mp / st.maxMp) * 100, 100),
+        value: clampPct((st.mp / st.maxMp) * 100, 0),
+        displayText: `${b.mp} ➔ ${st.mp} / ${st.maxMp}`,
+        color: '#f97316',
+        animated: true
+      });
+    }
+    const failBoosts = deltas.map(d => ({ label: d.label, delta: d.deltaText }));
+    if (isDead) {
+      failBoosts.push({ label: 'STATUS', delta: '💀 DEAD (0 HP)' });
+    } else if (failBoosts.length === 0) {
+      failBoosts.push(
+        { label: 'HP', delta: `${b.hp} ➔ ${st.hp}` },
+        { label: 'COINS', delta: `${formatCoins(st.coins)} G` }
+      );
+    }
+    const cfg = normalizeConfig({
+      systemConfig: {
+        presetId: 'timer',
+        ...themeProps('crimson_danger'),
+        animation: 'impact',
+        sfx: 'sting',
+        headerIcon: '💀',
+        headerTitle: isDead
+          ? 'SYSTEM FATAL PENALTY — YOU ARE DEAD!'
+          : (opts.fromTimer ? 'TIME EXPIRED — PENALTY APPLIED' : 'QUEST DECLINED — PENALTY APPLIED'),
+        headerBadge: isDead ? '0 HP • DEAD' : 'PENALTY',
+        currencyText: `🪙 ${formatCoins(st.coins)} G`,
+        subtitle: isDead ? `${srcTitle} • Vitality Dropped to Zero` : `${srcTitle} • Failed / Rejected`,
+        bodyText: isDead
+          ? 'Critical Failure: Your HP fell to 0! System Vessel has been terminated.'
+          : (res.gainedFlag ? `Penalty Flag Recorded: ${res.gainedFlag}` : 'Penalty deducted directly from Player Status.'),
+        unlockedAbility: isDead ? `💀 STATUS CRITICAL: 0 / ${st.maxHp} HP — YOU ARE DEAD!` : '',
+        statBoosts: failBoosts,
+        bars: failBars,
+        pills: isDead ? ['0 HP • Vessel Dead', 'Revive Required'] : ['Penalty Applied', `Remaining HP: ${st.hp}/${st.maxHp}`],
+        timerEnabled: false,
+        buttons: [],
+        stampText: isDead ? 'YOU DIED!' : 'PENALTY!',
+        stampColor: '#ef4444',
+        footerText: `Player LV.${st.lv} • HP ${st.hp}/${st.maxHp} • ${formatCoins(st.coins)} G`
+      }
+    });
+    return { title: cfg.headerTitle, text: cfg.bodyText || cfg.subtitle, systemConfig: cfg, delayMs: estimateSystemWindowHoldMs(cfg) };
+  }
+
+  const AUTO_OUTCOME_STAMP_RE = /^(CLEARED|PASS(ED)?|COMPLETED|PENALTY!?|FAIL(ED)?|DECLINED|EXPIRED|YOU\s+DIED!?)$/i;
 
   function resolveCardOutcome(msg, outcomeType, opts = {}) {
     if (!msg || !msg.systemConfig) return null;
@@ -2841,13 +3760,38 @@
       msg.systemConfig.stampColor = outcomeType === 'pass' ? '#4ade80' : '#ef4444';
     }
     const rule = outcomeType === 'pass' ? link.passReward : link.failPenalty;
-    const res = applyRpgDelta(outcomeType, rule, opts);
+    const canAutoReplace = !opts.skipAutoReplace && link.autoHideAfterResolve && Boolean(msg.id) && Boolean(api() && typeof api().replaceSystemWindowMessage === 'function');
+    const res = applyRpgDelta(outcomeType, rule, { ...opts, skipSpawn: canAutoReplace ? true : opts.skipSpawn });
+    if (outcomeType === 'fail' && res && res.isDead && AUTO_OUTCOME_STAMP_RE.test(String(msg.systemConfig.stampText || ''))) {
+      msg.systemConfig.stampText = 'YOU DIED!';
+    }
     if (api() && typeof api().triggerSfxByName === 'function') {
       api().triggerSfxByName(outcomeType === 'pass' ? (res.leveledUp ? 'sparkle' : 'scifi') : 'sting', 1.05);
     }
     if (api() && typeof api().showToast === 'function') {
-      const icon = outcomeType === 'pass' ? '✅ QUEST PASS' : (opts.fromTimer ? '💀 TIME EXPIRED' : '❌ QUEST FAIL');
+      const icon = outcomeType === 'pass' ? '✅ QUEST PASS' : (res && res.isDead ? '💀 YOU ARE DEAD!' : (opts.fromTimer ? '💀 TIME EXPIRED' : '❌ QUEST FAIL'));
       api().showToast(res.summary ? `${icon}: ${res.summary}` : icon);
+    }
+    if (canAutoReplace) {
+      const resultPayload = (rule && String(rule.spawnTag || '').trim() ? buildBranchPayloadFromSpec(rule.spawnTag) : null)
+        || buildOutcomeResultConfig(msg, outcomeType, res, opts);
+      const waitMs = Math.max(300, Math.round((Number(link.autoHideDelaySec) || 1.8) * 1000));
+      const fadeLead = Math.min(320, Math.floor(waitMs * 0.4));
+      const msgKey = String(msg.id);
+      setTimeout(() => {
+        if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+          const cardEl = document.querySelector(`.manhwa-sys-win[data-msw-msg-id="${typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(msgKey) : msgKey}"]`);
+          if (cardEl && cardEl.classList) cardEl.classList.add('msw-outcome-fadeout');
+        }
+      }, Math.max(0, waitMs - fadeLead));
+      setTimeout(() => {
+        if (api() && typeof api().replaceSystemWindowMessage === 'function') {
+          api().replaceSystemWindowMessage(msgKey, resultPayload);
+          if (typeof api().triggerSfxByName === 'function') {
+            api().triggerSfxByName(outcomeType === 'pass' ? (res.leveledUp ? 'sparkle' : 'scifi') : 'sting', 1.0);
+          }
+        }
+      }, waitMs);
     }
     return res;
   }
@@ -2895,6 +3839,8 @@
       shopItems: [],
       bars: [],
       statsCols: 2,
+      statusLayout: 'sheet',
+      shopLayout: 'rows',
       stats: [],
       pills: [],
       timerEnabled: false,
@@ -2973,17 +3919,23 @@
       label: String(sb.label || 'STR'),
       delta: String(sb.delta || '+10')
     })) : [];
+    merged.statsCols = [1, 2, 3].includes(Number(merged.statsCols)) ? Number(merged.statsCols) : 2;
+    merged.statusLayout = merged.statusLayout === 'compact' ? 'compact' : 'sheet';
+    merged.shopLayout = merged.shopLayout === 'grid' ? 'grid' : 'rows';
     merged.inventoryItems = Array.isArray(merged.inventoryItems) ? merged.inventoryItems.map(it => ({
       icon: String(it.icon || '📦'),
+      iconImage: isExplicitItemImageUrl(it.iconImage) ? String(it.iconImage).trim() : '',
       name: String(it.name || 'Item'),
       rarity: normalizeRarity(it.rarity),
       qty: String(it.qty ?? '1'),
+      meta: String(it.meta || ''),
       equipped: Boolean(it.equipped),
       locked: Boolean(it.locked),
       unlockReq: String(it.unlockReq || '').trim()
     })) : [];
     merged.shopItems = Array.isArray(merged.shopItems) ? merged.shopItems.map(sp => ({
       icon: String(sp.icon || '🛒'),
+      iconImage: isExplicitItemImageUrl(sp.iconImage) ? String(sp.iconImage).trim() : '',
       name: String(sp.name || 'Shop Item'),
       rarity: normalizeRarity(sp.rarity),
       meta: String(sp.meta || ''),
@@ -3308,6 +4260,7 @@
     const previewMode = !!opts.previewMode;
     const rpg = getRpgState();
 
+    let syncedGear = null;
     if (cfg.syncWithStoryRpg) {
       cfg.currencyText = `🪙 ${formatCoins(rpg.coins)} G`;
       cfg.headerBadge = `LV.${rpg.lv}`;
@@ -3329,16 +4282,66 @@
           return b;
         });
       }
+      if (cfg.presetId === 'status') {
+        const gear = computeEquippedGearStats(rpg);
+        syncedGear = gear;
+        const existingStats = Array.isArray(cfg.stats) && cfg.stats.length > 0
+          ? cloneObj(cfg.stats)
+          : Object.entries(rpg.baseStats || getDefaultBaseStats()).map(([label, val]) => ({ label, value: String(val) }));
+        const seenKeys = new Set();
+        const mergedStats = existingStats.map(s => {
+          const lbl = String(s.label || '').toUpperCase();
+          seenKeys.add(lbl);
+          const gb = gear.bonusMap[lbl];
+          if (gb && gb.amount > 0 && /^\s*[+\-]?\d+\s*%?\s*$/.test(String(s.value || ''))) {
+            const baseNum = parseInt(String(s.value).replace(/[^\d\-]/g, ''), 10) || 0;
+            const totalNum = baseNum + gb.amount;
+            return {
+              ...s,
+              value: `${baseNum} (+${gb.amount}${gb.suffix}) = ${totalNum}${gb.suffix}`,
+              baseVal: String(baseNum),
+              bonusText: `+${gb.amount}${gb.suffix}`,
+              totalVal: `${totalNum}${gb.suffix}`,
+              isBoosted: true
+            };
+          }
+          return s;
+        });
+        gear.bonusList.forEach(gb => {
+          if (seenKeys.has(gb.stat)) return;
+          const baseNum = (rpg.baseStats && Number.isFinite(Number(rpg.baseStats[gb.stat])))
+            ? Number(rpg.baseStats[gb.stat])
+            : 0;
+          const totalNum = baseNum + gb.amount;
+          mergedStats.push({
+            label: gb.stat,
+            value: `${baseNum} (+${gb.amount}${gb.suffix}) = ${totalNum}${gb.suffix}`,
+            baseVal: `${baseNum}${gb.suffix}`,
+            bonusText: `+${gb.amount}${gb.suffix}`,
+            totalVal: `${totalNum}${gb.suffix}`,
+            isBoosted: true
+          });
+        });
+        cfg.stats = mergedStats;
+        cfg.pills = Array.isArray(cfg.pills)
+          ? cfg.pills.filter(p => !/^⚔️?\s*Equipped:/i.test(String(p)))
+          : [];
+      }
       if (cfg.presetId === 'inventory' && rpg.inventory.length > 0) {
         cfg.inventoryItems = rpg.inventory.map(it => ({
           icon: it.icon || '📦',
+          iconImage: isExplicitItemImageUrl(it.iconImage) ? String(it.iconImage).trim() : '',
           name: it.name,
           rarity: normalizeRarity(it.rarity),
           qty: String(it.qty || 1),
           equipped: Boolean(it.equipped),
-          locked: false,
-          unlockReq: ''
+          meta: it.meta || '',
+          bonuses: it.bonuses || [],
+          consumable: it.consumable || null,
+          locked: Boolean(it.locked),
+          unlockReq: it.unlockReq || ''
         }));
+        cfg.headerBadge = `${cfg.inventoryItems.length}/20 SLOTS`;
       }
     } else if (rpg.active && (cfg.presetId === 'shop' || cfg.shopItems.some(sp => sp.unlockReq))) {
       cfg.currencyText = `🪙 ${formatCoins(rpg.coins)} G`;
@@ -3347,6 +4350,9 @@
     const syncedFromRpgInv = Boolean(cfg.syncWithStoryRpg && cfg.presetId === 'inventory' && rpg.inventory.length > 0);
     const cardLockEval = evaluateUnlockReq(cfg.unlockReq, rpg);
     const el = document.createElement('div');
+    if (msg && msg.id && !previewMode && el.dataset) {
+      el.dataset.mswMsgId = String(msg.id);
+    }
     if (cfg.cardStyle === 'canvas') {
       return renderCanvasModeElement(el, cfg, msg, opts);
     }
@@ -3422,15 +4428,19 @@
           <span class="msw-lvl-jump">${esc(cfg.levelTransition)}</span>
         </div>
       ` : ''}
-      ${cfg.unlockedAbility ? `<div class="msw-ability-box">${esc(cfg.unlockedAbility)}</div>` : ''}
+      ${cfg.unlockedAbility ? `<div class="msw-ability-box" ${/\b(?:DEAD|CRITICAL|0\s*\/\s*\d+\s*HP)\b/i.test(cfg.unlockedAbility) ? 'style="border-color:rgba(248,113,113,0.75); background:rgba(127,29,29,0.35); color:#fecaca;"' : ''}>${esc(cfg.unlockedAbility)}</div>` : ''}
       ${cfg.statBoosts.length > 0 ? `
         <div class="msw-boost-grid">
-          ${cfg.statBoosts.map(sb => `
-            <div class="msw-boost-cell">
+          ${cfg.statBoosts.map(sb => {
+            const dStr = String(sb.delta || '');
+            const isNeg = /(?:^[-▼]|[-]\d|DEAD|0\s*HP|LOST)/i.test(dStr);
+            const prefix = dStr.includes('➔') ? '' : (isNeg ? '▼ ' : '▲ ');
+            return `
+            <div class="msw-boost-cell ${isNeg ? 'is-neg' : ''}">
               <span class="msw-boost-stat">${esc(sb.label)}</span>
-              <span class="msw-boost-delta">▲ ${esc(sb.delta)}</span>
-            </div>
-          `).join('')}
+              <span class="msw-boost-delta ${isNeg ? 'is-neg' : ''}">${prefix}${esc(sb.delta)}</span>
+            </div>`;
+          }).join('')}
         </div>
       ` : ''}
     ` : '';
@@ -3440,35 +4450,71 @@
         ${cfg.inventoryItems.map((it, idx) => {
           const itEval = evaluateUnlockReq(it.unlockReq, rpg);
           const isLocked = itEval.hasReq ? !itEval.unlocked : Boolean(it.locked);
+          const eff = parseItemEffects(it.name, it.meta || '');
+          const isCons = Boolean(it.consumable || eff.consumable);
+          const bonusHint = !isLocked && Array.isArray(it.bonuses) && it.bonuses.length > 0
+            ? it.bonuses.slice(0, 1).map(b => `+${b.amount}${b.suffix} ${b.stat}`).join('')
+            : (!isLocked && eff.bonusSummary ? eff.bonusSummary.split(',')[0].trim() : '');
           const reqHint = itEval.hasReq ? (isLocked ? `🔒 ${itEval.missing[0]}` : '🔓 READY') : '';
           return `
-          <div class="msw-inv-slot rarity-${esc(it.rarity)} ${it.equipped && !isLocked ? 'is-equipped' : ''} ${isLocked ? 'is-locked' : ''}" data-inv-idx="${idx}" title="${esc(it.name)} (${esc(it.rarity.toUpperCase())})${itEval.hasReq ? ' • Req: ' + esc(itEval.summary) : ''}">
-            ${it.equipped && !isLocked ? '<span class="msw-inv-tag eqp">EQP</span>' : (isLocked ? '<span class="msw-inv-tag lock">🔒</span>' : '')}
-            <span class="msw-inv-icon">${esc(it.icon)}</span>
+          <div class="msw-inv-slot rarity-${esc(it.rarity)} ${it.equipped && !isLocked && !isCons ? 'is-equipped' : ''} ${isLocked ? 'is-locked' : ''}" data-inv-idx="${idx}" title="${esc(it.name)} — Tap for info">
+            ${isCons && !isLocked ? '<span class="msw-inv-tag use">USE</span>' : (it.equipped && !isLocked ? '<span class="msw-inv-tag eqp">EQP</span>' : (isLocked ? '<span class="msw-inv-tag lock">🔒</span>' : ''))}
+            ${renderItemIconVisual(it, '📦', 'sm')}
             <span class="msw-inv-name">${esc(it.name)}</span>
+            ${bonusHint && !reqHint ? `<span class="msw-inv-subbonus">${esc(bonusHint)}</span>` : ''}
             ${reqHint ? `<span class="msw-rpg-req-chip ${isLocked ? '' : 'unlocked'}">${esc(reqHint)}</span>` : (it.qty && it.qty !== '1' ? `<span class="msw-inv-qty">${esc(it.qty.startsWith('x') || isNaN(Number(it.qty)) ? it.qty : 'x' + it.qty)}</span>` : '')}
           </div>`;
         }).join('')}
       </div>
     ` : '';
 
+    const shopNoticePill = cfg.presetId === 'shop'
+      ? (cfg.pills || []).find(p => /discount|sale|privilege|event/i.test(String(p))) || ''
+      : '';
+    const isGridShop = cfg.shopLayout === 'grid';
     const shopHtml = cfg.shopItems.length > 0 ? `
-      <div class="msw-shop-list">
+      ${shopNoticePill ? `<div class="msw-shop-notice-bar"><span>⚡ SYSTEM EXCHANGE PRIVILEGE</span><span>${esc(shopNoticePill)}</span></div>` : ''}
+      <div class="${isGridShop ? 'msw-shop-grid' : 'msw-shop-list'}">
         ${cfg.shopItems.map((sp, idx) => {
           const spEval = evaluateUnlockReq(sp.unlockReq, rpg);
           const isLocked = spEval.hasReq ? !spEval.unlocked : Boolean(sp.locked);
+          const rarity = normalizeRarity(sp.rarity);
+          const cat = inferItemCategory(sp);
           const btnPriceLabel = /^LOCKED/i.test(sp.price) ? (parseCoinNumber(sp.price.replace(/LV\.?\s*\d+/gi, '')) > 0 ? sp.price.replace(/^LOCKED\s*/i, '') : 'CLAIM') : sp.price;
+          const chipsHtml = buildItemEffectChipsHtml(sp);
           const reqChipHtml = spEval.hasReq
-            ? `<span class="msw-rpg-req-chip ${isLocked ? '' : 'unlocked'}">${isLocked ? `🔒 Req: ${esc(spEval.missing.join(', '))}` : `🔓 Unlocked (${esc(spEval.summary)})`}</span>`
+            ? `<span class="msw-rpg-req-chip ${isLocked ? '' : 'unlocked'}">${isLocked ? `🔒 Req: ${esc(spEval.missing.join(', '))}` : `🔓 Unlocked`}</span>`
             : '';
-          return `
-          <div class="msw-shop-row rarity-${esc(sp.rarity)}">
-            <div class="msw-shop-left">
-              <span style="font-size:19px; flex-shrink:0;">${esc(sp.icon)}</span>
-              <div class="msw-shop-info">
-                <span class="msw-shop-name">${esc(sp.name)}</span>
-                ${sp.meta ? `<span class="msw-shop-meta">${esc(sp.meta)}</span>` : ''}
+          if (isGridShop) {
+            return `
+              <div class="msw-shop-tile rarity-${esc(rarity)} ${isLocked ? 'is-locked-item' : ''}" data-shop-inspect-idx="${idx}" title="Tap item for details">
+                <div class="msw-shop-tags">
+                  <span class="msw-rarity-pill rarity-${esc(rarity)}">[${esc(rarity.toUpperCase())}]</span>
+                  <span class="msw-cat-pill">[${esc(cat)}]</span>
+                </div>
+                ${renderItemIconVisual(sp, '🛒')}
+                <span class="msw-shop-name" style="white-space:normal; line-height:1.2;">${esc(sp.name)}</span>
+                ${chipsHtml}
                 ${reqChipHtml}
+                <button type="button" class="msw-shop-buy-btn ${sp.owned ? 'owned' : (isLocked ? 'locked' : '')}" data-shop-idx="${idx}">
+                  ${sp.owned ? '✔ OWNED' : (isLocked ? `🔒 ${esc(sp.price)}` : `🪙 BUY • ${esc(btnPriceLabel)}`)}
+                </button>
+              </div>
+            `;
+          }
+          return `
+          <div class="msw-shop-row is-manhwa rarity-${esc(rarity)} ${isLocked ? 'is-locked-item' : ''}" data-shop-inspect-idx="${idx}" title="Tap item for details">
+            <div class="msw-shop-left">
+              ${renderItemIconVisual(sp, '🛒')}
+              <div class="msw-shop-info">
+                <div class="msw-shop-tags">
+                  <span class="msw-rarity-pill rarity-${esc(rarity)}">[${esc(rarity.toUpperCase())}]</span>
+                  <span class="msw-cat-pill">[${esc(cat)}]</span>
+                </div>
+                <span class="msw-shop-name">${esc(sp.name)}</span>
+                ${chipsHtml}
+                ${reqChipHtml}
+                <span class="msw-shop-tap-hint">Tap row for full item stats</span>
               </div>
             </div>
             <button type="button" class="msw-shop-buy-btn ${sp.owned ? 'owned' : (isLocked ? 'locked' : '')}" data-shop-idx="${idx}">
@@ -3499,22 +4545,58 @@
       </div>
     ` : '';
 
-    const statsHtml = cfg.stats.length > 0 ? `
-      <div class="msw-stats-grid cols-${Number(cfg.statsCols) === 3 ? 3 : (Number(cfg.statsCols) === 1 ? 1 : 2)}">
-        ${cfg.stats.map(s => `
-          <div class="msw-stat-cell">
-            <span class="msw-stat-lbl">${esc(s.label)}</span>
-            <span class="msw-stat-val">${esc(s.value)}</span>
-          </div>
-        `).join('')}
-      </div>
-    ` : '';
+    let extractedPointsStat = null;
+    let displayStats = Array.isArray(cfg.stats) ? cfg.stats : [];
+    if (cfg.presetId === 'status' && displayStats.length >= 6) {
+      const ptIdx = displayStats.findIndex(s => /^(POINTS|AP|ABILITY\s*POINTS)$/i.test(String(s.label || '').trim()));
+      if (ptIdx >= 0 && displayStats.length > 5) {
+        extractedPointsStat = displayStats[ptIdx];
+        displayStats = displayStats.filter((_, i) => i !== ptIdx);
+      }
+    }
+    const isCompactStatus = cfg.presetId === 'status' && cfg.statusLayout === 'compact';
+    const gridColsNum = Number(cfg.statsCols) === 3 ? 3 : (Number(cfg.statsCols) === 1 ? 1 : 2);
+    const statsHtml = displayStats.length > 0 ? (
+      isCompactStatus ? `
+        <div class="msw-stats-compact-table">
+          ${displayStats.map((s, idx) => {
+            const isLastOdd = (idx === displayStats.length - 1) && (displayStats.length % 2 === 1);
+            return `
+              <div class="msw-stat-row-compact ${s.isBoosted ? 'is-boosted' : ''} ${isLastOdd ? 'is-odd-span' : ''}">
+                <span class="msw-stat-lbl">${esc(s.label)}</span>
+                ${s.isBoosted
+                  ? `<span class="msw-stat-val-inline"><span class="msw-stat-total">${esc(s.totalVal)}</span><span class="msw-stat-bonus">(${esc(s.bonusText)})</span></span>`
+                  : `<span class="msw-stat-val">${esc(s.value)}</span>`}
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${extractedPointsStat ? `<div class="msw-points-banner"><span class="msw-points-lbl">✨ Available Ability Points</span><span class="msw-points-val">${esc(extractedPointsStat.value)}</span></div>` : ''}
+      ` : `
+        <div class="msw-stats-grid cols-${gridColsNum}">
+          ${displayStats.map((s, idx) => {
+            const isLastOdd = (idx === displayStats.length - 1) && (gridColsNum > 1) && (displayStats.length % gridColsNum === 1);
+            return `
+            <div class="msw-stat-cell ${s.isBoosted ? 'is-boosted' : ''} ${isLastOdd ? 'is-odd-span' : ''}">
+              ${s.isBoosted
+                ? `<div class="msw-stat-head-row"><span class="msw-stat-lbl">${esc(s.label)}</span><span class="msw-stat-bonus-chip">▲ ${esc(s.bonusText)}</span></div>
+                   <div class="msw-stat-val-row"><span class="msw-stat-total">${esc(s.totalVal)}</span><span class="msw-stat-base">(${esc(s.baseVal)} <span class="msw-stat-bonus">${esc(s.bonusText)}</span>)</span></div>`
+                : `<span class="msw-stat-lbl">${esc(s.label)}</span><span class="msw-stat-val">${esc(s.value)}</span>`}
+            </div>`;
+          }).join('')}
+        </div>
+        ${extractedPointsStat ? `<div class="msw-points-banner"><span class="msw-points-lbl">✨ Available Ability Points</span><span class="msw-points-val">${esc(extractedPointsStat.value)}</span></div>` : ''}
+      `
+    ) : '';
 
-    const pillsHtml = cfg.pills.length > 0 ? `
-      <div class="msw-pills-row">
-        ${cfg.pills.map(p => `<span class="msw-pill-tag">${esc(p)}</span>`).join('')}
-      </div>
-    ` : '';
+    const remainingPills = shopNoticePill ? cfg.pills.filter(p => p !== shopNoticePill) : cfg.pills;
+    const pillsHtml = cfg.presetId === 'status'
+      ? renderManhwaStatusSections(cfg, syncedGear)
+      : (remainingPills.length > 0 ? `
+        <div class="msw-pills-row">
+          ${remainingPills.map(p => `<span class="msw-pill-tag">${esc(p)}</span>`).join('')}
+        </div>
+      ` : '');
 
     const timerSec = Math.max(0, Number(cfg.timerSeconds) || 0);
     const timerHtml = cfg.timerEnabled ? `
@@ -3644,6 +4726,15 @@
       `;
     }
 
+    const showCardRpgBar = !previewMode && (['shop', 'inventory', 'status'].includes(cfg.presetId) || isOutcomeResolved);
+    const totalBagQty = (rpg.inventory || []).reduce((acc, it) => acc + Math.max(1, Number(it.qty) || 1), 0);
+    const cardRpgBarHtml = showCardRpgBar ? `
+      <div class="msw-card-rpg-bar">
+        <button type="button" class="msw-card-rpg-btn msw-card-rpg-bag">🎒 Bag (${totalBagQty})</button>
+        <button type="button" class="msw-card-rpg-btn msw-card-rpg-prof">📊 Boosted Profile</button>
+      </div>
+    ` : '';
+
     el.innerHTML = `
       ${cardBgHtml}
       <div class="msw-corner tl"></div>
@@ -3673,11 +4764,36 @@
         ${pillsHtml}
         ${timerHtml}
         ${btnsHtml}
+        ${cardRpgBarHtml}
         ${cfg.footerText ? `<div class="msw-footer"><span>${esc(cfg.footerText)}</span></div>` : ''}
       </div>
     `;
 
     animateBarsInElement(el);
+
+    el.querySelectorAll('.msw-card-rpg-bag').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openRpgDrawer('bag');
+      });
+    });
+    el.querySelectorAll('.msw-card-rpg-prof').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openRpgDrawer('profile');
+      });
+    });
+
+    el.querySelectorAll('[data-inspect-eqp-idx]').forEach(row => {
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = Number(row.dataset.inspectEqpIdx);
+        const eq = syncedGear && syncedGear.equippedItems && syncedGear.equippedItems[idx];
+        if (!eq) return;
+        const bagIdx = (rpg.inventory || []).findIndex(it => it.name === eq.name && it.equipped);
+        openItemInspectModal(eq, { source: bagIdx >= 0 ? 'bag' : 'view', idx: bagIdx, previewMode });
+      });
+    });
 
     el.querySelectorAll('.msw-action-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -3714,36 +4830,30 @@
       slotEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const idx = Number(slotEl.dataset.invIdx);
-        const curRpg = getRpgState();
-        const target = syncedFromRpgInv
-          ? (curRpg.inventory && curRpg.inventory[idx])
+        const target = syncedFromRpgInv && !previewMode && rpg.inventory[idx]
+          ? rpg.inventory[idx]
           : ((msg && msg.systemConfig && msg.systemConfig.inventoryItems && msg.systemConfig.inventoryItems[idx]) || cfg.inventoryItems[idx]);
         if (!target) return;
-        const liveEval = evaluateUnlockReq(target.unlockReq, curRpg);
-        const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(target.locked);
-        if (lockedNow) {
-          const msgTxt = liveEval.hasReq ? `🔒 ${target.name} requires: ${liveEval.missing.join(', ')}` : `🔒 ${target.name} is Locked!`;
-          if (api() && typeof api().showToast === 'function') api().showToast(msgTxt);
-          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
-          return;
-        }
-        target.equipped = !target.equipped;
-        slotEl.classList.toggle('is-equipped', target.equipped);
-        let tag = slotEl.querySelector('.msw-inv-tag.eqp');
-        if (target.equipped && !tag) {
-          tag = document.createElement('span');
-          tag.className = 'msw-inv-tag eqp';
-          tag.textContent = 'EQP';
-          slotEl.prepend(tag);
-        } else if (!target.equipped && tag) {
-          tag.remove();
-        }
-        if (syncedFromRpgInv && !previewMode) {
-          saveRpgState(curRpg, { rerender: false });
-        }
-        if (api() && typeof api().playPopSound === 'function') api().playPopSound(1.15);
-        if (api() && typeof api().showToast === 'function') api().showToast(target.equipped ? `⚔️ Equipped ${target.name}!` : `🎒 Unequipped ${target.name}`);
-        if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+        openItemInspectModal(target, {
+          source: (syncedFromRpgInv && !previewMode) ? 'bag' : 'inv',
+          idx,
+          msg,
+          cfg,
+          el,
+          slotEl,
+          previewMode
+        });
+      });
+    });
+
+    el.querySelectorAll('[data-shop-inspect-idx]').forEach(rowEl => {
+      rowEl.addEventListener('click', (e) => {
+        if (e.target && e.target.closest('.msw-shop-buy-btn')) return;
+        e.stopPropagation();
+        const idx = Number(rowEl.dataset.shopInspectIdx);
+        const target = (msg && msg.systemConfig && msg.systemConfig.shopItems && msg.systemConfig.shopItems[idx]) || cfg.shopItems[idx];
+        const buyBtn = rowEl.querySelector('.msw-shop-buy-btn');
+        if (target) openItemInspectModal(target, { source: 'shop', idx, msg, cfg, el, buyBtn, previewMode });
       });
     });
 
@@ -3751,51 +4861,7 @@
       buyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const idx = Number(buyBtn.dataset.shopIdx);
-        const target = (msg && msg.systemConfig && msg.systemConfig.shopItems && msg.systemConfig.shopItems[idx]) || cfg.shopItems[idx];
-        if (!target) return;
-        const curRpg = getRpgState();
-        const liveEval = evaluateUnlockReq(target.unlockReq, curRpg);
-        const lockedNow = liveEval.hasReq ? !liveEval.unlocked : Boolean(target.locked);
-        if (lockedNow) {
-          const msgTxt = liveEval.hasReq ? `🔒 Locked — Need: ${liveEval.missing.join(', ')}` : `🔒 Locked: ${target.meta || target.price}`;
-          if (api() && typeof api().showToast === 'function') api().showToast(msgTxt);
-          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
-          return;
-        }
-        if (target.owned) return;
-        const economyLinked = curRpg.active || (cfg.rpgLink && cfg.rpgLink.enabled) || cfg.syncWithStoryRpg || liveEval.hasReq;
-        const priceNum = /^LOCKED/i.test(target.price) ? parseCoinNumber(String(target.price).replace(/LV\.?\s*\d+/gi, '')) : parseCoinNumber(target.price);
-        if (!previewMode && economyLinked && priceNum > 0) {
-          if (curRpg.coins < priceNum) {
-            if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Need ${formatCoins(priceNum)} G (You have ${formatCoins(curRpg.coins)} G)`);
-            if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sting', 1.0);
-            return;
-          }
-          curRpg.active = true;
-          curRpg.coins -= priceNum;
-          const existingInv = curRpg.inventory.find(it => it.name.toLowerCase() === String(target.name).toLowerCase());
-          if (existingInv) existingInv.qty += 1;
-          else curRpg.inventory.push({ icon: target.icon || '🛒', name: target.name, rarity: normalizeRarity(target.rarity), qty: 1, equipped: false });
-          target.owned = true;
-          buyBtn.classList.add('owned');
-          buyBtn.textContent = '✔ OWNED';
-          saveRpgState(curRpg);
-          if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
-          if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Bought ${target.name} (-${formatCoins(priceNum)} G)!`);
-          if (api() && typeof api().saveStudioState === 'function') api().saveStudioState();
-          return;
-        }
-        target.owned = true;
-        buyBtn.classList.add('owned');
-        buyBtn.textContent = '✔ OWNED';
-        if (economyLinked && !previewMode) {
-          curRpg.active = true;
-          curRpg.inventory.push({ icon: target.icon || '🛒', name: target.name, rarity: normalizeRarity(target.rarity), qty: 1, equipped: false });
-          saveRpgState(curRpg);
-        }
-        if (api() && typeof api().triggerSfxByName === 'function') api().triggerSfxByName('sparkle', 1.1);
-        if (api() && typeof api().showToast === 'function') api().showToast(`🪙 Purchased ${target.name}!`);
-        if (!previewMode && api() && typeof api().saveStudioState === 'function') api().saveStudioState();
+        purchaseShopItem(msg, cfg, el, idx, buyBtn, previewMode);
       });
     });
 
@@ -3861,7 +4927,7 @@
   function applyOptionalTagModifiers(cfg, parts) {
     const cleanParts = [];
     parts.forEach(p => {
-      const m = p.match(/^(theme|frame|accent|stamp|badge|icon)=([#\w\s\-\.\[\]\/✦🔥💀⚡👑]+)$/i);
+      const m = p.match(/^(theme|frame|accent|stamp|badge|icon|shoplayout|statuslayout)=([#\w\s\-\.\!\?\:\+%\(\)&,\[\]\/✦🔥💀⚡👑]+)$/i);
       if (m) {
         const key = m[1].toLowerCase();
         const val = m[2].trim();
@@ -3875,6 +4941,10 @@
           cfg.stampText = val;
         } else if (key === 'badge') {
           cfg.headerBadge = val;
+        } else if (key === 'shoplayout') {
+          cfg.shopLayout = val.toLowerCase() === 'grid' ? 'grid' : 'rows';
+        } else if (key === 'statuslayout') {
+          cfg.statusLayout = val.toLowerCase() === 'compact' ? 'compact' : 'sheet';
         } else if (key === 'icon') {
           if (getAllSvgIcons()[val]) {
             cfg.svgIcon = val;
@@ -3889,15 +4959,51 @@
     return cleanParts;
   }
 
-  function makeMsg(cfg, delayMs = 2000, idx = 0) {
+  function parseQuestDeltaSpec(specStr = '', isFail = false) {
+    const out = { coins: 0, exp: 0, hp: 0, mp: 0, itemName: '', flag: '' };
+    String(specStr || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tok => {
+      const itemM = tok.match(/^ITEM:\s*(.+)$/i);
+      if (itemM) { out.itemName = itemM[1].trim(); return; }
+      const flagM = tok.match(/^FLAG:\s*(.+)$/i);
+      if (flagM) { out.flag = flagM[1].trim(); return; }
+      const m = tok.match(/^([+\-]?\d+)\s*(G|COINS?|GOLD|EXP|XP|HP|MP|MANA)$/i);
+      if (!m) return;
+      const num = Math.abs(parseInt(m[1], 10) || 0);
+      const unit = m[2].toUpperCase();
+      if (unit === 'G' || unit.startsWith('COIN') || unit === 'GOLD') out.coins += num;
+      else if (unit === 'EXP' || unit === 'XP') out.exp += num;
+      else if (unit === 'HP') out.hp += (isFail ? num : (parseInt(m[1], 10) || num));
+      else if (unit === 'MP' || unit === 'MANA') out.mp += (isFail ? num : (parseInt(m[1], 10) || num));
+    });
+    return out;
+  }
+
+  function estimateSystemWindowHoldMs(cfg) {
+    const c = (cfg && typeof cfg === 'object') ? cfg : {};
+    const words = [c.headerTitle, c.subtitle, c.bodyText, c.levelTransition, c.unlockedAbility]
+      .filter(Boolean).join(' ').trim().split(/\s+/).filter(Boolean).length;
+    const itemCount =
+      (Array.isArray(c.stats) ? c.stats.length : 0) +
+      (Array.isArray(c.statBoosts) ? c.statBoosts.length : 0) +
+      (Array.isArray(c.inventoryItems) ? c.inventoryItems.length : 0) +
+      (Array.isArray(c.shopItems) ? c.shopItems.length : 0) +
+      (Array.isArray(c.bars) ? c.bars.length : 0) +
+      (Array.isArray(c.buttons) ? c.buttons.length : 0) +
+      (Array.isArray(c.pills) ? c.pills.length : 0);
+    return Math.max(3500, Math.min(5200, Math.round(3200 + itemCount * 220 + words * 65)));
+  }
+
+  function makeMsg(cfg, delayMs = 0, idx = 0) {
     const cleanCfg = normalizeConfig({ systemConfig: cfg });
+    const autoHold = estimateSystemWindowHoldMs(cleanCfg);
+    const resolvedDelay = (Number(delayMs) > 2500) ? Number(delayMs) : autoHold;
     return {
       id: 'm_syswin_' + Date.now() + '_' + idx,
       type: 'syswindow',
       title: cleanCfg.headerTitle,
       text: cleanCfg.bodyText || cleanCfg.subtitle || cleanCfg.levelTransition || cleanCfg.headerTitle,
       systemConfig: cleanCfg,
-      delayMs
+      delayMs: resolvedDelay
     };
   }
 
@@ -3982,7 +5088,7 @@
     if (fullMatch) {
       try {
         const parsed = JSON.parse(fullMatch[1]);
-        return makeMsg(parsed, Number(parsed.holdMs) || 1900, idx);
+        return makeMsg(parsed, Number(parsed.holdMs) || 0, idx);
       } catch (e) {}
     }
 
@@ -4018,6 +5124,7 @@
     if (statusMatch) {
       const rawParts = statusMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'status').config);
+      base.syncWithStoryRpg = false;
       const parts = applyOptionalTagModifiers(base, rawParts);
       base.headerTitle = `${(parts[0] || 'PLAYER').toUpperCase()} — STATUS`;
       base.headerBadge = parts[1] || 'AWAKENED';
@@ -4088,6 +5195,7 @@
     if (invMatch) {
       const rawParts = invMatch[1].split('|').map(s => s.trim()).filter(Boolean);
       const base = cloneObj(PRESETS.find(p => p.id === 'inventory').config);
+      base.syncWithStoryRpg = false;
       const parts = applyOptionalTagModifiers(base, rawParts);
       base.currencyText = parts[0] ? (parts[0].includes('🪙') ? parts[0] : '🪙 ' + parts[0]) : '🪙 0 G';
       const itemListRaw = parts[1] ? parts.slice(1).join(', ') : '';
@@ -4245,7 +5353,90 @@
       base.bodyText = parts.slice(2).join('\n') || 'Complete the survival task before time hits 00:00!';
       base.stats = [];
       base.pills = [];
-      return makeMsg(base, 2000, idx);
+      base.rpgLink = normalizeRpgLink({ enabled: false });
+      return makeMsg(base, 0, idx);
+    }
+
+    const questMatch = line.match(/^\[SYS_QUEST:\s*(.+)\]$/i);
+    if (questMatch) {
+      const rawParts = questMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      const base = cloneObj(PRESETS.find(p => p.id === 'notification').config);
+      const afterMods = applyOptionalTagModifiers(base, rawParts);
+      const posParts = [];
+      let rewardTxt = '';
+      let penaltyTxt = '';
+      let passSpec = '';
+      let failSpec = '';
+      let customButtons = null;
+      let timerSpec = '';
+      afterMods.forEach(p => {
+        const kv = p.match(/^(reward|penalty|pass|fail|buttons|timer)\s*[:=]\s*(.+)$/i);
+        if (kv) {
+          const k = kv[1].toLowerCase();
+          const v = kv[2].trim();
+          if (k === 'reward') rewardTxt = v;
+          else if (k === 'penalty') penaltyTxt = v;
+          else if (k === 'pass') passSpec = v;
+          else if (k === 'fail') failSpec = v;
+          else if (k === 'timer') timerSpec = v;
+          else if (k === 'buttons') {
+            customButtons = v.split(/\s*\/\s*|\s*,\s*/).map(s => s.trim()).filter(Boolean);
+          }
+        } else {
+          posParts.push(p);
+        }
+      });
+      base.headerTitle = posParts[0] || 'SYSTEM QUEST ALERT';
+      base.bodyText = posParts[1] || 'Will you accept the System Quest contract?';
+      if (!rewardTxt && posParts[2]) rewardTxt = posParts[2];
+      if (!penaltyTxt && posParts[3]) penaltyTxt = posParts[3];
+      base.subtitle = '';
+      base.statsCols = 2;
+      base.stats = [];
+      if (rewardTxt) base.stats.push({ label: 'REWARD', value: rewardTxt });
+      if (penaltyTxt) base.stats.push({ label: 'PENALTY', value: penaltyTxt });
+      if (base.stats.length === 0) {
+        base.stats = [{ label: 'REWARD', value: passSpec || 'System Awakening' }, { label: 'PENALTY', value: failSpec || 'System Penalty' }];
+      }
+      base.buttons = (customButtons && customButtons.length >= 2)
+        ? customButtons.slice(0, 3).map(lbl => ({ label: lbl, style: 'neutral' }))
+        : [{ label: '✔ ACCEPT', style: 'neutral' }, { label: '✖ DECLINE', style: 'neutral' }];
+      if (timerSpec) {
+        let secs = parseInt(timerSpec, 10) || 10;
+        if (/m/i.test(timerSpec)) secs *= 60;
+        base.timerEnabled = true;
+        base.timerSeconds = Math.max(1, secs);
+      }
+      const passObj = parseQuestDeltaSpec(passSpec, false);
+      const failObj = parseQuestDeltaSpec(failSpec, true);
+      if (!passSpec && !failSpec) {
+        passObj.exp = 50;
+        passObj.coins = 100;
+        failObj.hp = 20;
+      }
+      base.rpgLink = normalizeRpgLink({
+        enabled: true,
+        passBtnIndex: 0,
+        failBtnIndex: 1,
+        timerExpirePenalty: true,
+        autoHideAfterResolve: true,
+        autoHideDelaySec: 1.8,
+        passReward: {
+          coins: passObj.coins,
+          exp: passObj.exp,
+          hp: passObj.hp,
+          mp: passObj.mp,
+          itemName: passObj.itemName,
+          flag: passObj.flag
+        },
+        failPenalty: {
+          coins: failObj.coins,
+          hp: failObj.hp,
+          mp: failObj.mp,
+          flag: failObj.flag
+        }
+      });
+      return makeMsg(base, 0, idx);
     }
 
     return null;
@@ -4548,9 +5739,15 @@
             </div>
             <div class="syswin-block-list" id="sysWinInvList"></div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
               <span style="font-size:11.5px; font-weight:900; color:#facc15;">🪙 System Coin Shop Items</span>
-              <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addShopItem()">+ Add Shop Item</button>
+              <div style="display:flex; gap:5px; align-items:center;">
+                <select class="syswin-select" id="sysSelShopLayout" style="width:auto; padding:3px 7px; font-size:11px;" title="Shop Layout Style">
+                  <option value="rows">Holographic Rows</option>
+                  <option value="grid">2-Col Relic Grid</option>
+                </select>
+                <button type="button" class="syswin-chip-btn" onclick="window.ChatHubSystemWindows.addShopItem()">+ Add Shop Item</button>
+              </div>
             </div>
             <div class="syswin-block-list" id="sysWinShopList"></div>
 
@@ -4560,9 +5757,13 @@
             </div>
             <div class="syswin-block-list" id="sysWinBarsList"></div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
-              <span style="font-size:11.5px; font-weight:900; color:#e2e8f0;">🔢 Key-Value Stat Grid</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px; gap:6px; flex-wrap:wrap;">
+              <span style="font-size:11.5px; font-weight:900; color:#e2e8f0;">🔢 Status Style &amp; Stat Grid</span>
               <div style="display:flex; gap:5px; align-items:center;">
+                <select class="syswin-select" id="sysSelStatusLayout" style="width:auto; padding:3px 7px; font-size:11px;" title="Player Status Window Layout">
+                  <option value="sheet">Solo Leveling Sheet</option>
+                  <option value="compact">2-Col Hologram Table</option>
+                </select>
                 <select class="syswin-select" id="sysSelStatsCols" style="width:auto; padding:3px 7px; font-size:11px;">
                   <option value="1">1 Col</option>
                   <option value="2">2 Cols</option>
@@ -4944,6 +6145,8 @@
     setVal('sysInpMediaUrl', builderDraft.mediaUrl || '');
 
     setVal('sysSelStatsCols', String(builderDraft.statsCols || 2));
+    setVal('sysSelStatusLayout', builderDraft.statusLayout || 'sheet');
+    setVal('sysSelShopLayout', builderDraft.shopLayout || 'rows');
     setVal('sysInpPills', (builderDraft.pills || []).join(', '));
     setVal('sysInpButtons', (builderDraft.buttons || []).map(b => b.label).join(' | '));
     setChk('sysChkTimer', builderDraft.timerEnabled);
@@ -5570,6 +6773,18 @@
     });
   }
 
+  function buildItemIconControlHtml(listKey, idx, item) {
+    const imgSrc = getItemImageSrc(item);
+    return `
+      <div style="display:flex; align-items:center; gap:3px; flex-shrink:0;">
+        <button type="button" class="syswin-chip-btn" style="padding:2px 6px; font-size:10px; display:inline-flex; align-items:center; gap:3px;" onclick="window.ChatHubSystemWindows.pickCustomItemImage('${listKey}', ${idx})" title="Upload PNG/JPG Icon">
+          ${imgSrc ? `<img src="${esc(imgSrc)}" style="width:16px; height:16px; object-fit:cover; border-radius:3px;">` : '🖼️'}
+        </button>
+        ${imgSrc ? `<button type="button" class="syswin-chip-btn" style="padding:2px 5px; font-size:9px; color:#fca5a5;" onclick="window.ChatHubSystemWindows.clearCustomItemImage('${listKey}', ${idx})" title="Revert to Emoji Icon">↺</button>` : ''}
+      </div>
+    `;
+  }
+
   function renderInventoryEditor() {
     const list = document.getElementById('sysWinInvList');
     if (!list) return;
@@ -5579,19 +6794,20 @@
     }
     list.innerHTML = builderDraft.inventoryItems.map((it, idx) => `
       <div class="syswin-block-row">
-        <input type="text" class="syswin-input" style="width:42px; text-align:center;" value="${esc(it.icon)}" data-inv-eidx="${idx}" data-inv-efield="icon">
-        <input type="text" class="syswin-input" style="flex:1; min-width:90px;" value="${esc(it.name)}" placeholder="Item Name" data-inv-eidx="${idx}" data-inv-efield="name">
-        <select class="syswin-select" style="width:88px;" data-inv-eidx="${idx}" data-inv-efield="rarity">
+        ${buildItemIconControlHtml('inventoryItems', idx, it)}
+        <input type="text" class="syswin-input" style="width:46px; text-align:center;" value="${esc(it.icon)}" placeholder="🗡️/URL" title="Emoji or Image URL" data-inv-eidx="${idx}" data-inv-efield="icon">
+        <input type="text" class="syswin-input" style="flex:1; min-width:85px;" value="${esc(it.name)}" placeholder="Item Name" data-inv-eidx="${idx}" data-inv-efield="name">
+        <select class="syswin-select" style="width:84px;" data-inv-eidx="${idx}" data-inv-efield="rarity">
           <option value="common" ${it.rarity === 'common' ? 'selected' : ''}>Common</option>
           <option value="rare" ${it.rarity === 'rare' ? 'selected' : ''}>Rare</option>
           <option value="epic" ${it.rarity === 'epic' ? 'selected' : ''}>Epic</option>
           <option value="legendary" ${it.rarity === 'legendary' ? 'selected' : ''}>Legend</option>
           <option value="mythic" ${it.rarity === 'mythic' ? 'selected' : ''}>Mythic</option>
         </select>
-        <input type="text" class="syswin-input" style="width:48px;" value="${esc(it.qty)}" placeholder="x1" title="Qty / Rank" data-inv-eidx="${idx}" data-inv-efield="qty">
+        <input type="text" class="syswin-input" style="width:44px;" value="${esc(it.qty)}" placeholder="x1" title="Qty / Rank" data-inv-eidx="${idx}" data-inv-efield="qty">
         <label style="font-size:10px; color:#4ade80; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${it.equipped ? 'checked' : ''} data-inv-eidx="${idx}" data-inv-efield="equipped">EQP</label>
         <label style="font-size:10px; color:#fca5a5; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${it.locked ? 'checked' : ''} data-inv-eidx="${idx}" data-inv-efield="locked">🔒</label>
-        <input type="text" class="syswin-input" style="width:125px; font-size:10.5px;" value="${esc(it.unlockReq || '')}" placeholder="Unlock Req (LV>=5)" data-inv-eidx="${idx}" data-inv-efield="unlockReq" title="e.g. LV>=5, FLAG:boss_dead, ITEM:Key">
+        <input type="text" class="syswin-input" style="width:110px; font-size:10.5px;" value="${esc(it.unlockReq || '')}" placeholder="Req (LV>=5)" data-inv-eidx="${idx}" data-inv-efield="unlockReq" title="e.g. LV>=5, FLAG:boss_dead, ITEM:Key">
         <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeInventoryItem(${idx})">✕</button>
       </div>
     `).join('');
@@ -5611,22 +6827,30 @@
     const list = document.getElementById('sysWinShopList');
     if (!list) return;
     if (!builderDraft.shopItems || builderDraft.shopItems.length === 0) {
-      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No coin shop items yet. Click "+ Add Shop Item" to sell skills & weapons!</div>';
+      list.innerHTML = '<div style="font-size:10.5px; color:#64748b;">No coin shop items yet. Click "+ Add Shop Item" to sell skills &amp; weapons!</div>';
       return;
     }
     list.innerHTML = builderDraft.shopItems.map((sp, idx) => `
       <div class="syswin-block-row">
-        <input type="text" class="syswin-input" style="width:42px; text-align:center;" value="${esc(sp.icon)}" data-shop-eidx="${idx}" data-shop-efield="icon">
-        <input type="text" class="syswin-input" style="flex:1; min-width:90px;" value="${esc(sp.name)}" placeholder="Item Name" data-shop-eidx="${idx}" data-shop-efield="name">
-        <input type="text" class="syswin-input" style="flex:1; min-width:85px;" value="${esc(sp.meta)}" placeholder="Meta / ATK" data-shop-eidx="${idx}" data-shop-efield="meta">
-        <input type="text" class="syswin-input" style="width:76px;" value="${esc(sp.price)}" placeholder="50,000 G" data-shop-eidx="${idx}" data-shop-efield="price">
+        ${buildItemIconControlHtml('shopItems', idx, sp)}
+        <input type="text" class="syswin-input" style="width:46px; text-align:center;" value="${esc(sp.icon)}" placeholder="🗡️/URL" title="Emoji or Image URL" data-shop-eidx="${idx}" data-shop-efield="icon">
+        <input type="text" class="syswin-input" style="flex:1; min-width:85px;" value="${esc(sp.name)}" placeholder="Item Name" data-shop-eidx="${idx}" data-shop-efield="name">
+        <select class="syswin-select" style="width:76px;" data-shop-eidx="${idx}" data-shop-efield="rarity" title="Rarity">
+          <option value="common" ${sp.rarity === 'common' ? 'selected' : ''}>Common</option>
+          <option value="rare" ${sp.rarity === 'rare' ? 'selected' : ''}>Rare</option>
+          <option value="epic" ${sp.rarity === 'epic' ? 'selected' : ''}>Epic</option>
+          <option value="legendary" ${sp.rarity === 'legendary' ? 'selected' : ''}>Legend</option>
+          <option value="mythic" ${sp.rarity === 'mythic' ? 'selected' : ''}>Mythic</option>
+        </select>
+        <input type="text" class="syswin-input" style="flex:1; min-width:80px;" value="${esc(sp.meta)}" placeholder="Meta / ATK +240" data-shop-eidx="${idx}" data-shop-efield="meta">
+        <input type="text" class="syswin-input" style="width:72px;" value="${esc(sp.price)}" placeholder="50,000 G" data-shop-eidx="${idx}" data-shop-efield="price">
         <label style="font-size:10px; color:#fca5a5; display:flex; align-items:center; gap:2px;"><input type="checkbox" ${sp.locked ? 'checked' : ''} data-shop-eidx="${idx}" data-shop-efield="locked">🔒</label>
-        <input type="text" class="syswin-input" style="width:130px; font-size:10.5px;" value="${esc(sp.unlockReq || '')}" placeholder="Req (LV>=3, FLAG:x)" data-shop-eidx="${idx}" data-shop-efield="unlockReq" title="e.g. LV>=5, 500 G, FLAG:gate_open, ITEM:Key">
+        <input type="text" class="syswin-input" style="width:110px; font-size:10.5px;" value="${esc(sp.unlockReq || '')}" placeholder="Req (LV>=3)" data-shop-eidx="${idx}" data-shop-efield="unlockReq" title="e.g. LV>=5, 500 G, FLAG:gate_open, ITEM:Key">
         <button type="button" class="syswin-chip-btn" style="color:#fca5a5; padding:4px 8px;" onclick="window.ChatHubSystemWindows.removeShopItem(${idx})">✕</button>
       </div>
     `).join('');
     list.querySelectorAll('[data-shop-eidx]').forEach(inp => {
-      const evt = inp.type === 'checkbox' ? 'change' : 'input';
+      const evt = (inp.tagName === 'SELECT' || inp.type === 'checkbox') ? 'change' : 'input';
       inp.addEventListener(evt, () => {
         const i = Number(inp.dataset.shopEidx);
         const f = inp.dataset.shopEfield;
@@ -5747,6 +6971,15 @@
           <div><label class="syswin-label">FAIL Button # (1=2nd)</label><input type="number" class="syswin-input" min="0" max="5" data-rpg-link="failBtnIndex" value="${link.failBtnIndex}"></div>
           <label class="syswin-chip-btn" style="margin-top:14px;"><input type="checkbox" data-rpg-link-chk="timerExpirePenalty" ${link.timerExpirePenalty ? 'checked' : ''}> 00:00 = FAIL</label>
         </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <label class="syswin-chip-btn" style="flex:1; min-width:195px;" title="Hold stamp briefly after Accept/Reject or 00:00, then fade out Prompt and display Result card">
+            <input type="checkbox" data-rpg-link-chk="autoHideAfterResolve" ${link.autoHideAfterResolve ? 'checked' : ''}> ⏳ Auto-Hide Prompt & Show Result after
+          </label>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <input type="number" class="syswin-input" style="width:62px;" min="0.3" max="10" step="0.1" data-rpg-link-num="autoHideDelaySec" value="${link.autoHideDelaySec}">
+            <span style="font-size:10.5px; color:#94a3b8;">sec</span>
+          </div>
+        </div>
         <div style="font-size:10.5px; font-weight:900; color:#4ade80;">✅ On PASS Rewards:</div>
         <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:5px;">
           <div><label class="syswin-label">+Coins</label><input type="number" class="syswin-input" min="0" data-rpg-pass="coins" data-num="1" value="${pr.coins}"></div>
@@ -5851,6 +7084,11 @@
         builderDraft.rpgLink[chk.dataset.rpgLinkChk] = Boolean(chk.checked);
       });
     });
+    panel.querySelectorAll('[data-rpg-link-num]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        builderDraft.rpgLink[inp.dataset.rpgLinkNum] = clampNum(inp.value, 0.3, 10, 1.8);
+      });
+    });
     panel.querySelectorAll('[data-rpg-pass]').forEach(inp => {
       inp.addEventListener('input', () => {
         builderDraft.rpgLink.passReward[inp.dataset.rpgPass] = inp.dataset.num ? (parseInt(inp.value, 10) || 0) : inp.value;
@@ -5934,6 +7172,8 @@
     }
 
     bindChange('sysSelStatsCols', 'statsCols', v => Number(v) || 2);
+    bindChange('sysSelStatusLayout', 'statusLayout', v => (v === 'compact' ? 'compact' : 'sheet'));
+    bindChange('sysSelShopLayout', 'shopLayout', v => (v === 'grid' ? 'grid' : 'rows'));
     bindInput('sysInpPills', 'pills', v => String(v).split(',').map(s => s.trim()).filter(Boolean));
     bindInput('sysInpButtons', 'buttons', v => String(v).split('|').map(s => s.trim()).filter(Boolean).map(lbl => ({ label: lbl, style: 'neutral' })));
     bindChange('sysChkTimer', 'timerEnabled');
@@ -6263,6 +7503,7 @@
     getAllSvgIcons,
     getAllFrames,
     normalizeConfig,
+    estimateSystemWindowHoldMs,
     renderSystemWindowElement,
     animateBarsInElement,
     applyTimerVisualState,
@@ -6275,7 +7516,17 @@
     parseUnlockReq,
     evaluateUnlockReq,
     applyRpgDelta,
+    buildOutcomeResultConfig,
     resolveCardOutcome,
+    parseItemEffects,
+    computeEquippedGearStats,
+    equipOrUseInventoryItem,
+    renderRpgHudBar,
+    openRpgDrawer,
+    closeRpgDrawer,
+    openItemInspectModal,
+    closeItemInspectModal,
+    insertSyncedRpgCard,
     openBuilder: openSystemWindowBuilder,
     closeBuilder: closeSystemWindowBuilder,
     switchTab,
@@ -6796,6 +8047,61 @@
     removeShopItem(idx) {
       builderDraft.shopItems.splice(idx, 1);
       renderShopEditor();
+      refreshPreviewOnly();
+    },
+    pickCustomItemImage(listKey, idx) {
+      if (!builderDraft || !Array.isArray(builderDraft[listKey]) || !builderDraft[listKey][idx]) return;
+      const picker = document.createElement('input');
+      picker.type = 'file';
+      picker.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
+      picker.onchange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const rawUrl = String(ev.target.result || '');
+          if (!rawUrl.startsWith('data:image/')) return;
+          const finishAssign = (finalUrl) => {
+            if (!builderDraft[listKey] || !builderDraft[listKey][idx]) return;
+            builderDraft[listKey][idx].iconImage = finalUrl;
+            if (listKey === 'shopItems') renderShopEditor();
+            else renderInventoryEditor();
+            refreshPreviewOnly();
+            if (api() && typeof api().showToast === 'function') api().showToast('🖼️ Custom item icon attached!');
+          };
+          if (rawUrl.startsWith('data:image/svg') || rawUrl.startsWith('data:image/gif') || typeof Image === 'undefined') {
+            finishAssign(rawUrl);
+            return;
+          }
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 256;
+            const scale = Math.min(1, maxDim / Math.max(img.width || maxDim, img.height || maxDim));
+            const w = Math.max(1, Math.round((img.width || maxDim) * scale));
+            const h = Math.max(1, Math.round((img.height || maxDim) * scale));
+            try {
+              const cv = document.createElement('canvas');
+              cv.width = w;
+              cv.height = h;
+              const ctx = cv.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              finishAssign(cv.toDataURL('image/png'));
+            } catch (err) {
+              finishAssign(rawUrl);
+            }
+          };
+          img.onerror = () => finishAssign(rawUrl);
+          img.src = rawUrl;
+        };
+        reader.readAsDataURL(file);
+      };
+      picker.click();
+    },
+    clearCustomItemImage(listKey, idx) {
+      if (!builderDraft || !Array.isArray(builderDraft[listKey]) || !builderDraft[listKey][idx]) return;
+      builderDraft[listKey][idx].iconImage = '';
+      if (listKey === 'shopItems') renderShopEditor();
+      else renderInventoryEditor();
       refreshPreviewOnly();
     },
     addBar() {
